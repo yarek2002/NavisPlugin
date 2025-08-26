@@ -1,0 +1,259 @@
+private void ActivateClashDetective(ClashTest test, SavedItem issue)
+{
+    try
+    {
+        Log($"UIA Activate start: test={test?.Guid}, issue={issue?.Guid}, type={issue?.GetType().Name}");
+        if (test == null || issue == null) return;
+
+        var root = System.Windows.Automation.AutomationElement.RootElement;
+        if (root == null) { Log("UIA root is null"); return; }
+
+        // 1. Найти окно Navisworks
+        var navWindow = root.FindFirst(System.Windows.Automation.TreeScope.Children,
+            new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.NameProperty, _doc?.Title ?? ""));
+        if (navWindow == null) { Log("UIA Navisworks window not found"); return; }
+
+        // 2. Активировать вкладку Clash Detective
+        string[] panelNames = { "Clash Detective", "Проверка коллизий", "Проверка столкновений" };
+        bool panelActivated = false;
+        foreach (var name in panelNames)
+        {
+            var tab = navWindow.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+                new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.NameProperty, name));
+            if (tab != null)
+            {
+                var sel = tab.GetCurrentPattern(System.Windows.Automation.SelectionItemPattern.Pattern) as System.Windows.Automation.SelectionItemPattern;
+                try { sel?.Select(); Log($"UIA activated panel: {name}"); panelActivated = true; Thread.Sleep(100); break; }
+                catch { Log($"UIA failed to activate panel: {name}"); }
+            }
+        }
+        if (!panelActivated) { Log("UIA Clash Detective panel not found"); return; }
+
+        // 3. Найти дерево тестов
+        var tree = navWindow.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+            new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.ControlTypeProperty, System.Windows.Automation.ControlType.Tree));
+        if (tree == null)
+        {
+            tree = navWindow.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+                new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.ControlTypeProperty, System.Windows.Automation.ControlType.List));
+            if (tree == null) { Log("UIA Clash Detective tree/list not found"); return; }
+        }
+
+        // 4. Выбрать тест
+        var testItem = FindUIAItemByGuidOrName(tree, test.Guid, test.DisplayName);
+        if (testItem == null) { Log($"UIA test not found: {test.Guid}"); return; }
+        var testSel = testItem.GetCurrentPattern(System.Windows.Automation.SelectionItemPattern.Pattern) as System.Windows.Automation.SelectionItemPattern;
+        try
+        {
+            testSel?.Select();
+            Log($"UIA selected test: {test.Guid}");
+            Thread.Sleep(150); // Дать UI обновиться
+        }
+        catch { Log($"UIA failed to select test: {test.Guid}"); return; }
+
+        // 5. Найти и выбрать группу/результат по пути индексов
+        var path = new System.Collections.Generic.List<int>();
+        if (!TryGetManagedIndexPath(test, issue, path))
+        {
+            Log($"UIA index path not found for issue: {issue.Guid}");
+            // Fallback: поиск по GUID или имени
+            var issueItem = FindUIAItemByGuidOrName(tree, issue.Guid, issue.DisplayName);
+            if (issueItem == null) { Log($"UIA issue not found: {issue.Guid}"); return; }
+            var issueSel = issueItem.GetCurrentPattern(System.Windows.Automation.SelectionItemPattern.Pattern) as System.Windows.Automation.SelectionItemPattern;
+            try { issueSel?.Select(); Log($"UIA selected issue by GUID/name: {issue.Guid}"); }
+            catch { Log($"UIA failed to select issue by GUID/name: {issue.Guid}"); }
+            return;
+        }
+
+        // 6. Выбрать по пути индексов
+        var current = tree;
+        for (int depth = 0; depth < path.Count; depth++)
+        {
+            var children = current.FindAll(System.Windows.Automation.TreeScope.Children,
+                new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.ControlTypeProperty, System.Windows.Automation.ControlType.TreeItem));
+            if (children == null || children.Count == 0)
+            {
+                children = current.FindAll(System.Windows.Automation.TreeScope.Children,
+                    new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.ControlTypeProperty, System.Windows.Automation.ControlType.ListItem));
+            }
+            if (children == null || children.Count <= path[depth])
+            {
+                Log($"UIA path select failed at depth {depth}, index {path[depth]}");
+                return;
+            }
+            current = children[path[depth]];
+            var ec = current.GetCurrentPattern(System.Windows.Automation.ExpandCollapsePattern.Pattern) as System.Windows.Automation.ExpandCollapsePattern;
+            try
+            {
+                if (ec != null && ec.Current.ExpandCollapseState != System.Windows.Automation.ExpandCollapseState.Expanded)
+                {
+                    ec.Expand();
+                    Thread.Sleep(100); // Дать время на разворачивание
+                }
+            }
+            catch { Log($"UIA failed to expand at depth {depth}"); }
+        }
+        var sel = current.GetCurrentPattern(System.Windows.Automation.SelectionItemPattern.Pattern) as System.Windows.Automation.SelectionItemPattern;
+        try
+        {
+            sel?.Select();
+            Log($"UIA selected issue by path: [{string.Join(",", path)}], guid={issue.Guid}");
+        }
+        catch { Log($"UIA failed to select issue by path: [{string.Join(",", path)}]"); }
+    }
+    catch (Exception ex)
+    {
+        Log($"UIA error: {ex.Message}");
+    }
+}
+
+// Вспомогательный метод для поиска элемента по GUID или имени
+private System.Windows.Automation.AutomationElement FindUIAItemByGuidOrName(System.Windows.Automation.AutomationElement root, Guid guid, string displayName)
+{
+    if (root == null) return null;
+    string guidStr = guid.ToString();
+    // Поиск по GUID (Name или AutomationId)
+    var item = root.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+        new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.NameProperty, guidStr));
+    if (item == null)
+    {
+        item = root.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+            new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.AutomationIdProperty, guidStr));
+    }
+    // Поиск по имени, если GUID не нашёлся
+    if (item == null && !string.IsNullOrWhiteSpace(displayName))
+    {
+        item = root.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+            new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.NameProperty, displayName));
+    }
+    return item;
+}private void ActivateClashDetective(ClashTest test, SavedItem issue)
+{
+    try
+    {
+        Log($"UIA Activate start: test={test?.Guid}, issue={issue?.Guid}, type={issue?.GetType().Name}");
+        if (test == null || issue == null) return;
+
+        var root = System.Windows.Automation.AutomationElement.RootElement;
+        if (root == null) { Log("UIA root is null"); return; }
+
+        // 1. Найти окно Navisworks
+        var navWindow = root.FindFirst(System.Windows.Automation.TreeScope.Children,
+            new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.NameProperty, _doc?.Title ?? ""));
+        if (navWindow == null) { Log("UIA Navisworks window not found"); return; }
+
+        // 2. Активировать вкладку Clash Detective
+        string[] panelNames = { "Clash Detective", "Проверка коллизий", "Проверка столкновений" };
+        bool panelActivated = false;
+        foreach (var name in panelNames)
+        {
+            var tab = navWindow.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+                new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.NameProperty, name));
+            if (tab != null)
+            {
+                var sel = tab.GetCurrentPattern(System.Windows.Automation.SelectionItemPattern.Pattern) as System.Windows.Automation.SelectionItemPattern;
+                try { sel?.Select(); Log($"UIA activated panel: {name}"); panelActivated = true; Thread.Sleep(100); break; }
+                catch { Log($"UIA failed to activate panel: {name}"); }
+            }
+        }
+        if (!panelActivated) { Log("UIA Clash Detective panel not found"); return; }
+
+        // 3. Найти дерево тестов
+        var tree = navWindow.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+            new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.ControlTypeProperty, System.Windows.Automation.ControlType.Tree));
+        if (tree == null)
+        {
+            tree = navWindow.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+                new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.ControlTypeProperty, System.Windows.Automation.ControlType.List));
+            if (tree == null) { Log("UIA Clash Detective tree/list not found"); return; }
+        }
+
+        // 4. Выбрать тест
+        var testItem = FindUIAItemByGuidOrName(tree, test.Guid, test.DisplayName);
+        if (testItem == null) { Log($"UIA test not found: {test.Guid}"); return; }
+        var testSel = testItem.GetCurrentPattern(System.Windows.Automation.SelectionItemPattern.Pattern) as System.Windows.Automation.SelectionItemPattern;
+        try
+        {
+            testSel?.Select();
+            Log($"UIA selected test: {test.Guid}");
+            Thread.Sleep(150); // Дать UI обновиться
+        }
+        catch { Log($"UIA failed to select test: {test.Guid}"); return; }
+
+        // 5. Найти и выбрать группу/результат по пути индексов
+        var path = new System.Collections.Generic.List<int>();
+        if (!TryGetManagedIndexPath(test, issue, path))
+        {
+            Log($"UIA index path not found for issue: {issue.Guid}");
+            // Fallback: поиск по GUID или имени
+            var issueItem = FindUIAItemByGuidOrName(tree, issue.Guid, issue.DisplayName);
+            if (issueItem == null) { Log($"UIA issue not found: {issue.Guid}"); return; }
+            var issueSel = issueItem.GetCurrentPattern(System.Windows.Automation.SelectionItemPattern.Pattern) as System.Windows.Automation.SelectionItemPattern;
+            try { issueSel?.Select(); Log($"UIA selected issue by GUID/name: {issue.Guid}"); }
+            catch { Log($"UIA failed to select issue by GUID/name: {issue.Guid}"); }
+            return;
+        }
+
+        // 6. Выбрать по пути индексов
+        var current = tree;
+        for (int depth = 0; depth < path.Count; depth++)
+        {
+            var children = current.FindAll(System.Windows.Automation.TreeScope.Children,
+                new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.ControlTypeProperty, System.Windows.Automation.ControlType.TreeItem));
+            if (children == null || children.Count == 0)
+            {
+                children = current.FindAll(System.Windows.Automation.TreeScope.Children,
+                    new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.ControlTypeProperty, System.Windows.Automation.ControlType.ListItem));
+            }
+            if (children == null || children.Count <= path[depth])
+            {
+                Log($"UIA path select failed at depth {depth}, index {path[depth]}");
+                return;
+            }
+            current = children[path[depth]];
+            var ec = current.GetCurrentPattern(System.Windows.Automation.ExpandCollapsePattern.Pattern) as System.Windows.Automation.ExpandCollapsePattern;
+            try
+            {
+                if (ec != null && ec.Current.ExpandCollapseState != System.Windows.Automation.ExpandCollapseState.Expanded)
+                {
+                    ec.Expand();
+                    Thread.Sleep(100); // Дать время на разворачивание
+                }
+            }
+            catch { Log($"UIA failed to expand at depth {depth}"); }
+        }
+        var sel = current.GetCurrentPattern(System.Windows.Automation.SelectionItemPattern.Pattern) as System.Windows.Automation.SelectionItemPattern;
+        try
+        {
+            sel?.Select();
+            Log($"UIA selected issue by path: [{string.Join(",", path)}], guid={issue.Guid}");
+        }
+        catch { Log($"UIA failed to select issue by path: [{string.Join(",", path)}]"); }
+    }
+    catch (Exception ex)
+    {
+        Log($"UIA error: {ex.Message}");
+    }
+}
+
+// Вспомогательный метод для поиска элемента по GUID или имени
+private System.Windows.Automation.AutomationElement FindUIAItemByGuidOrName(System.Windows.Automation.AutomationElement root, Guid guid, string displayName)
+{
+    if (root == null) return null;
+    string guidStr = guid.ToString();
+    // Поиск по GUID (Name или AutomationId)
+    var item = root.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+        new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.NameProperty, guidStr));
+    if (item == null)
+    {
+        item = root.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+            new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.AutomationIdProperty, guidStr));
+    }
+    // Поиск по имени, если GUID не нашёлся
+    if (item == null && !string.IsNullOrWhiteSpace(displayName))
+    {
+        item = root.FindFirst(System.Windows.Automation.TreeScope.Descendants,
+            new System.Windows.Automation.PropertyCondition(System.Windows.Automation.AutomationElement.NameProperty, displayName));
+    }
+    return item;
+}
