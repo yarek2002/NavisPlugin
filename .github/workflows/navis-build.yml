@@ -23,7 +23,7 @@ jobs:
         run: nuget restore CUM.sln
 
       - name: Build with MSBuild (Debug)
-        run: msbuild YourSolution.sln /p:Configuration=Debug
+        run: msbuild CUM.sln /p:Configuration=Debug
 
       - name: Archive plugin DLL + PDB
         run: |
