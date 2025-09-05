@@ -20,7 +20,7 @@ jobs:
         uses: NuGet/setup-nuget@v2
 
       - name: Restore NuGet packages
-        run: nuget restore YourSolution.sln
+        run: nuget restore CUM.sln
 
       - name: Build with MSBuild (Debug)
         run: msbuild YourSolution.sln /p:Configuration=Debug
@@ -28,9 +28,9 @@ jobs:
       - name: Archive plugin DLL + PDB
         run: |
           mkdir publish
-          copy "YourProject\bin\Debug\YourPlugin.dll" publish\
-          copy "YourProject\bin\Debug\YourPlugin.pdb" publish\
-          Compress-Archive -Path publish\* -DestinationPath plugin.zip
+          copy "YourProject\bin\Debug\ClashManager.dll" publish\
+          copy "YourProject\bin\Debug\ClashManager.pdb" publish\
+          Compress-Archive -Path publish\* -DestinationPath ClashManager.zip
 
       - name: Upload artifact (download via Actions)
         uses: actions/upload-artifact@v4
