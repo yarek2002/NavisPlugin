@@ -19,9 +19,6 @@ jobs:
       - name: Setup NuGet
         uses: NuGet/setup-nuget@v2
 
-      - name: Restore NuGet packages
-        run: nuget restore CUM.sln
-
       - name: Build with MSBuild (Debug)
         run: msbuild CUM.sln /p:Configuration=Debug
 
