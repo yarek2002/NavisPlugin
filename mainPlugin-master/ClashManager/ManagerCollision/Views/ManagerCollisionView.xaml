@@ -1,0 +1,50 @@
+<Window x:Class="ClashManager.ManagerCollision.Views.ManagerCollisionView"
+		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		mc:Ignorable="d"
+		Title="Менеджер коллизий" Height="600" Width="900" WindowStartupLocation="CenterOwner">
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="300" />
+			<ColumnDefinition Width="*" />
+		</Grid.ColumnDefinitions>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="*" />
+			<RowDefinition Height="Auto" />
+		</Grid.RowDefinitions>
+
+		<!-- Тесты (слева сверху) -->
+		<GroupBox Header="Тесты" Grid.Column="0" Grid.Row="0" Margin="8">
+			<ListBox x:Name="TestsList"
+					 DisplayMemberPath="DisplayName"
+					 SelectionMode="Single"
+					 SelectionChanged="TestsList_SelectionChanged" />
+		</GroupBox>
+
+		<!-- Переименование (слева снизу) -->
+		<GroupBox Header="Переименование" Grid.Column="0" Grid.Row="1" Margin="8">
+			<StackPanel>
+				<TextBlock Text="Найти" Margin="0,0,0,6" />
+				<TextBox x:Name="FindBox" Margin="0,0,0,8" />
+				<TextBlock Text="Заменить на" Margin="0,0,0,6" />
+				<TextBox x:Name="ReplaceBox" Margin="0,0,0,8" />
+				<Button x:Name="ApplyRenameButton" Content="Применить" Click="ApplyRenameButton_Click" />
+			</StackPanel>
+		</GroupBox>
+
+		<!-- Коллизии (самое большое окно справа) -->
+		<GroupBox Header="Коллизии" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Margin="8">
+			<ListView x:Name="CollisionsList" SelectionMode="Extended">
+				<ListView.View>
+					<GridView>
+						<GridViewColumn Header="Имя" DisplayMemberBinding="{Binding Name}" Width="250" />
+						<GridViewColumn Header="Статус" DisplayMemberBinding="{Binding Status}" Width="120" />
+						<GridViewColumn Header="GUID" DisplayMemberBinding="{Binding Guid}" Width="220" />
+					</GridView>
+				</ListView.View>
+			</ListView>
+		</GroupBox>
+	</Grid>
+</Window> 

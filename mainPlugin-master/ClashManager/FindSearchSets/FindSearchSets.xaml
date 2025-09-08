@@ -1,0 +1,56 @@
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="CollisionGrouperPlugin.FindSearchSets"
+        Title="Search Rules" Height="400" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Панель 1: Наборы первого элемента -->
+        <StackPanel Grid.Column="0" Grid.Row="0" Margin="10">
+            <Label Content="Наборы первого элемента" />
+            <ListBox x:Name="ListBoxFirst" DisplayMemberPath="DisplayName" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+        </StackPanel>
+
+        <!-- Панель 2: Наборы второго элемента -->
+        <StackPanel Grid.Column="1" Grid.Row="0" Margin="10">
+            <Label Content="Наборы второго элемента" />
+            <ListBox x:Name="ListBoxSecond" DisplayMemberPath="DisplayName" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+        </StackPanel>
+
+        <!-- Панель 3: Matching тесты Clash -->
+        <StackPanel Grid.Column="2" Grid.Row="0" Margin="10">
+            <Label Content="Matching тесты Clash" />
+            <ListBox x:Name="ListBoxClash" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock>
+                            <Run Text="{Binding DisplayName}" /> <!-- Имя теста + правила -->
+                            <Run Text=" (" />
+                            <Run Text="{Binding SelectionA, FallbackValue='N/A'}" /> <!-- Левый набор (строка) -->
+                            <Run Text=" vs " />
+                            <Run Text="{Binding SelectionB, FallbackValue='N/A'}" /> <!-- Правый набор (строка) -->
+                            <Run Text=")" />
+                        </TextBlock>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </StackPanel>
+
+        <!-- Кнопка для загрузки XML -->
+        <Button Content="Загрузить XML Clash" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Left" Margin="10" Click="LoadXmlButton_Click" />
+
+        <!-- Статус загрузки XML -->
+        <TextBlock x:Name="XmlStatusText" Grid.Column="1" Grid.Row="1" Margin="10" Text="XML не загружен" VerticalAlignment="Center" />
+
+        <!-- Кнопка Close -->
+        <Button Content="Закрыть" Grid.Column="2" Grid.Row="1" HorizontalAlignment="Right" Margin="10" Click="CloseButton_Click" />
+    </Grid>
+</Window>
