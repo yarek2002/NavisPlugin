@@ -1,0 +1,60 @@
+name: Build Navisworks Plugin
+
+on:
+  push:
+    branches:
+      - main   # запускаем только при пуше в main (можно поменять)
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore CUM.sln
+
+      - name: Build with MSBuild (Debug)
+        run: msbuild CUM.sln /p:Configuration=Debug
+
+      - name: Archive plugin DLL + PDB
+        run: |
+          mkdir publish
+          copy "YourProject\bin\Debug\ClashManager.dll" publish\
+          copy "YourProject\bin\Debug\ClashManager.pdb" publish\
+          Compress-Archive -Path publish\* -DestinationPath ClashManager.zip
+
+      - name: Upload artifact (download via Actions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: navisworks-plugin-debug
+          path: plugin.zip
+
+  release:
+    needs: build
+    runs-on: windows-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: navisworks-plugin-debug
+          path: .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Debug Build ${{ github.run_number }}
+          files: plugin.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

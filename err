@@ -1,0 +1,8 @@
+Невозможно задать в свойстве Owner объект Window, который не был показан ранее.
+в System.Windows.Window.set_Owner(Window value)
+в ClashManager.ManagerCollision.Views.ManagerCollisionView..ctor()
+в D:\NavisPlugin\mainPlugin-master\ClashManager\ManagerCollision\Views\ManagerCollisionView.xaml.cs:строка 40
+в ClashManager.Externals.ManagerCollisionCmd.Execute()
+в D:\NavisPlugin\mainPlugin-master\ClashManager\Externals\ManagerCollisionCmd.cs:строка 11
+в ClashManager.CollisionGrouperCommandHandler.ExecuteCommand(String name, String[] parameters)
+в D:\NavisPlugin\mainPlugin-master\ClashManager\CollisionManager.cs:строка 60
