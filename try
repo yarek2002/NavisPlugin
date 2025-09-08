@@ -1,0 +1,55 @@
+  public static (string LevelName, string IntersectionName, string Line1, string Line2, Point3D Position) 
+        GetClashGridInfo(ClashResult clash)
+    {
+        if (clash == null || clash.Center == null)
+            return (null, null, null, null, null);
+
+        var docGrids = Application.ActiveDocument?.Grids;
+        if (docGrids == null)
+            return (null, null, null, null, null);
+
+        var systems = docGrids.Systems; // collection of GridSystem
+        if (systems == null || systems.Count == 0)
+            return (null, null, null, null, null);
+
+        GridIntersection nearest = null;
+        double minDist = double.MaxValue;
+
+        foreach (GridSystem system in systems)
+        {
+            // Для каждого уровня в системе берем ближайшее пересечение к точке
+            foreach (GridLevel level in system.Levels)
+            {
+                GridIntersection gi = null;
+                try
+                {
+                    gi = level.ClosestIntersection(clash.Center); // документированный метод
+                }
+                catch (ArgumentException) { continue; }
+                catch (ObjectDisposedException) { continue; }
+                catch (Exception) { continue; }
+
+                if (gi == null) 
+                    continue;
+
+                double dist = clash.Center.DistanceTo(gi.Position);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    nearest = gi;
+                }
+            }
+        }
+
+        if (nearest == null)
+            return (null, null, null, null, null);
+
+        string levelName = nearest.Level?.DisplayName;
+        string intersectionName = nearest.DisplayName; // уже содержит "LineA-LineB @ Level"
+        string line1 = nearest.Line1?.DisplayName;
+        string line2 = nearest.Line2?.DisplayName;
+        Point3D pos = nearest.Position;
+
+        return (levelName, intersectionName, line1, line2, pos);
+    }
+}
