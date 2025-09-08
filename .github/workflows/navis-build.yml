@@ -3,7 +3,7 @@ name: Build Navisworks Plugin
 on:
   push:
     branches:
-      - main   # запускаем только при пуше в main (можно поменять)
+      - main   # запускаем только при пуше в main
 
 jobs:
   build:
@@ -28,9 +28,9 @@ jobs:
       - name: Archive plugin DLL + PDB
         run: |
           mkdir publish
-          copy "YourProject\bin\Debug\ClashManager.dll" publish\
-          copy "YourProject\bin\Debug\ClashManager.pdb" publish\
-          Compress-Archive -Path publish\* -DestinationPath ClashManager.zip
+          copy "ClashManager\bin\Debug\ClashManager.dll" publish\
+          copy "ClashManager\bin\Debug\ClashManager.pdb" publish\
+          Compress-Archive -Path publish\* -DestinationPath plugin.zip
 
       - name: Upload artifact (download via Actions)
         uses: actions/upload-artifact@v4
