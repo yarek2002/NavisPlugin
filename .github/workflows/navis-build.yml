@@ -5,6 +5,9 @@ on:
     branches:
       - main   # запуск только при пуше в main
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
