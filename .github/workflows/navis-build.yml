@@ -13,6 +13,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check libs
+        run: dir mainPlugin-master\ClashManager\libs
+
+
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
