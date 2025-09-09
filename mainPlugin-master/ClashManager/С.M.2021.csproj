@@ -45,40 +45,40 @@
       <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\AdWindows.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Api">
-      <HintPath>libs\Autodesk.Navisworks.Api.dll</HintPath>
+      <HintPath>$(ProjectDir)libs\Autodesk.Navisworks.Api.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Automation">
-      <HintPath>libs\Autodesk.Navisworks.Automation.dll</HintPath>
+      <HintPath>$(ProjectDir)libs\Autodesk.Navisworks.Automation.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Clash">
-      <HintPath>libs\Autodesk.Navisworks.Clash.dll</HintPath>
+      <HintPath>$(ProjectDir)libs\Autodesk.Navisworks.Clash.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.ComApi">
-      <HintPath>libs\Autodesk.Navisworks.ComApi.dll</HintPath>
+      <HintPath>$(ProjectDir)libs\Autodesk.Navisworks.ComApi.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Controls">
-      <HintPath>libs\Autodesk.Navisworks.Controls.dll</HintPath>
+      <HintPath>$(ProjectDir)libs\Autodesk.Navisworks.Controls.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Interop.ComApi">
-      <HintPath>libs\Autodesk.Navisworks.Interop.ComApi.dll</HintPath>
+      <HintPath>$(ProjectDir)libs\Autodesk.Navisworks.Interop.ComApi.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Interop.ComApiAutomation">
-      <HintPath>libs\Autodesk.Navisworks.Interop.ComApiAutomation.dll</HintPath>
+      <HintPath>$(ProjectDir)libs\Autodesk.Navisworks.Interop.ComApiAutomation.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Interop.Timeliner">
-      <HintPath>libs\Autodesk.Navisworks.Interop.Timeliner.dll</HintPath>
+      <HintPath>$(ProjectDir)libs\Autodesk.Navisworks.Interop.Timeliner.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Resolver">
-      <HintPath>libs\Autodesk.Navisworks.Resolver.dll</HintPath>
+      <HintPath>$(ProjectDir)libs\Autodesk.Navisworks.Resolver.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Takeoff">
-      <HintPath>libs\Autodesk.Navisworks.Takeoff.dll</HintPath>
+      <HintPath>$(ProjectDir)libs\Autodesk.Navisworks.Takeoff.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Timeliner">
-      <HintPath>libs\Autodesk.Navisworks.Timeliner.dll</HintPath>
+      <HintPath>$(ProjectDir)libs\Autodesk.Navisworks.Timeliner.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.IO.RecyclableMemoryStream, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.IO.RecyclableMemoryStream.3.0.1\lib\netstandard2.0\Microsoft.IO.RecyclableMemoryStream.dll</HintPath>
