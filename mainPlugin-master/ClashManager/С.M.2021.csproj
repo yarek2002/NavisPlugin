@@ -54,13 +54,13 @@
       <HintPath>libs\Autodesk.Navisworks.Clash.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.ComApi">
-      <HintPath>..libs\Autodesk.Navisworks.ComApi.dll</HintPath>
+      <HintPath>libs\Autodesk.Navisworks.ComApi.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Controls">
       <HintPath>libs\Autodesk.Navisworks.Controls.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Interop.ComApi">
-      <HintPath>..\libs\Autodesk.Navisworks.Interop.ComApi.dll</HintPath>
+      <HintPath>libs\Autodesk.Navisworks.Interop.ComApi.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Interop.ComApiAutomation">
