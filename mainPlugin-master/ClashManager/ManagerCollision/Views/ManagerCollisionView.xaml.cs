@@ -208,34 +208,42 @@ namespace ClashManager.ManagerCollision.Views
                         }
                     }
 
-                    // Alternative approach: check all intersections in the level
+                    // Alternative approach: try multiple points around the clash center
                     try
                     {
-                        // This is a more comprehensive search that might find better matches
-                        var allIntersections = GetAllIntersectionsInLevel(level);
-                        foreach (var intersection in allIntersections)
+                        // Try slight offsets to find potentially better intersections
+                        var testPoints = new Point3D[]
                         {
-                            if (intersection == null) continue;
+                            clash.Center,
+                            new Point3D(clash.Center.X + 0.01, clash.Center.Y, clash.Center.Z),
+                            new Point3D(clash.Center.X - 0.01, clash.Center.Y, clash.Center.Z),
+                            new Point3D(clash.Center.X, clash.Center.Y + 0.01, clash.Center.Z),
+                            new Point3D(clash.Center.X, clash.Center.Y - 0.01, clash.Center.Z)
+                        };
 
-                            double dist = clash.Center.DistanceTo(intersection.Position);
-
-                            if (dist <= tolerance)
+                        foreach (var testPoint in testPoints)
+                        {
+                            GridIntersection testGi = null;
+                            try
                             {
-                                // Additional validation: check if the intersection is actually relevant
-                                // by comparing grid line directions with clash position
-                                double levelDiff = Math.Abs(clash.Center.Z - intersection.Position.Z);
-                                double score = dist + levelDiff * 0.1;
+                                testGi = level.ClosestIntersection(testPoint);
+                            }
+                            catch { continue; }
 
-                                // Bonus for intersections that are more aligned with the clash
-                                if (IsIntersectionWellAligned(intersection, clash.Center))
-                                {
-                                    score *= 0.9; // Reduce score for better alignment
-                                }
+                            if (testGi != null)
+                            {
+                                double dist = clash.Center.DistanceTo(testGi.Position);
 
-                                if (score < bestScore)
+                                if (dist <= tolerance)
                                 {
-                                    bestScore = score;
-                                    bestIntersection = intersection;
+                                    double levelDiff = Math.Abs(clash.Center.Z - testGi.Position.Z);
+                                    double score = dist + levelDiff * 0.1;
+
+                                    if (score < bestScore)
+                                    {
+                                        bestScore = score;
+                                        bestIntersection = testGi;
+                                    }
                                 }
                             }
                         }
@@ -248,117 +256,12 @@ namespace ClashManager.ManagerCollision.Views
                 return (NA, NA, NA, NA, null);
 
             string levelName = bestIntersection.Level?.DisplayName ?? NA;
-            string intersection = bestIntersection.DisplayName ?? NA;
+            string intersectionName = bestIntersection.DisplayName ?? NA;
             string line1 = bestIntersection.Line1?.DisplayName ?? NA;
             string line2 = bestIntersection.Line2?.DisplayName ?? NA;
             Point3D pos = bestIntersection.Position;
 
-            return (levelName, intersection, line1, line2, pos);
-        }
-
-        /// <summary>
-        /// Gets all intersections in a grid level (alternative search method)
-        /// </summary>
-        private static System.Collections.Generic.List<GridIntersection> GetAllIntersectionsInLevel(GridLevel level)
-        {
-            var intersections = new System.Collections.Generic.List<GridIntersection>();
-
-            try
-            {
-                // This method attempts to enumerate all intersections in the level
-                // Note: This is a conceptual implementation - actual API may vary
-                var lines = level.Lines;
-                if (lines != null)
-                {
-                    for (int i = 0; i < lines.Count; i++)
-                    {
-                        for (int j = i + 1; j < lines.Count; j++)
-                        {
-                            try
-                            {
-                                // Try to get intersection between two lines
-                                var intersection = level.GetIntersection(lines[i], lines[j]);
-                                if (intersection != null)
-                                {
-                                    intersections.Add(intersection);
-                                }
-                            }
-                            catch { /* Skip invalid intersections */ }
-                        }
-                    }
-                }
-            }
-            catch { /* Return empty list if enumeration fails */ }
-
-            return intersections;
-        }
-
-        /// <summary>
-        /// Checks if an intersection is well-aligned with a clash position
-        /// </summary>
-        private static bool IsIntersectionWellAligned(GridIntersection intersection, Point3D clashPosition)
-        {
-            try
-            {
-                if (intersection == null || intersection.Position == null || clashPosition == null)
-                    return false;
-
-                // Check if the clash position is reasonably close to the intersection
-                // and consider the grid line directions for better alignment assessment
-                var line1 = intersection.Line1;
-                var line2 = intersection.Line2;
-
-                if (line1 != null && line2 != null)
-                {
-                    // Calculate vectors from intersection to clash position
-                    var toClash = clashPosition - intersection.Position;
-
-                    // Get line directions (conceptual - actual API may differ)
-                    var line1Dir = GetGridLineDirection(line1);
-                    var line2Dir = GetGridLineDirection(line2);
-
-                    if (line1Dir != null && line2Dir != null)
-                    {
-                        // Check if the clash position aligns well with both grid lines
-                        double dot1 = Vector3D.DotProduct(toClash.ToVector3D(), line1Dir);
-                        double dot2 = Vector3D.DotProduct(toClash.ToVector3D(), line2Dir);
-
-                        // If both dot products are small, the position is well-aligned
-                        return Math.Abs(dot1) < 0.1 && Math.Abs(dot2) < 0.1;
-                    }
-                }
-
-                return false;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Gets the direction vector of a grid line (conceptual implementation)
-        /// </summary>
-        private static Vector3D GetGridLineDirection(GridLine line)
-        {
-            try
-            {
-                if (line == null) return null;
-
-                // This is a conceptual implementation
-                // Actual implementation would depend on the GridLine API
-                var start = line.StartPoint;
-                var end = line.EndPoint;
-
-                if (start != null && end != null)
-                {
-                    var direction = end - start;
-                    return direction.ToVector3D().Normalized();
-                }
-            }
-            catch { }
-
-            return null;
+            return (levelName, intersectionName, line1, line2, pos);
         }
 
         private void TestsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
