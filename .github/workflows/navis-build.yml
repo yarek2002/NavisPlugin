@@ -20,8 +20,10 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Build with MSBuild (Debug)
-        run: msbuild mainPlugin-master\CUM.sln /p:Configuration=Debug /p:Platform="Any CPU"
+      - name: Build with MSBuild
+        run: msbuild mainPlugin-master\ClashManager\С.M.2021.csproj /p:Configuration=Debug /p:OutputPath=bin\Debug
+        working-directory: ${{ github.workspace }}
+
 
       - name: Show all build outputs
         run: dir mainPlugin-master\ClashManager -Recurse
