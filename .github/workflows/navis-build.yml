@@ -23,6 +23,10 @@ jobs:
       - name: Build with MSBuild (Debug)
         run: msbuild mainPlugin-master\CUM.sln /p:Configuration=Debug /p:Platform="Any CPU"
 
+      - name: List build output
+        run: dir mainPlugin-master\ClashManager\bin\Debug -Recurse
+
+
       - name: Archive plugin DLL + PDB
         run: |
           mkdir publish
