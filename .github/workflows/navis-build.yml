@@ -3,7 +3,7 @@ name: Build Navisworks Plugin
 on:
   push:
     branches:
-      - main   # запускаем только при пуше в main
+      - main   # запуск только при пуше в main
 
 jobs:
   build:
@@ -16,17 +16,14 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Setup NuGet
-        uses: NuGet/setup-nuget@v2
-
       - name: Build with MSBuild (Debug)
-        run: msbuild CUM.sln /p:Configuration=Debug
+        run: msbuild mainPlugin-master\CUM.sln /p:Configuration=Debug /p:Platform="Any CPU"
 
       - name: Archive plugin DLL + PDB
         run: |
           mkdir publish
-          copy "ClashManager\bin\Debug\ClashManager.dll" publish\
-          copy "ClashManager\bin\Debug\ClashManager.pdb" publish\
+          copy "mainPlugin-master\ClashManager\bin\Debug\*.dll" publish\
+          copy "mainPlugin-master\ClashManager\bin\Debug\*.pdb" publish\
           Compress-Archive -Path publish\* -DestinationPath plugin.zip
 
       - name: Upload artifact (download via Actions)
