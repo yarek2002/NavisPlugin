@@ -23,7 +23,7 @@ namespace ClashManager
     [Command("MoveToFake", LargeIcon = "IMG/3_32.png", ToolTip = "Перенести в проанализированно")]
     [Command("FindSearchSets", LargeIcon = "IMG/5_32.png", ToolTip = "Поиск наборов и правил Clash по элементам")] // Новая команда: укажите подходящую иконку
     [Command("MagicWand", LargeIcon = "IMG/4_32.png", ToolTip = "Автоматическая группировка и кластеризация")]
-    [Command("ManagerCollision", LargeIcon = "IMG/3_32.png", ToolTip = "Менеджер")]
+    [Command("ManagerCollision", LargeIcon = "IMG/6_32.png", ToolTip = "Менеджер")]
 
 
     public class CollisionGrouperCommandHandler : CommandHandlerPlugin

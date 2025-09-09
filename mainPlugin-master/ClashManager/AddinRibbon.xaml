@@ -52,11 +52,11 @@
                                        Text="Авто-группировка&#x0A;и кластеризация"
                                        Orientation="Vertical"
                                     />
-				<local:NWRibbonButton x:Uid="Button_6" Id="NewFeature"
+				<local:NWRibbonButton x:Uid="Button_6" Id="ManagerCollision"
 								  Size="Large"
 								  KeyTip="B6"
 								  ShowText="True"
-								  Text="Новая функция"
+								  Text="Менеджер коллизий"
 								  Orientation="Vertical"
 								  />
 				

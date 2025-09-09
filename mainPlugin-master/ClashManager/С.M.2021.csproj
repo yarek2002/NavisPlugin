@@ -2,6 +2,9 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
+    <EnableDefaultPageItems>false</EnableDefaultPageItems>
+  </PropertyGroup>
+  <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{5FD55B12-188D-4D64-96E0-0FE5BD6B9517}</ProjectGuid>
@@ -17,7 +20,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\..\..\Program Files\Autodesk\Navisworks Manage 2020\Plugins\ClashManager\</OutputPath>
+    <OutputPath>D:\NavisPlugin\out\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -32,44 +35,50 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="UIAutomationClient">
+      <HintPath>$(MSBuildProgramFiles32)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\UIAutomationClient.dll</HintPath>
+    </Reference>
+    <Reference Include="UIAutomationTypes">
+      <HintPath>$(MSBuildProgramFiles32)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\UIAutomationTypes.dll</HintPath>
+    </Reference>
     <Reference Include="AdWindows">
       <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\AdWindows.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Api">
-      <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\Autodesk.Navisworks.Api.dll</HintPath>
+      <HintPath>libs\Autodesk.Navisworks.Api.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Automation">
-      <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\Autodesk.Navisworks.Automation.dll</HintPath>
+      <HintPath>libs\Autodesk.Navisworks.Automation.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Clash">
-      <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\Autodesk.Navisworks.Clash.dll</HintPath>
+      <HintPath>libs\Autodesk.Navisworks.Clash.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.ComApi">
-      <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\Autodesk.Navisworks.ComApi.dll</HintPath>
+      <HintPath>..libs\Autodesk.Navisworks.ComApi.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Controls">
-      <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\Autodesk.Navisworks.Controls.dll</HintPath>
+      <HintPath>libs\Autodesk.Navisworks.Controls.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Interop.ComApi">
-      <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\Autodesk.Navisworks.Interop.ComApi.dll</HintPath>
+      <HintPath>..\libs\Autodesk.Navisworks.Interop.ComApi.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Interop.ComApiAutomation">
-      <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\Autodesk.Navisworks.Interop.ComApiAutomation.dll</HintPath>
+      <HintPath>libs\Autodesk.Navisworks.Interop.ComApiAutomation.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Interop.Timeliner">
-      <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\Autodesk.Navisworks.Interop.Timeliner.dll</HintPath>
+      <HintPath>libs\Autodesk.Navisworks.Interop.Timeliner.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Resolver">
-      <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\Autodesk.Navisworks.Resolver.dll</HintPath>
+      <HintPath>libs\Autodesk.Navisworks.Resolver.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Takeoff">
-      <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\Autodesk.Navisworks.Takeoff.dll</HintPath>
+      <HintPath>libs\Autodesk.Navisworks.Takeoff.dll</HintPath>
     </Reference>
     <Reference Include="Autodesk.Navisworks.Timeliner">
-      <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\Autodesk.Navisworks.Timeliner.dll</HintPath>
+      <HintPath>libs\Autodesk.Navisworks.Timeliner.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.IO.RecyclableMemoryStream, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.IO.RecyclableMemoryStream.3.0.1\lib\netstandard2.0\Microsoft.IO.RecyclableMemoryStream.dll</HintPath>
@@ -87,7 +96,7 @@
       <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\navisworks.gui.roamer.dll</HintPath>
     </Reference>
     <Reference Include="navisworks.roamer.plugin">
-      <HintPath>D:\090_Работа\030_Коллизии\Разработка\Navisworks\navisworks.roamer.plugin.dll</HintPath>
+      <HintPath>C:\Users\pcuzr\Documents\Navis_dll\navisworks.roamer.plugin.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -117,6 +126,7 @@
     </Reference>
     <Reference Include="System.Windows" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="WindowsFormsIntegration" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
@@ -131,7 +141,6 @@
     <Compile Include="Externals\MakeClusterCmd.cs" />
     <Compile Include="Externals\MoveToConfirmedCmd.cs" />
     <Compile Include="Externals\UnknownCmd.cs" />
-    <Compile Include="Externals\NewFeatureCmd.cs" />
     <Compile Include="FindSearchSets\FindSearchSets.cs" />
     <Compile Include="MagicWand\MagicWand.cs" />
     <Compile Include="СollisionGrouping\Models\Models.cs" />
@@ -153,6 +162,12 @@
       <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Interop.Navisworks.ComApi">
+      <HintPath>C:\Users\pcuzr\Documents\Navis_dll\Interop.Navisworks.ComApi.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Page Include="FindSearchSets\FindSearchSets.xaml">
@@ -180,15 +195,26 @@
     <Content Include="IMG\3_32.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="IMG\4_32.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="IMG\5_32.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="IMG\6_32.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Analyzer Include="D:\090_Работа\030_Коллизии\Разработка\Navisworks\Autodesk.Navisworks.Api.dll" />
+    <Analyzer Include="libs\Autodesk.Navisworks.Api.dll" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

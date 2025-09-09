@@ -9,7 +9,10 @@ namespace ClashManager.Externals
 		public void Execute()
 		{
 			var window = new ManagerCollisionView();
-			window.ShowDialog();
+			window.WindowStyle = WindowStyle.SingleBorderWindow;
+window.ShowInTaskbar = false;
+window.Topmost = false;
+			window.Show();
 		}
 	}
-} 
+}

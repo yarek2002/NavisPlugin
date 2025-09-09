@@ -5,46 +5,171 @@
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		mc:Ignorable="d"
 		Title="Менеджер коллизий" Height="600" Width="900" WindowStartupLocation="CenterOwner">
-	<Grid>
-		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="300" />
-			<ColumnDefinition Width="*" />
-		</Grid.ColumnDefinitions>
-		<Grid.RowDefinitions>
-			<RowDefinition Height="*" />
-			<RowDefinition Height="Auto" />
-		</Grid.RowDefinitions>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" MinHeight="154.76" />
+            <RowDefinition Height="Auto" MinHeight="154.76" />
+        </Grid.RowDefinitions>
 
-		<!-- Тесты (слева сверху) -->
-		<GroupBox Header="Тесты" Grid.Column="0" Grid.Row="0" Margin="8">
-			<ListBox x:Name="TestsList"
-					 DisplayMemberPath="DisplayName"
-					 SelectionMode="Single"
-					 SelectionChanged="TestsList_SelectionChanged" />
-		</GroupBox>
+        <!-- Тесты (слева сверху) -->
+        <GroupBox Header="Тесты" Grid.Column="0" Grid.Row="0" Margin="8,8,8,8">
+            <ListBox x:Name="TestsList"
+					 SelectionMode="Extended"
+					 SelectionChanged="TestsList_SelectionChanged">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox Margin="0,0,6,0"
+									  Tag="{Binding Guid}"
+									  Click="TestCheckBox_Click"/>
+                            <TextBlock Text="{Binding DisplayName}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </GroupBox>
 
-		<!-- Переименование (слева снизу) -->
-		<GroupBox Header="Переименование" Grid.Column="0" Grid.Row="1" Margin="8">
-			<StackPanel>
-				<TextBlock Text="Найти" Margin="0,0,0,6" />
-				<TextBox x:Name="FindBox" Margin="0,0,0,8" />
-				<TextBlock Text="Заменить на" Margin="0,0,0,6" />
-				<TextBox x:Name="ReplaceBox" Margin="0,0,0,8" />
-				<Button x:Name="ApplyRenameButton" Content="Применить" Click="ApplyRenameButton_Click" />
-			</StackPanel>
-		</GroupBox>
+        <!--Выбор работы с тестами или коллизиями-->
+        <GroupBox Header="Режим" Grid.Column="0" Grid.Row="1" Margin="8,8,8,8">
+            <StackPanel Orientation="Horizontal" Margin="8">
+                <RadioButton x:Name="TestModeRadioButton" Content="Режим тестов" Checked="TestModeRadioButton_Checked" Margin="0,0,16,0"/>
+                <RadioButton x:Name="CollisionModeRadioButton" Content="Режим коллизий" IsChecked="True" Checked="CollisionModeRadioButton_Checked"/>
+            </StackPanel>
+        </GroupBox>
+        <!-- Переименование (слева снизу) -->
+        <GroupBox Header="Переименование" Grid.Column="0" Grid.Row="2" Margin="8,8,8,8">
+            <StackPanel>
+                <TextBlock Text="Найти" Margin="0,0,0,6" />
+                <TextBox x:Name="FindBox" Margin="0,0,0,8" />
+                <TextBlock Text="Заменить на" Margin="0,0,0,6" />
+                <TextBox x:Name="ReplaceBox" Margin="0,0,0,8" />
+                <Button x:Name="ApplyRenameButton" Content="Применить" Click="ApplyRenameButton_Click" />
+            </StackPanel>
+        </GroupBox>
 
-		<!-- Коллизии (самое большое окно справа) -->
-		<GroupBox Header="Коллизии" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Margin="8">
-			<ListView x:Name="CollisionsList" SelectionMode="Extended">
-				<ListView.View>
-					<GridView>
-						<GridViewColumn Header="Имя" DisplayMemberBinding="{Binding Name}" Width="250" />
-						<GridViewColumn Header="Статус" DisplayMemberBinding="{Binding Status}" Width="120" />
-						<GridViewColumn Header="GUID" DisplayMemberBinding="{Binding Guid}" Width="220" />
-					</GridView>
-				</ListView.View>
-			</ListView>
-		</GroupBox>
-	</Grid>
-</Window> 
+        <!-- Преффикс/суффикс (слева под переименованием) -->
+        <GroupBox Header="Префикс/Суффикс" Grid.Column="0" Grid.Row="3" Margin="8,8,8,8">
+            <StackPanel>
+                <TextBlock Text="Префикс" Margin="0,0,0,6" />
+                <TextBox x:Name="Prefix" Margin="0,0,0,8" />
+                <TextBlock Text="Суффикс" Margin="0,0,0,6"/>
+                <TextBox x:Name="Suffix" Margin="0,0,0,8"/>
+                <Button x:Name="ApplyPrefixSuffix" Content="Применить" Click="ApplySuffixPreffix_Click" />
+            </StackPanel>
+        </GroupBox>
+
+
+        <!-- Коллизии (самое большое окно справа) -->
+        <GroupBox Header="Коллизии" Grid.Column="1" Grid.Row="0" Grid.RowSpan="4" Margin="8,8,8,8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Поиск по имени и GUID -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,6">
+                    <!-- Переключатели режима поиска -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <RadioButton x:Name="SearchByNameRadioButton" Content="По имени" IsChecked="True" Checked="SearchByNameRadioButton_Checked" Margin="0,0,16,0"/>
+                        <RadioButton x:Name="SearchByGuidRadioButton" Content="По GUID" Checked="SearchByGuidRadioButton_Checked"/>
+                    </StackPanel>
+                    
+                    <!-- Поле поиска и кнопки -->
+                    <DockPanel LastChildFill="True">
+                        <TextBox Name="SearchBox" DockPanel.Dock="Left" Width="260" Margin="0,0,6,0" KeyDown="SearchBox_KeyDown" TextChanged="SearchBox_TextChanged" />
+                        <Button x:Name="SearchButton" Content="Найти" Width="80" Margin="0,0,6,0" Click="SearchButton_Click" />
+                        <Button x:Name="RefreshButton" Content="🔄"  Width="30" Margin="0,0,6,0" Click="RefreshButton_Click"/>
+                        <Button x:Name="ResetButton" Content="Сброс" Width="80" Click="ResetButton_Click" />
+                    </DockPanel>
+                </StackPanel>
+
+                <ListView x:Name="CollisionsList" Grid.Row="1" SelectionMode="Extended" MouseDoubleClick="CollisionsList_MouseDoubleClick">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="300">
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="Имя" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="Name" />
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox Margin="0,0,6,0" Click="CollisionCheckBox_Click"/>
+                                            <TextBlock Text="{Binding Name}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="120">
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="Статус" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="Status" />
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Status}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="160">
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="Назначение" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="AssignedTo" />
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding AssignedTo}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="220">
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="GUID" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="Guid" />
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Guid}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="100">
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="Уровень" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="Level" />
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Level}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="150">
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="Пересечения сетки" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="GridIntersection" />
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding GridIntersection}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="200">
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="Название теста" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="TestName" />
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding TestName}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Grid>
+        </GroupBox>
+    </Grid>
+</Window>
