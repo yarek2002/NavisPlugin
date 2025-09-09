@@ -39,8 +39,8 @@ jobs:
       - name: Archive plugin DLL + PDB
         run: |
           mkdir publish
-          copy "ClashManager\bin\Debug\*.dll" publish\
-          copy "ClashManager\bin\Debug\*.pdb" publish\
+          copy "mainPlugin-master\ClashManager\bin\Debug\*.dll" publish\
+          copy "mainPlugin-master\ClashManager\bin\Debug\*.pdb" publish\
           Compress-Archive -Path publish\* -DestinationPath plugin.zip
 
       - name: Upload artifact (download via Actions)
