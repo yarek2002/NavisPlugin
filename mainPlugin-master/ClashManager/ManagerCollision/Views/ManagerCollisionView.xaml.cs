@@ -159,7 +159,7 @@ namespace ClashManager.ManagerCollision.Views
         /// This method searches for intersections within a specified tolerance and considers multiple candidates
         /// </summary>
         public static (string LevelName, string IntersectionName, string Line1, string Line2, Point3D Position)
-         GetClashGridInfoAlternative(ClashResult clash, double tolerance = 1.0)
+         GetClashGridInfoAlternative(ClashResult clash, double tolerance = 5.0)
         {
             const string NA = "N/A";
 
@@ -177,78 +177,81 @@ namespace ClashManager.ManagerCollision.Views
             GridIntersection bestIntersection = null;
             double bestScore = double.MaxValue;
 
+            // Try with larger tolerance and more test points
+            double[] tolerances = { tolerance, tolerance * 2, tolerance * 5 };
+            double[] offsets = { 0.0, 0.01, 0.05, 0.1, 0.5, 1.0 };
+
             foreach (GridSystem system in systems)
             {
                 foreach (GridLevel level in system.Levels)
                 {
-                    // Try to find intersection using ClosestIntersection first
-                    GridIntersection closestGi = null;
-                    try
+                    foreach (double currentTolerance in tolerances)
                     {
-                        closestGi = level.ClosestIntersection(clash.Center);
-                    }
-                    catch { continue; }
-
-                    if (closestGi != null)
-                    {
-                        double dist = clash.Center.DistanceTo(closestGi.Position);
-
-                        // Only consider intersections within tolerance
-                        if (dist <= tolerance)
+                        // Try multiple test points with different offsets
+                        foreach (double xOffset in offsets)
                         {
-                            // Calculate a score based on distance and level proximity
-                            double levelDiff = Math.Abs(clash.Center.Z - closestGi.Position.Z);
-                            double score = dist + levelDiff * 0.1; // Weight level difference less
-
-                            if (score < bestScore)
+                            foreach (double yOffset in offsets)
                             {
-                                bestScore = score;
-                                bestIntersection = closestGi;
-                            }
-                        }
-                    }
+                                if (xOffset == 0.0 && yOffset == 0.0) continue; // Skip center point for now
 
-                    // Alternative approach: try multiple points around the clash center
-                    try
-                    {
-                        // Try slight offsets to find potentially better intersections
-                        var testPoints = new Point3D[]
-                        {
-                            clash.Center,
-                            new Point3D(clash.Center.X + 0.01, clash.Center.Y, clash.Center.Z),
-                            new Point3D(clash.Center.X - 0.01, clash.Center.Y, clash.Center.Z),
-                            new Point3D(clash.Center.X, clash.Center.Y + 0.01, clash.Center.Z),
-                            new Point3D(clash.Center.X, clash.Center.Y - 0.01, clash.Center.Z)
-                        };
+                                Point3D testPoint = new Point3D(
+                                    clash.Center.X + xOffset,
+                                    clash.Center.Y + yOffset,
+                                    clash.Center.Z
+                                );
 
-                        foreach (var testPoint in testPoints)
-                        {
-                            GridIntersection testGi = null;
-                            try
-                            {
-                                testGi = level.ClosestIntersection(testPoint);
-                            }
-                            catch { continue; }
-
-                            if (testGi != null)
-                            {
-                                double dist = clash.Center.DistanceTo(testGi.Position);
-
-                                if (dist <= tolerance)
+                                GridIntersection testGi = null;
+                                try
                                 {
-                                    double levelDiff = Math.Abs(clash.Center.Z - testGi.Position.Z);
-                                    double score = dist + levelDiff * 0.1;
+                                    testGi = level.ClosestIntersection(testPoint);
+                                }
+                                catch { continue; }
 
-                                    if (score < bestScore)
+                                if (testGi != null)
+                                {
+                                    double dist = clash.Center.DistanceTo(testGi.Position);
+
+                                    if (dist <= currentTolerance)
                                     {
-                                        bestScore = score;
-                                        bestIntersection = testGi;
+                                        // Calculate a score based on distance and level proximity
+                                        double levelDiff = Math.Abs(clash.Center.Z - testGi.Position.Z);
+                                        double score = dist + levelDiff * 0.1; // Weight level difference less
+
+                                        if (score < bestScore)
+                                        {
+                                            bestScore = score;
+                                            bestIntersection = testGi;
+                                        }
                                     }
                                 }
                             }
                         }
+
+                        // Also try the original center point
+                        GridIntersection centerGi = null;
+                        try
+                        {
+                            centerGi = level.ClosestIntersection(clash.Center);
+                        }
+                        catch { continue; }
+
+                        if (centerGi != null)
+                        {
+                            double dist = clash.Center.DistanceTo(centerGi.Position);
+
+                            if (dist <= currentTolerance)
+                            {
+                                double levelDiff = Math.Abs(clash.Center.Z - centerGi.Position.Z);
+                                double score = dist + levelDiff * 0.1;
+
+                                if (score < bestScore)
+                                {
+                                    bestScore = score;
+                                    bestIntersection = centerGi;
+                                }
+                            }
+                        }
                     }
-                    catch { /* Continue if alternative search fails */ }
                 }
             }
 
@@ -2581,27 +2584,49 @@ namespace ClashManager.ManagerCollision.Views
                 return gridInfo;
             }
 
-            // Last resort: fall back to nearest grid intersection calculation
+            // Third priority: try alternative grid intersection method with larger tolerance
+            var (altLevelName, altIntersection, altLine1, altLine2, altPosition) = GetClashGridInfoAlternative(clash, 10.0);
+            if (altIntersection != "N/A" || altLine1 != "N/A" || altLine2 != "N/A")
+            {
+                var parts = new System.Collections.Generic.List<string>();
+                if (altIntersection != "N/A") parts.Add($"Grid: {altIntersection}");
+                if (altLine1 != "N/A" && altLine2 != "N/A")
+                {
+                    if (altLine1 == altLine2)
+                        parts.Add($"Line: {altLine1}");
+                    else
+                        parts.Add($"Lines: {altLine1} x {altLine2}");
+                }
+                else if (altLine1 != "N/A")
+                    parts.Add($"Line: {altLine1}");
+                else if (altLine2 != "N/A")
+                    parts.Add($"Line: {altLine2}");
+
+                if (parts.Count > 0)
+                    return string.Join(", ", parts);
+            }
+
+            // Last resort: fall back to original nearest grid intersection calculation
             var (levelName, intersection, line1, line2, position) = GetClashGridInfo(clash);
 
             if (intersection == "N/A" && line1 == "N/A" && line2 == "N/A")
                 return "N/A";
 
-            var parts = new System.Collections.Generic.List<string>();
-            if (intersection != "N/A") parts.Add($"Grid: {intersection}");
+            var partsOrig = new System.Collections.Generic.List<string>();
+            if (intersection != "N/A") partsOrig.Add($"Grid: {intersection}");
             if (line1 != "N/A" && line2 != "N/A")
             {
                 if (line1 == line2)
-                    parts.Add($"Line: {line1}");
+                    partsOrig.Add($"Line: {line1}");
                 else
-                    parts.Add($"Lines: {line1} x {line2}");
+                    partsOrig.Add($"Lines: {line1} x {line2}");
             }
             else if (line1 != "N/A")
-                parts.Add($"Line: {line1}");
+                partsOrig.Add($"Line: {line1}");
             else if (line2 != "N/A")
-                parts.Add($"Line: {line2}");
+                partsOrig.Add($"Line: {line2}");
 
-            return parts.Count > 0 ? string.Join(", ", parts) : "N/A";
+            return partsOrig.Count > 0 ? string.Join(", ", partsOrig) : "N/A";
         }
 
         /// <summary>
