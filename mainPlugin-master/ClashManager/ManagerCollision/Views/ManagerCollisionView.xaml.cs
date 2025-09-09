@@ -108,9 +108,129 @@ namespace ClashManager.ManagerCollision.Views
             if (clash == null || clash.Center == null)
                 return (NA, NA, NA, NA, null);
 
-            // Since Grids API is not available in this version, return N/A
-            // Grid intersection information should be obtained through model item properties instead
-            return (NA, NA, NA, NA, null);
+            try
+            {
+                // Try to access the Grids property dynamically
+                var doc = Application.ActiveDocument;
+                if (doc == null)
+                    return (NA, NA, NA, NA, null);
+
+                // Use reflection to access Grids property safely
+                var gridsProp = doc.GetType().GetProperty("Grids", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (gridsProp == null)
+                {
+                    // Grids property doesn't exist in this API version
+                    return (NA, NA, NA, NA, null);
+                }
+
+                var docGrids = gridsProp.GetValue(doc);
+                if (docGrids == null)
+                    return (NA, NA, NA, NA, null);
+
+                // Get the Systems property
+                var systemsProp = docGrids.GetType().GetProperty("Systems", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (systemsProp == null)
+                    return (NA, NA, NA, NA, null);
+
+                var systems = systemsProp.GetValue(docGrids) as System.Collections.IEnumerable;
+                if (systems == null)
+                    return (NA, NA, NA, NA, null);
+
+                GridIntersection nearest = null;
+                double minDist = double.MaxValue;
+
+                foreach (var systemObj in systems)
+                {
+                    if (systemObj == null) continue;
+
+                    // Get Levels property
+                    var levelsProp = systemObj.GetType().GetProperty("Levels", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                    if (levelsProp == null) continue;
+
+                    var levels = levelsProp.GetValue(systemObj) as System.Collections.IEnumerable;
+                    if (levels == null) continue;
+
+                    foreach (var levelObj in levels)
+                    {
+                        if (levelObj == null) continue;
+
+                        // Try to get closest intersection
+                        var closestIntersectionMethod = levelObj.GetType().GetMethod("ClosestIntersection",
+                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance,
+                            null, new[] { typeof(Point3D) }, null);
+
+                        if (closestIntersectionMethod == null) continue;
+
+                        GridIntersection gi = null;
+                        try
+                        {
+                            gi = closestIntersectionMethod.Invoke(levelObj, new object[] { clash.Center }) as GridIntersection;
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error getting closest intersection: {ex.Message}");
+                            continue;
+                        }
+
+                        if (gi == null) continue;
+
+                        // Get Position property
+                        var giPositionProp = gi.GetType().GetProperty("Position", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                        if (giPositionProp == null) continue;
+
+                        var giPosition = giPositionProp.GetValue(gi) as Point3D;
+                        if (giPosition == null) continue;
+
+                        double dist = clash.Center.DistanceTo(giPosition);
+                        if (dist < minDist)
+                        {
+                            minDist = dist;
+                            nearest = gi;
+                        }
+                    }
+                }
+
+                if (nearest == null)
+                    return (NA, NA, NA, NA, null);
+
+                // Extract information from the nearest intersection
+                string levelName = GetGridPropertyValue(nearest, "Level", "DisplayName") ?? NA;
+                string intersectionName = GetGridPropertyValue(nearest, "DisplayName") ?? NA;
+                string line1 = GetGridPropertyValue(nearest, "Line1", "DisplayName") ?? NA;
+                string line2 = GetGridPropertyValue(nearest, "Line2", "DisplayName") ?? NA;
+
+                var positionProp = nearest.GetType().GetProperty("Position", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                Point3D pos = positionProp?.GetValue(nearest) as Point3D;
+
+                return (levelName, intersectionName, line1, line2, pos);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in GetClashGridInfo: {ex.Message}");
+                return (NA, NA, NA, NA, null);
+            }
+        }
+
+        /// <summary>
+        /// Helper method to safely get property values from grid objects using reflection
+        /// </summary>
+        private static string GetGridPropertyValue(object obj, params string[] propertyPath)
+        {
+            if (obj == null || propertyPath == null || propertyPath.Length == 0)
+                return null;
+
+            object current = obj;
+            foreach (string propName in propertyPath)
+            {
+                if (current == null) return null;
+
+                var prop = current.GetType().GetProperty(propName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (prop == null) return null;
+
+                current = prop.GetValue(current);
+            }
+
+            return current?.ToString();
         }
 
         /// <summary>
