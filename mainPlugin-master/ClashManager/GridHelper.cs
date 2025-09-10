@@ -1,5 +1,6 @@
 
 
+using System;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
 
@@ -107,6 +108,57 @@ namespace ClashManager
             catch (System.Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"GridHelper: Exception: {ex.Message}");
+                return "—";
+            }
+        }
+
+        /// <summary>
+        /// Получает этаж для коллизии по координате Z (более точный метод)
+        /// </summary>
+        /// <param name="clash">Коллизия</param>
+        /// <returns>Номер этажа или "—", если этаж не определен</returns>
+        public static string GetFloorByElevation(ClashResult clash)
+        {
+            if (clash == null) 
+            {
+                System.Diagnostics.Debug.WriteLine("GridHelper GetFloor: clash is null");
+                return "—";
+            }
+
+            try
+            {
+                // Берём точку коллизии (центр)
+                Point3D clashPoint = clash.Center;
+                double zCoordinate = clashPoint.Z;
+                
+                System.Diagnostics.Debug.WriteLine($"GridHelper GetFloor: clash Z coordinate = {zCoordinate}");
+
+                // Типичные высоты этажей (можно настроить под конкретный проект)
+                // Обычно этаж = 3-4 метра высоты
+                double floorHeight = 3.0; // метры
+                double groundFloorElevation = 0.0; // уровень первого этажа
+
+                // Вычисляем номер этажа
+                int floorNumber = (int)Math.Round((zCoordinate - groundFloorElevation) / floorHeight);
+                
+                System.Diagnostics.Debug.WriteLine($"GridHelper GetFloor: calculated floor = {floorNumber}");
+
+                // Проверяем разумность результата
+                if (floorNumber >= -10 && floorNumber <= 100) // разумные пределы
+                {
+                    string result = floorNumber.ToString();
+                    System.Diagnostics.Debug.WriteLine($"GridHelper GetFloor: Result = '{result}'");
+                    return result;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"GridHelper GetFloor: Floor number {floorNumber} is out of reasonable range");
+                    return "—";
+                }
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GridHelper GetFloor: Exception: {ex.Message}");
                 return "—";
             }
         }

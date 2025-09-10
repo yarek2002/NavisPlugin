@@ -412,7 +412,7 @@ namespace ClashManager.ManagerCollision.Views
 					IsGroup = true,
 					IsSelected = false,
 					Level = GetLevelFromGroup(x.Group),
-					GridIntersection = GetGridIntersectionInfo(null, null), // No items for groups
+					GridIntersection = GetGridIntersectionFromGroup(x.Group),
 					TestName = selectedTest.DisplayName ?? string.Empty
 				});
 
@@ -2491,17 +2491,7 @@ namespace ClashManager.ManagerCollision.Views
 
 		private string GetLevelFromItems(ModelItem item1, ModelItem item2, ClashResult clash = null)
 		{
-			// First priority: try GridHelper method using GridLevel (most reliable)
-			if (clash != null)
-			{
-				string gridHelperLevel = GridHelper.GetLevelForClash(clash);
-				if (!string.IsNullOrEmpty(gridHelperLevel) && gridHelperLevel != "—")
-				{
-					return gridHelperLevel;
-				}
-			}
-
-			// Second priority: try to get level from the ClashResult itself
+			// First priority: try to get level from the ClashResult itself
 			if (clash != null)
 			{
 				string clashLevel = GetLevelFromClashResult(clash);
@@ -2511,7 +2501,7 @@ namespace ClashManager.ManagerCollision.Views
 				}
 			}
 
-			// Third priority: get level from ModelItem properties
+			// Second priority: get level from ModelItem properties (most reliable)
 			string level1 = GetLevelFromItem(item1);
 			string level2 = GetLevelFromItem(item2);
 
@@ -2520,8 +2510,28 @@ namespace ClashManager.ManagerCollision.Views
 				return level1;
 			else if (!string.IsNullOrEmpty(level2) && level2 != "N/A")
 				return level2;
-			else
-				return "N/A";
+
+			// Third priority: try GridHelper method using elevation calculation (more accurate)
+			if (clash != null)
+			{
+				string floorByElevation = GridHelper.GetFloorByElevation(clash);
+				if (!string.IsNullOrEmpty(floorByElevation) && floorByElevation != "—")
+				{
+					return floorByElevation;
+				}
+			}
+
+			// Fourth priority: try GridHelper method using GridLevel (fallback)
+			if (clash != null)
+			{
+				string gridHelperLevel = GridHelper.GetLevelForClash(clash);
+				if (!string.IsNullOrEmpty(gridHelperLevel) && gridHelperLevel != "—")
+				{
+					return gridHelperLevel;
+				}
+			}
+
+			return "N/A";
 		}
 
 		/// <summary>
