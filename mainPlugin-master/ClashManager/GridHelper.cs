@@ -1,6 +1,7 @@
 
 
 using System;
+using System.Linq;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
 
@@ -164,7 +165,7 @@ namespace ClashManager
         }
 
         /// <summary>
-        /// Получает уровень для коллизии (ClashResult) используя GridLevel
+        /// Получает уровень для коллизии (ClashResult) используя свойства элементов (правильный метод)
         /// </summary>
         /// <param name="clash">Коллизия</param>
         /// <returns>Название уровня или "—", если уровень не найден</returns>
@@ -178,120 +179,174 @@ namespace ClashManager
 
             try
             {
-                // Берём точку коллизии (центр)
-                Point3D clashPoint = clash.Center;
-                System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: clash point = {clashPoint}");
+                // Пробуем получить уровень из свойств элементов коллизии
+                string level1 = GetLevelFromModelItem(clash.CompositeItem1);
+                string level2 = GetLevelFromModelItem(clash.CompositeItem2);
 
-                // Проверяем доступность документа и сеток
-                var doc = Application.ActiveDocument;
-                if (doc == null)
+                // Предпочитаем первый найденный уровень
+                if (!string.IsNullOrEmpty(level1) && level1 != "—")
                 {
-                    System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: ActiveDocument is null");
-                    return "—";
+                    System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: Found level from item1: {level1}");
+                    return level1;
+                }
+                else if (!string.IsNullOrEmpty(level2) && level2 != "—")
+                {
+                    System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: Found level from item2: {level2}");
+                    return level2;
                 }
 
-                var grids = doc.Grids;
-                if (grids == null)
+                // Если не найден в свойствах, пробуем расчет по координате Z
+                string floorByElevation = GetFloorByElevation(clash);
+                if (!string.IsNullOrEmpty(floorByElevation) && floorByElevation != "—")
                 {
-                    System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: Grids is null");
-                    return "—";
+                    System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: Using elevation calculation: {floorByElevation}");
+                    return floorByElevation;
                 }
 
-                // Активная система сеток
-                GridSystem oGS = grids.ActiveSystem;
-                if (oGS == null)
-                {
-                    System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: ActiveSystem is null");
-                    // Попробуем получить любую доступную систему
-                    var systems = grids.Systems;
-                    if (systems != null && systems.Count > 0)
-                    {
-                        oGS = systems[0];
-                        System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: Using first available system: {oGS.DisplayName}");
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: No grid systems available");
-                        return "—";
-                    }
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: ActiveSystem found: {oGS.DisplayName}");
-                }
-
-                // Находим ближайший уровень через Levels коллекцию
-                var levels = oGS.Levels;
-                if (levels == null || levels.Count == 0)
-                {
-                    System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: No levels available in system");
-                    return "—";
-                }
-
-                GridLevel closestLevel = null;
-                double minDistance = double.MaxValue;
-
-                foreach (GridLevel level in levels)
-                {
-                    if (level == null) continue;
-
-                    try
-                    {
-                        // Получаем позицию уровня (если доступна)
-                        var levelPositionProp = level.GetType().GetProperty("Position", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                        if (levelPositionProp != null)
-                        {
-                            var levelPosition = levelPositionProp.GetValue(level) as Point3D;
-                            if (levelPosition != null)
-                            {
-                                double distance = clashPoint.DistanceTo(levelPosition);
-                                if (distance < minDistance)
-                                {
-                                    minDistance = distance;
-                                    closestLevel = level;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Если нет Position, используем первый доступный уровень
-                            if (closestLevel == null)
-                            {
-                                closestLevel = level;
-                            }
-                        }
-                    }
-                    catch (System.Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: Error processing level: {ex.Message}");
-                        continue;
-                    }
-                }
-
-                if (closestLevel == null)
-                {
-                    System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: No closest level found");
-                    return "—";
-                }
-
-                System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: ClosestLevel found: {closestLevel.DisplayName}");
-
-                // Получаем название уровня
-                string levelName = closestLevel.DisplayName ?? "";
-                
-                if (!string.IsNullOrEmpty(levelName))
-                {
-                    System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: Result = '{levelName}'");
-                    return levelName;
-                }
-
-                System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: No level name found");
+                System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: No level found");
                 return "—";
             }
             catch (System.Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: Exception: {ex.Message}");
                 return "—";
+            }
+        }
+
+        /// <summary>
+        /// Получает уровень из свойств ModelItem
+        /// </summary>
+        /// <param name="item">Элемент модели</param>
+        /// <returns>Название уровня или "—", если не найден</returns>
+        private static string GetLevelFromModelItem(ModelItem item)
+        {
+            if (item == null) return "—";
+
+            try
+            {
+                // Ищем уровень в различных категориях и свойствах
+                string[] categoryNames = { 
+                    "Идентификация", "Constraints", "Element", "Object", "Properties", 
+                    "Identity Data", "Данные идентификации", "Revit", "AutoCAD" 
+                };
+                string[] propertyNames = { 
+                    "Level", "Этаж", "Floor", "Storey", "Story", "Уровень", 
+                    "Level Name", "Имя уровня", "Floor Name", "Имя этажа",
+                    "Base Level", "Базовый уровень", "Reference Level", "Этаж ссылки"
+                };
+
+                foreach (string catName in categoryNames)
+                {
+                    foreach (string propName in propertyNames)
+                    {
+                        try
+                        {
+                            DataProperty prop = item.PropertyCategories.FindPropertyByDisplayName(catName, propName);
+                            if (prop != null)
+                            {
+                                string value = prop.Value?.ToDisplayString() ?? "";
+                                if (!string.IsNullOrEmpty(value) && value != "N/A" && value != "—")
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"GridHelper GetLevelFromModelItem: Found {catName}.{propName} = {value}");
+                                    return value;
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // Continue searching
+                        }
+                    }
+                }
+
+                // Fallback: поиск по всем свойствам
+                foreach (PropertyCategory cat in item.PropertyCategories)
+                {
+                    foreach (DataProperty prop in cat.Properties)
+                    {
+                        try
+                        {
+                            string displayName = prop.DisplayName ?? string.Empty;
+                            if (displayName.IndexOf("Level", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                displayName.IndexOf("Этаж", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                displayName.IndexOf("Floor", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                string value = prop.Value?.ToDisplayString() ?? "";
+                                if (!string.IsNullOrEmpty(value) && value != "N/A" && value != "—")
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"GridHelper GetLevelFromModelItem: Found {cat.DisplayName}.{displayName} = {value}");
+                                    return value;
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // Continue searching
+                        }
+                    }
+                }
+
+                // Попробуем получить от родительского элемента
+                if (item.Parent != null)
+                {
+                    return GetLevelFromModelItem(item.Parent);
+                }
+
+                return "—";
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GridHelper GetLevelFromModelItem: Exception: {ex.Message}");
+                return "—";
+            }
+        }
+
+        /// <summary>
+        /// Получает уровень для группы коллизий (ClashResultGroup)
+        /// </summary>
+        /// <param name="group">Группа коллизий</param>
+        /// <returns>Название уровня или "—", если уровень не найден</returns>
+        public static string GetLevelForGroup(ClashResultGroup group)
+        {
+            if (group == null) 
+            {
+                System.Diagnostics.Debug.WriteLine("GridHelper GetLevelForGroup: group is null");
+                return "—";
+            }
+
+            try
+            {
+                // Пробуем получить уровень из первого результата в группе
+                var firstResult = GetAllResultsFromGroup(group).FirstOrDefault();
+                if (firstResult != null)
+                {
+                    return GetLevelForClash(firstResult);
+                }
+
+                System.Diagnostics.Debug.WriteLine("GridHelper GetLevelForGroup: No results found in group");
+                return "—";
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GridHelper GetLevelForGroup: Exception: {ex.Message}");
+                return "—";
+            }
+        }
+
+        /// <summary>
+        /// Получает все результаты из группы коллизий (рекурсивно)
+        /// </summary>
+        /// <param name="group">Группа коллизий</param>
+        /// <returns>Перечисление результатов</returns>
+        private static System.Collections.Generic.IEnumerable<ClashResult> GetAllResultsFromGroup(ClashResultGroup group)
+        {
+            foreach (var r in group.Children.OfType<ClashResult>())
+                yield return r;
+
+            foreach (var g in group.Children.OfType<ClashResultGroup>())
+            {
+                foreach (var r in GetAllResultsFromGroup(g))
+                    yield return r;
             }
         }
 

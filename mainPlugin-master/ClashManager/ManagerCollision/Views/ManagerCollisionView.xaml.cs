@@ -2467,7 +2467,15 @@ namespace ClashManager.ManagerCollision.Views
 		private string GetLevelFromGroup(ClashResultGroup group)
 		{
 			if (group == null) return "N/A";
-			// Get level from the first result in the group
+			
+			// First priority: try GridHelper method using LevelSystem (most reliable)
+			string gridHelperLevel = GridHelper.GetLevelForGroup(group);
+			if (!string.IsNullOrEmpty(gridHelperLevel) && gridHelperLevel != "—")
+			{
+				return gridHelperLevel;
+			}
+			
+			// Second priority: get level from the first result in the group
 			var firstResult = GetAllResultsFromGroup(group).FirstOrDefault();
 			if (firstResult != null)
 			{
