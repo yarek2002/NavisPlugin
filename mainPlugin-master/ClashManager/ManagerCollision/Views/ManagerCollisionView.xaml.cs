@@ -368,7 +368,7 @@ namespace ClashManager.ManagerCollision.Views
 							IsGroup = true,
 							IsSelected = false,
 							Level = GetLevelFromGroup(x.Group),
-							GridIntersection = GetGridIntersectionInfo(null, null), // No items for groups
+							GridIntersection = GetGridIntersectionFromGroup(x.Group),
 							TestName = t.DisplayName ?? string.Empty
 						});
 					var ungroupedResultRowsMerged = t.Children
@@ -531,7 +531,7 @@ namespace ClashManager.ManagerCollision.Views
 							IsGroup = true,
 							IsSelected = false,
 							Level = GetLevelFromGroup(x.Group),
-							GridIntersection = GetGridIntersectionInfo(null, null), // No items for groups
+							GridIntersection = GetGridIntersectionFromGroup(x.Group),
 							TestName = test.DisplayName ?? string.Empty,
 							Item = x.Group
 						});
@@ -2419,14 +2419,14 @@ namespace ClashManager.ManagerCollision.Views
 			if (!string.IsNullOrEmpty(grid1) && !string.IsNullOrEmpty(grid2))
 			{
 				if (grid1 == grid2)
-					return $"Grid: {grid1}";
+					return $"{grid1}";
 				else
 					return $"Grid Intersection: {grid1} x {grid2}";
 			}
 			else if (!string.IsNullOrEmpty(grid1))
-				return $"Grid: {grid1}";
+				return $"{grid1}";
 			else if (!string.IsNullOrEmpty(grid2))
-				return $"Grid: {grid2}";
+				return $"{grid2}";
 			else
 				return "N/A";
 		}
@@ -2472,6 +2472,19 @@ namespace ClashManager.ManagerCollision.Views
 			if (firstResult != null)
 			{
 				return GetLevelFromItems(firstResult.CompositeItem1, firstResult.CompositeItem2, firstResult);
+			}
+			return "N/A";
+		}
+
+		private string GetGridIntersectionFromGroup(ClashResultGroup group)
+		{
+			if (group == null) return "N/A";
+			
+			// Get grid intersection from the first result in the group
+			var firstResult = GetAllResultsFromGroup(group).FirstOrDefault();
+			if (firstResult != null)
+			{
+				return FormatGridIntersectionDisplay(firstResult);
 			}
 			return "N/A";
 		}
