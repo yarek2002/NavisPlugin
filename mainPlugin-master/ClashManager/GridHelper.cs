@@ -450,6 +450,76 @@ namespace ClashManager
         }
 
         /// <summary>
+        /// Извлекает уровень из пересечения сеток (например, "-02*4--02*9" -> "-2")
+        /// </summary>
+        /// <param name="gridIntersection">Пересечение сеток</param>
+        /// <returns>Номер этажа или "—", если не удалось извлечь</returns>
+        public static string ExtractLevelFromGridIntersection(string gridIntersection)
+        {
+            if (string.IsNullOrEmpty(gridIntersection) || gridIntersection == "—")
+                return "—";
+
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"GridHelper ExtractLevelFromGridIntersection: input = '{gridIntersection}'");
+
+                // Ищем паттерны типа "-02*4--02*9", "1*A-1*B", "02*4-02*9"
+                // Ищем числа в начале строки (могут быть отрицательными)
+                var match = System.Text.RegularExpressions.Regex.Match(gridIntersection, @"^(-?\d+)");
+                if (match.Success)
+                {
+                    string levelStr = match.Groups[1].Value;
+                    
+                    // Убираем ведущие нули, но сохраняем знак
+                    if (levelStr.StartsWith("-"))
+                    {
+                        levelStr = "-" + levelStr.Substring(1).TrimStart('0');
+                        if (levelStr == "-") levelStr = "-0";
+                    }
+                    else
+                    {
+                        levelStr = levelStr.TrimStart('0');
+                        if (string.IsNullOrEmpty(levelStr)) levelStr = "0";
+                    }
+
+                    System.Diagnostics.Debug.WriteLine($"GridHelper ExtractLevelFromGridIntersection: extracted level = '{levelStr}'");
+                    return levelStr;
+                }
+
+                // Попробуем найти числа в других частях строки
+                var numberMatches = System.Text.RegularExpressions.Regex.Matches(gridIntersection, @"-?\d+");
+                if (numberMatches.Count > 0)
+                {
+                    // Берем первое найденное число
+                    string levelStr = numberMatches[0].Value;
+                    
+                    // Убираем ведущие нули
+                    if (levelStr.StartsWith("-"))
+                    {
+                        levelStr = "-" + levelStr.Substring(1).TrimStart('0');
+                        if (levelStr == "-") levelStr = "-0";
+                    }
+                    else
+                    {
+                        levelStr = levelStr.TrimStart('0');
+                        if (string.IsNullOrEmpty(levelStr)) levelStr = "0";
+                    }
+
+                    System.Diagnostics.Debug.WriteLine($"GridHelper ExtractLevelFromGridIntersection: extracted level from numbers = '{levelStr}'");
+                    return levelStr;
+                }
+
+                System.Diagnostics.Debug.WriteLine("GridHelper ExtractLevelFromGridIntersection: No level pattern found");
+                return "—";
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GridHelper ExtractLevelFromGridIntersection: Exception: {ex.Message}");
+                return "—";
+            }
+        }
+
+        /// <summary>
         /// Получает уровень для коллизии (ClashResult) - основной метод
         /// </summary>
         /// <param name="clash">Коллизия</param>
@@ -464,7 +534,19 @@ namespace ClashManager
 
             try
             {
-                // First priority: try COM API method (like Clash Detective)
+                // First priority: try to extract level from grid intersection
+                string gridIntersection = GetGridIntersectionForClash(clash);
+                if (!string.IsNullOrEmpty(gridIntersection) && gridIntersection != "—")
+                {
+                    string levelFromGrid = ExtractLevelFromGridIntersection(gridIntersection);
+                    if (!string.IsNullOrEmpty(levelFromGrid) && levelFromGrid != "—")
+                    {
+                        System.Diagnostics.Debug.WriteLine($"GridHelper GetLevelForClash: Using level from grid intersection: {levelFromGrid}");
+                        return levelFromGrid;
+                    }
+                }
+
+                // Second priority: try COM API method (like Clash Detective)
                 string comApiLevel = GetLevelUsingComApi(clash);
                 if (!string.IsNullOrEmpty(comApiLevel) && comApiLevel != "—")
                 {
@@ -472,7 +554,7 @@ namespace ClashManager
                     return comApiLevel;
                 }
 
-                // Second priority: try properties from model items
+                // Third priority: try properties from model items
                 string level1 = GetLevelFromModelItem(clash.CompositeItem1);
                 string level2 = GetLevelFromModelItem(clash.CompositeItem2);
 
@@ -487,7 +569,7 @@ namespace ClashManager
                     return level2;
                 }
 
-                // Third priority: try elevation calculation
+                // Fourth priority: try elevation calculation
                 string floorByElevation = GetFloorByElevation(clash);
                 if (!string.IsNullOrEmpty(floorByElevation) && floorByElevation != "—")
                 {
@@ -520,7 +602,19 @@ namespace ClashManager
 
             try
             {
-                // First priority: try COM API method (like Clash Detective)
+                // First priority: try to extract level from grid intersection
+                string gridIntersection = GetGridIntersectionFromGroup(group);
+                if (!string.IsNullOrEmpty(gridIntersection) && gridIntersection != "—")
+                {
+                    string levelFromGrid = ExtractLevelFromGridIntersection(gridIntersection);
+                    if (!string.IsNullOrEmpty(levelFromGrid) && levelFromGrid != "—")
+                    {
+                        System.Diagnostics.Debug.WriteLine($"GridHelper GetLevelForGroup: Using level from grid intersection: {levelFromGrid}");
+                        return levelFromGrid;
+                    }
+                }
+
+                // Second priority: try COM API method (like Clash Detective)
                 string comApiLevel = GetLevelUsingComApi(group);
                 if (!string.IsNullOrEmpty(comApiLevel) && comApiLevel != "—")
                 {
@@ -528,7 +622,7 @@ namespace ClashManager
                     return comApiLevel;
                 }
 
-                // Second priority: try to get level from the first result in the group
+                // Third priority: try to get level from the first result in the group
                 var firstResult = GetAllResultsFromGroup(group).FirstOrDefault();
                 if (firstResult != null)
                 {
@@ -543,6 +637,25 @@ namespace ClashManager
                 System.Diagnostics.Debug.WriteLine($"GridHelper GetLevelForGroup: Exception: {ex.Message}");
                 return "—";
             }
+        }
+
+        /// <summary>
+        /// Получает пересечение сеток для группы коллизий (для извлечения уровня)
+        /// </summary>
+        /// <param name="group">Группа коллизий</param>
+        /// <returns>Пересечение сеток или "—", если не найдено</returns>
+        private static string GetGridIntersectionFromGroup(ClashResultGroup group)
+        {
+            if (group == null) return "—";
+            
+            // Получаем пересечение сеток из первого результата в группе
+            var firstResult = GetAllResultsFromGroup(group).FirstOrDefault();
+            if (firstResult != null)
+            {
+                return GetGridIntersectionForClash(firstResult);
+            }
+            
+            return "—";
         }
 
         /// <summary>
