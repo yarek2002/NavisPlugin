@@ -200,6 +200,13 @@ namespace ClashManager
                     {
                         if (levelObj == null) continue;
 
+                        // Get the ClosestIntersection method once for this level
+                        var closestIntersectionMethod = levelObj.GetType().GetMethod("ClosestIntersection",
+                            BindingFlags.Public | BindingFlags.Instance,
+                            null, new[] { typeof(Point3D) }, null);
+
+                        if (closestIntersectionMethod == null) continue;
+
                         foreach (double currentTolerance in tolerances)
                         {
                             // Try multiple test points with different offsets
@@ -214,12 +221,6 @@ namespace ClashManager
                                         clash.Center.Y + yOffset,
                                         clash.Center.Z
                                     );
-
-                                    var closestIntersectionMethod = levelObj.GetType().GetMethod("ClosestIntersection",
-                                        BindingFlags.Public | BindingFlags.Instance,
-                                        null, new[] { typeof(Point3D) }, null);
-
-                                    if (closestIntersectionMethod == null) continue;
 
                                     GridIntersection testGi = null;
                                     try
