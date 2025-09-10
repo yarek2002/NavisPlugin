@@ -15,6 +15,7 @@ using System.Windows.Threading;
 using System.IO;
 using System.Windows.Media;
 using Application = Autodesk.Navisworks.Api.Application;
+using ClashManager;
 
 namespace ClashManager.ManagerCollision.Views
 {
@@ -2649,21 +2650,28 @@ namespace ClashManager.ManagerCollision.Views
         {
             if (clash == null) return "N/A";
 
-            // First priority: try to get grid intersection from ClashResult itself
+            // First priority: try GridHelper method (most reliable)
+            string gridHelperResult = GridHelper.GetGridIntersectionForClash(clash);
+            if (!string.IsNullOrEmpty(gridHelperResult) && gridHelperResult != "—")
+            {
+                return $"Grid: {gridHelperResult}";
+            }
+
+            // Second priority: try to get grid intersection from ClashResult itself
             string clashGridInfo = GetGridIntersectionFromClashResult(clash);
             if (!string.IsNullOrEmpty(clashGridInfo) && clashGridInfo != "N/A")
             {
                 return clashGridInfo;
             }
 
-            // Second priority: use item-based grid intersection
+            // Third priority: use item-based grid intersection
             string gridInfo = GetGridIntersectionInfo(clash.CompositeItem1, clash.CompositeItem2);
             if (gridInfo != "N/A")
             {
                 return gridInfo;
             }
 
-            // Third priority: try alternative grid intersection method with larger tolerance
+            // Fourth priority: try alternative grid intersection method with larger tolerance
             var (altLevelName, altIntersection, altLine1, altLine2, altPosition) = GetClashGridInfoAlternative(clash, 10.0);
             if (altIntersection != "N/A" || altLine1 != "N/A" || altLine2 != "N/A")
             {

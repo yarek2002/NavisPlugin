@@ -145,6 +145,7 @@
     <Compile Include="Externals\MoveToConfirmedCmd.cs" />
     <Compile Include="Externals\UnknownCmd.cs" />
     <Compile Include="FindSearchSets\FindSearchSets.cs" />
+    <Compile Include="GridHelper.cs" />
     <Compile Include="MagicWand\MagicWand.cs" />
     <Compile Include="СollisionGrouping\Models\Models.cs" />
     <Compile Include="СollisionGrouping\Views\MainView.xaml.cs">
