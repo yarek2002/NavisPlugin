@@ -112,6 +112,138 @@ namespace ClashManager
         }
 
         /// <summary>
+        /// Получает уровень для коллизии (ClashResult) используя GridLevel
+        /// </summary>
+        /// <param name="clash">Коллизия</param>
+        /// <returns>Название уровня или "—", если уровень не найден</returns>
+        public static string GetLevelForClash(ClashResult clash)
+        {
+            if (clash == null) 
+            {
+                System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: clash is null");
+                return "—";
+            }
+
+            try
+            {
+                // Берём точку коллизии (центр)
+                Point3D clashPoint = clash.Center;
+                System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: clash point = {clashPoint}");
+
+                // Проверяем доступность документа и сеток
+                var doc = Application.ActiveDocument;
+                if (doc == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: ActiveDocument is null");
+                    return "—";
+                }
+
+                var grids = doc.Grids;
+                if (grids == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: Grids is null");
+                    return "—";
+                }
+
+                // Активная система сеток
+                GridSystem oGS = grids.ActiveSystem;
+                if (oGS == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: ActiveSystem is null");
+                    // Попробуем получить любую доступную систему
+                    var systems = grids.Systems;
+                    if (systems != null && systems.Count > 0)
+                    {
+                        oGS = systems[0];
+                        System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: Using first available system: {oGS.DisplayName}");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: No grid systems available");
+                        return "—";
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: ActiveSystem found: {oGS.DisplayName}");
+                }
+
+                // Находим ближайший уровень через Levels коллекцию
+                var levels = oGS.Levels;
+                if (levels == null || levels.Count == 0)
+                {
+                    System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: No levels available in system");
+                    return "—";
+                }
+
+                GridLevel closestLevel = null;
+                double minDistance = double.MaxValue;
+
+                foreach (GridLevel level in levels)
+                {
+                    if (level == null) continue;
+
+                    try
+                    {
+                        // Получаем позицию уровня (если доступна)
+                        var levelPositionProp = level.GetType().GetProperty("Position", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                        if (levelPositionProp != null)
+                        {
+                            var levelPosition = levelPositionProp.GetValue(level) as Point3D;
+                            if (levelPosition != null)
+                            {
+                                double distance = clashPoint.DistanceTo(levelPosition);
+                                if (distance < minDistance)
+                                {
+                                    minDistance = distance;
+                                    closestLevel = level;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Если нет Position, используем первый доступный уровень
+                            if (closestLevel == null)
+                            {
+                                closestLevel = level;
+                            }
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: Error processing level: {ex.Message}");
+                        continue;
+                    }
+                }
+
+                if (closestLevel == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: No closest level found");
+                    return "—";
+                }
+
+                System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: ClosestLevel found: {closestLevel.DisplayName}");
+
+                // Получаем название уровня
+                string levelName = closestLevel.DisplayName ?? "";
+                
+                if (!string.IsNullOrEmpty(levelName))
+                {
+                    System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: Result = '{levelName}'");
+                    return levelName;
+                }
+
+                System.Diagnostics.Debug.WriteLine("GridHelper GetLevel: No level name found");
+                return "—";
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GridHelper GetLevel: Exception: {ex.Message}");
+                return "—";
+            }
+        }
+
+        /// <summary>
         /// Альтернативный метод получения пересечения сеток, используя существующую логику
         /// </summary>
         public static string GetGridIntersectionForClashAlternative(ClashResult clash)

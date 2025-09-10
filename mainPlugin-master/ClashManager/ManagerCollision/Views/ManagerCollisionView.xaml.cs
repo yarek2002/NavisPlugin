@@ -2491,7 +2491,17 @@ namespace ClashManager.ManagerCollision.Views
 
 		private string GetLevelFromItems(ModelItem item1, ModelItem item2, ClashResult clash = null)
 		{
-			// First priority: try to get level from the ClashResult itself
+			// First priority: try GridHelper method using GridLevel (most reliable)
+			if (clash != null)
+			{
+				string gridHelperLevel = GridHelper.GetLevelForClash(clash);
+				if (!string.IsNullOrEmpty(gridHelperLevel) && gridHelperLevel != "—")
+				{
+					return gridHelperLevel;
+				}
+			}
+
+			// Second priority: try to get level from the ClashResult itself
 			if (clash != null)
 			{
 				string clashLevel = GetLevelFromClashResult(clash);
@@ -2501,7 +2511,7 @@ namespace ClashManager.ManagerCollision.Views
 				}
 			}
 
-			// Second priority: get level from ModelItem properties
+			// Third priority: get level from ModelItem properties
 			string level1 = GetLevelFromItem(item1);
 			string level2 = GetLevelFromItem(item2);
 
@@ -2667,14 +2677,14 @@ namespace ClashManager.ManagerCollision.Views
             string gridHelperResult = GridHelper.GetGridIntersectionForClash(clash);
             if (!string.IsNullOrEmpty(gridHelperResult) && gridHelperResult != "—")
             {
-                return $"Grid: {gridHelperResult}";
+                return $"{gridHelperResult}";
             }
 
             // Second priority: try GridHelper alternative method
             string gridHelperAltResult = GridHelper.GetGridIntersectionForClashAlternative(clash);
             if (!string.IsNullOrEmpty(gridHelperAltResult) && gridHelperAltResult != "—")
             {
-                return $"Grid: {gridHelperAltResult}";
+                return $"{gridHelperAltResult}";
             }
 
             // Third priority: try to get grid intersection from ClashResult itself
@@ -2696,7 +2706,7 @@ namespace ClashManager.ManagerCollision.Views
             if (altIntersection != "N/A" || altLine1 != "N/A" || altLine2 != "N/A")
             {
                 var parts = new System.Collections.Generic.List<string>();
-                if (altIntersection != "N/A") parts.Add($"Grid: {altIntersection}");
+                if (altIntersection != "N/A") parts.Add($"{altIntersection}");
                 if (altLine1 != "N/A" && altLine2 != "N/A")
                 {
                     if (altLine1 == altLine2)
@@ -2720,7 +2730,7 @@ namespace ClashManager.ManagerCollision.Views
                 return "N/A";
 
             var partsOrig = new System.Collections.Generic.List<string>();
-            if (intersection != "N/A") partsOrig.Add($"Grid: {intersection}");
+            if (intersection != "N/A") partsOrig.Add($"{intersection}");
             if (line1 != "N/A" && line2 != "N/A")
             {
                 if (line1 == line2)
