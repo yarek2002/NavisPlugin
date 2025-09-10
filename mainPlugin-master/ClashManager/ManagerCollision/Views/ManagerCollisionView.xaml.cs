@@ -2657,21 +2657,28 @@ namespace ClashManager.ManagerCollision.Views
                 return $"Grid: {gridHelperResult}";
             }
 
-            // Second priority: try to get grid intersection from ClashResult itself
+            // Second priority: try GridHelper alternative method
+            string gridHelperAltResult = GridHelper.GetGridIntersectionForClashAlternative(clash);
+            if (!string.IsNullOrEmpty(gridHelperAltResult) && gridHelperAltResult != "—")
+            {
+                return $"Grid: {gridHelperAltResult}";
+            }
+
+            // Third priority: try to get grid intersection from ClashResult itself
             string clashGridInfo = GetGridIntersectionFromClashResult(clash);
             if (!string.IsNullOrEmpty(clashGridInfo) && clashGridInfo != "N/A")
             {
                 return clashGridInfo;
             }
 
-            // Third priority: use item-based grid intersection
+            // Fourth priority: use item-based grid intersection
             string gridInfo = GetGridIntersectionInfo(clash.CompositeItem1, clash.CompositeItem2);
             if (gridInfo != "N/A")
             {
                 return gridInfo;
             }
 
-            // Fourth priority: try alternative grid intersection method with larger tolerance
+            // Fifth priority: try alternative grid intersection method with larger tolerance
             var (altLevelName, altIntersection, altLine1, altLine2, altPosition) = GetClashGridInfoAlternative(clash, 10.0);
             if (altIntersection != "N/A" || altLine1 != "N/A" || altLine2 != "N/A")
             {
