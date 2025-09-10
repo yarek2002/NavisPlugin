@@ -5,6 +5,10 @@ on:
     branches:
       - main   # запуск только при пуше в main
 
+    paths-ignore:
+      - "README.md"   # игнорировать изменения README
+      - "README.MD"   # (на всякий случай, если кто-то изменит регистр)
+
 permissions:
   contents: write
 
