@@ -152,6 +152,7 @@
     </Compile>
     <Compile Include="СollisionGrouping\CollisionGrouper.Externals.cs" />
     <Compile Include="CollisionManager.cs" />
+    <Compile Include="NavisworksGridHelper.cs" />
     <Compile Include="MoveToConfirmed\MoveToConfirmedPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CollisionCluster\Union.cs" />
