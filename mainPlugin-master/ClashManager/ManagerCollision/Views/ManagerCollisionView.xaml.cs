@@ -480,10 +480,7 @@ namespace ClashManager.ManagerCollision.Views
 				return;
 			}
 
-			// Сначала попробуем найти и открыть конкретный элемент (старое поведение)
-			if (TryGlobalSearchAndOpen(query)) return;
-
-			// Если не нашли для открытия, фильтруем список
+			// Всегда используем фильтрацию для показа всех найденных элементов
 			ApplySearchFilter(query);
 		}
 
