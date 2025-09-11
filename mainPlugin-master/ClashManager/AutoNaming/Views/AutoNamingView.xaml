@@ -34,17 +34,18 @@
             </ListBox>
         </GroupBox>
 
-        <!-- Поле для имени группы -->
-        <GroupBox Header="Имя группы" Grid.Row="2" Margin="10,0,10,10">
-            <StackPanel Orientation="Horizontal" Margin="10">
-                <TextBlock Text="Имя:" VerticalAlignment="Center" Margin="0,0,10,0" />
-                <TextBox x:Name="GroupNameTextBox" Width="300" />
+        <!-- Информация -->
+        <GroupBox Header="Информация" Grid.Row="2" Margin="10,0,10,10">
+            <StackPanel Margin="10">
+                <TextBlock Text="Будут переименованы группы, заканчивающиеся на '_'" FontWeight="Bold" Margin="0,0,0,5" />
+                <TextBlock Text="К существующему имени будет добавлено название модели первого элемента и название модели второго элемента" TextWrapping="Wrap" />
+                <TextBlock Text="Пример: 'Группа_' → 'Группа_Model1 x Model2'" Margin="0,5,0,0" FontStyle="Italic" />
             </StackPanel>
         </GroupBox>
 
         <!-- Кнопки -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
-            <Button x:Name="AssignNameButton" Content="Назначить имя" Width="120" Margin="0,0,10,0" Click="AssignNameButton_Click" />
+            <Button x:Name="AssignNameButton" Content="Авто-наименование" Width="150" Margin="0,0,10,0" Click="AssignNameButton_Click" />
             <Button x:Name="CancelButton" Content="Отмена" Width="80" Click="CancelButton_Click" />
         </StackPanel>
     </Grid>
