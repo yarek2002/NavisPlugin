@@ -217,7 +217,7 @@ namespace ClashManager.AutoNaming.Views
         }
 
         /// <summary>
-        /// Получает название модели из ModelItem (без расширения файла)
+        /// Получает название модели из ModelItem через иерархию дерева выбора
         /// </summary>
         /// <param name="modelItem">Элемент модели</param>
         /// <returns>Название модели без расширения или "Unknown"</returns>
@@ -227,15 +227,16 @@ namespace ClashManager.AutoNaming.Views
 
             try
             {
-                // Получаем свойство "Файл источника" из категории "Элемент"
-                var sourceFileProperty = modelItem.PropertyCategories.FindPropertyByDisplayName("Элемент", "Файл источника");
-                if (sourceFileProperty != null)
+                // Поднимаемся по иерархии до корневого элемента модели
+                ModelItem rootModel = GetRootModelItem(modelItem);
+                if (rootModel != null)
                 {
-                    string sourceFile = sourceFileProperty.Value?.ToDisplayString() ?? "";
-                    if (!string.IsNullOrEmpty(sourceFile))
+                    // Получаем название из SourceFileName корневого элемента
+                    string sourceFileName = rootModel.SourceFileName;
+                    if (!string.IsNullOrEmpty(sourceFileName))
                     {
                         // Извлекаем название файла без расширения
-                        string fileName = System.IO.Path.GetFileName(sourceFile);
+                        string fileName = System.IO.Path.GetFileName(sourceFileName);
                         string fileNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(fileName);
                         return fileNameWithoutExtension;
                     }
@@ -247,6 +248,36 @@ namespace ClashManager.AutoNaming.Views
             }
 
             return "Unknown";
+        }
+
+        /// <summary>
+        /// Получает корневой элемент модели, поднимаясь по иерархии
+        /// </summary>
+        /// <param name="modelItem">Начальный элемент модели</param>
+        /// <returns>Корневой элемент модели или null</returns>
+        private ModelItem GetRootModelItem(ModelItem modelItem)
+        {
+            if (modelItem == null) return null;
+
+            try
+            {
+                ModelItem current = modelItem;
+                ModelItem root = null;
+
+                // Поднимаемся по иерархии до самого верха
+                while (current != null)
+                {
+                    root = current;
+                    current = current.Parent;
+                }
+
+                return root;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error getting root model item: {ex.Message}");
+                return null;
+            }
         }
 
         /// <summary>
