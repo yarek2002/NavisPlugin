@@ -24,6 +24,7 @@ namespace ClashManager
     [Command("FindSearchSets", LargeIcon = "IMG/5_32.png", ToolTip = "Поиск наборов и правил Clash по элементам")] // Новая команда: укажите подходящую иконку
     [Command("MagicWand", LargeIcon = "IMG/4_32.png", ToolTip = "Автоматическая группировка и кластеризация")]
     [Command("ManagerCollision", LargeIcon = "IMG/6_32.png", ToolTip = "Менеджер")]
+    [Command("AutoNaming", LargeIcon = "IMG/6_32.png", ToolTip = "Авто-наименование групп коллизий")]
 
 
     public class CollisionGrouperCommandHandler : CommandHandlerPlugin
@@ -55,6 +56,9 @@ namespace ClashManager
                         break;
                     case "ManagerCollision":
                         command = (IExternalCommand)new ManagerCollisionCmd();
+                        break;
+                    case "AutoNaming":
+                        command = (IExternalCommand)new AutoNamingCmd();
                         break;
                 }
                 command.Execute();
