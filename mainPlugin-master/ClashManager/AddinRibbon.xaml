@@ -29,14 +29,14 @@
                                       Text="Группировка &#x0A; по кластерам"
                                       Orientation="Vertical"
                                       />
-                <local:NWRibbonButton x:Uid="Button_2" Id="MoveToFake"
+                <local:NWRibbonButton x:Uid="Button_3" Id="MoveToFake"
                                        Size="Large"
                                        KeyTip="B3"
                                        ShowText="True"
                                        Text="Перенести&#x0A; в подтверждено"
                                        Orientation="Vertical"
                                        />
-				<local:NWRibbonButton x:Uid="Button_2" Id="FindSearchSets"
+				<local:NWRibbonButton x:Uid="Button_4" Id="FindSearchSets"
 									  Size="Large"
 									  KeyTip="B4"
 									  ShowText="True"
