@@ -303,6 +303,9 @@ namespace ClashManager.AutoNaming.Views
                 // Получаем ID элементов
                 string element1Id = GetElementId(firstResult.CompositeItem1);
                 string element2Id = GetElementId(firstResult.CompositeItem2);
+                
+                // Отладочная информация
+                System.Diagnostics.Debug.WriteLine($"Element1 ID: '{element1Id}', Element2 ID: '{element2Id}'");
 
                 // Формируем строку с названиями моделей, ID элементов и GUID группы
                 var parts = new List<string>();
@@ -359,7 +362,13 @@ namespace ClashManager.AutoNaming.Views
                 var idProperty = modelItem.PropertyCategories.FindPropertyByDisplayName("Объект", "Id");
                 if (idProperty != null)
                 {
-                    return idProperty.Value?.ToDisplayString() ?? "";
+                    string id = idProperty.Value.ToInt32().ToString();
+                    System.Diagnostics.Debug.WriteLine($"Found ID: '{id}' for element: '{modelItem.DisplayName}'");
+                    return id;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"ID property not found for element: '{modelItem.DisplayName}'");
                 }
 
                 // Если не найдено, пробуем поискать в родительском элементе
