@@ -2059,7 +2059,8 @@ namespace ClashManager.ManagerCollision.Views
 				bool isTestMode = TestModeRadioButton?.IsChecked == true;
 
 				// Запрещаем одновременное изменение тестов и коллизий/групп
-				if (hasCheckedTests && hasCheckedRows)
+				// Исключение: в режиме "Коллизии" выбранные тесты означают работу с их коллизиями
+				if (hasCheckedTests && hasCheckedRows && isTestMode)
 				{
 					MessageBox.Show("Выберите только тесты или только коллизии/группы для изменения префикса/суффикса.");
 					return;
