@@ -90,7 +90,7 @@
                     </DockPanel>
                 </StackPanel>
 
-                <ListView x:Name="CollisionsList" Grid.Row="1" SelectionMode="Extended" MouseDoubleClick="CollisionsList_MouseDoubleClick">
+                <ListView x:Name="CollisionsList" Grid.Row="1" SelectionMode="Extended" MouseDoubleClick="CollisionsList_MouseDoubleClick" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Width="300">

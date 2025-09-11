@@ -38,6 +38,24 @@ namespace ClashManager.ManagerCollision.Views
 		private DispatcherTimer _clashDetectiveMonitorTimer;
 		private Guid _lastDetectedClashGuid = Guid.Empty;
 		private bool _isSyncingFromPlugin = false;
+		private readonly System.Collections.Generic.Dictionary<Guid, string> _levelCache = new System.Collections.Generic.Dictionary<Guid, string>();
+		private readonly System.Collections.Generic.Dictionary<Guid, string> _gridCache = new System.Collections.Generic.Dictionary<Guid, string>();
+
+		// Класс для оптимизированного отображения элементов списка
+		public class CollisionListItem
+		{
+			public string Name { get; set; }
+			public string Status { get; set; }
+			public string AssignedTo { get; set; }
+			public Guid Guid { get; set; }
+			public Guid TestGuid { get; set; }
+			public bool IsGroup { get; set; }
+			public bool IsSelected { get; set; }
+			public string Level { get; set; }
+			public string GridIntersection { get; set; }
+			public string TestName { get; set; }
+			public object Item { get; set; }
+		}
 
 		public ManagerCollisionView()
 		{
@@ -360,7 +378,7 @@ namespace ClashManager.ManagerCollision.Views
 				foreach (var t in checkedTests)
 				{
 					var groupRowsMerged = EnumerateAllGroupsWithLevel(t)
-						.Select(x => new
+						.Select(x => new CollisionListItem
 						{
 							Name = x.Group.DisplayName ?? string.Empty,
 							Status = x.Group.Status.ToString(),
@@ -369,13 +387,14 @@ namespace ClashManager.ManagerCollision.Views
 							TestGuid = t.Guid,
 							IsGroup = true,
 							IsSelected = false,
-							Level = GetLevelFromGroup(x.Group),
-							GridIntersection = GetGridIntersectionFromGroup(x.Group),
-							TestName = t.DisplayName ?? string.Empty
+							Level = GetCachedLevelFromGroup(x.Group),
+							GridIntersection = GetCachedGridFromGroup(x.Group),
+							TestName = t.DisplayName ?? string.Empty,
+							Item = x.Group
 						});
 					var ungroupedResultRowsMerged = t.Children
 						.OfType<ClashResult>()
-						.Select(r => new
+						.Select(r => new CollisionListItem
 						{
 							Name = r.DisplayName ?? string.Empty,
 							Status = r.Status.ToString(),
@@ -384,9 +403,10 @@ namespace ClashManager.ManagerCollision.Views
 							TestGuid = t.Guid,
 							IsGroup = false,
 							IsSelected = false,
-							Level = GetLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
-							GridIntersection = FormatGridIntersectionDisplay(r),
-                            TestName = t.DisplayName ?? string.Empty
+							Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
+							GridIntersection = GetCachedGridFromResult(r),
+                            TestName = t.DisplayName ?? string.Empty,
+							Item = r
 						});
 					mergedRows.AddRange(groupRowsMerged);
 					mergedRows.AddRange(ungroupedResultRowsMerged);
@@ -403,9 +423,9 @@ namespace ClashManager.ManagerCollision.Views
 				return;
 			}
 
-			// Показываем по одной строке на группу, плюс отдельные (негрупповые) результаты теста
+			// Показываем по одной строке на группу, плюс отдельные (негрупповые) результаты теста (оптимизированно)
 			var groupRows = EnumerateAllGroupsWithLevel(selectedTest)
-				.Select(x => new
+				.Select(x => new CollisionListItem
 				{
 					Name = x.Group.DisplayName ?? string.Empty,
 					Status = x.Group.Status.ToString(),
@@ -414,14 +434,15 @@ namespace ClashManager.ManagerCollision.Views
 					TestGuid = selectedTest.Guid,
 					IsGroup = true,
 					IsSelected = false,
-					Level = GetLevelFromGroup(x.Group),
-					GridIntersection = GetGridIntersectionFromGroup(x.Group),
-					TestName = selectedTest.DisplayName ?? string.Empty
+					Level = GetCachedLevelFromGroup(x.Group),
+					GridIntersection = GetCachedGridFromGroup(x.Group),
+					TestName = selectedTest.DisplayName ?? string.Empty,
+					Item = x.Group
 				});
 
 			var ungroupedResultRows = selectedTest.Children
 				.OfType<ClashResult>()
-				.Select(r => new
+				.Select(r => new CollisionListItem
 				{
 					Name = r.DisplayName ?? string.Empty,
 					Status = r.Status.ToString(),
@@ -430,9 +451,10 @@ namespace ClashManager.ManagerCollision.Views
 					TestGuid = selectedTest.Guid,
 					IsGroup = false,
 					IsSelected = false,
-							Level = GetLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
-					GridIntersection = FormatGridIntersectionDisplay(r),
-                    TestName = selectedTest.DisplayName ?? string.Empty
+					Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
+					GridIntersection = GetCachedGridFromResult(r),
+                    TestName = selectedTest.DisplayName ?? string.Empty,
+					Item = r
 				});
 
 			var rows = groupRows.Concat(ungroupedResultRows).ToList();
@@ -510,9 +532,9 @@ namespace ClashManager.ManagerCollision.Views
 
 				foreach (var test in testsToSearch)
 				{
-					// Добавляем группы
+					// Добавляем группы (оптимизированно)
 					var groupRows = EnumerateAllGroupsWithLevel(test)
-						.Select(x => new
+						.Select(x => new CollisionListItem
 						{
 							Name = x.Group.DisplayName ?? string.Empty,
 							Status = x.Group.Status.ToString(),
@@ -521,16 +543,16 @@ namespace ClashManager.ManagerCollision.Views
 							TestGuid = test.Guid,
 							IsGroup = true,
 							IsSelected = false,
-							Level = GetLevelFromGroup(x.Group),
-							GridIntersection = GetGridIntersectionFromGroup(x.Group),
+							Level = GetCachedLevelFromGroup(x.Group),
+							GridIntersection = GetCachedGridFromGroup(x.Group),
 							TestName = test.DisplayName ?? string.Empty,
 							Item = x.Group
 						});
 
-					// Добавляем отдельные результаты
+					// Добавляем отдельные результаты (оптимизированно)
 					var ungroupedResultRows = test.Children
 						.OfType<ClashResult>()
-						.Select(r => new
+						.Select(r => new CollisionListItem
 						{
 							Name = r.DisplayName ?? string.Empty,
 							Status = r.Status.ToString(),
@@ -539,8 +561,8 @@ namespace ClashManager.ManagerCollision.Views
 							TestGuid = test.Guid,
 							IsGroup = false,
 							IsSelected = false,
-							Level = GetLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
-							GridIntersection = FormatGridIntersectionDisplay(r),
+							Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
+							GridIntersection = GetCachedGridFromResult(r),
 							TestName = test.DisplayName ?? string.Empty,
 							Item = r
 						});
@@ -2395,6 +2417,54 @@ namespace ClashManager.ManagerCollision.Views
 			view.SortDescriptions.Add(new System.ComponentModel.SortDescription(_currentSortProperty,
 				_currentSortAscending ? System.ComponentModel.ListSortDirection.Ascending : System.ComponentModel.ListSortDirection.Descending));
 			view.Refresh();
+		}
+
+		// Оптимизированные методы с кэшированием
+		private string GetCachedLevelFromGroup(ClashResultGroup group)
+		{
+			if (_levelCache.TryGetValue(group.Guid, out string cachedLevel))
+				return cachedLevel;
+			
+			string level = GetLevelFromGroup(group);
+			_levelCache[group.Guid] = level;
+			return level;
+		}
+
+		private string GetCachedGridFromGroup(ClashResultGroup group)
+		{
+			if (_gridCache.TryGetValue(group.Guid, out string cachedGrid))
+				return cachedGrid;
+			
+			string grid = GetGridIntersectionFromGroup(group);
+			_gridCache[group.Guid] = grid;
+			return grid;
+		}
+
+		private string GetCachedLevelFromItems(ModelItem item1, ModelItem item2, ClashResult result)
+		{
+			if (_levelCache.TryGetValue(result.Guid, out string cachedLevel))
+				return cachedLevel;
+			
+			string level = GetLevelFromItems(item1, item2, result);
+			_levelCache[result.Guid] = level;
+			return level;
+		}
+
+		private string GetCachedGridFromResult(ClashResult result)
+		{
+			if (_gridCache.TryGetValue(result.Guid, out string cachedGrid))
+				return cachedGrid;
+			
+			string grid = FormatGridIntersectionDisplay(result);
+			_gridCache[result.Guid] = grid;
+			return grid;
+		}
+
+		// Очистка кэша при необходимости
+		private void ClearCache()
+		{
+			_levelCache.Clear();
+			_gridCache.Clear();
 		}
 
 		private object GetSortValue(object item, string propertyName)
