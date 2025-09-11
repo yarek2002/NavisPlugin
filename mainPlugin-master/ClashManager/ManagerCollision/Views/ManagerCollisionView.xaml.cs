@@ -31,6 +31,8 @@ namespace ClashManager.ManagerCollision.Views
 		private bool _suppressCheckboxHandlers = false;
 		private bool _searchByNameMode = true; // true = по имени, false = по GUID
 		private readonly System.Collections.Generic.Dictionary<string, bool> _sortDirections = new System.Collections.Generic.Dictionary<string, bool>();
+		private string _currentSortProperty = null;
+		private bool _currentSortAscending = true;
 		private DispatcherTimer _searchTimer;
 		private string _lastSearchQuery = string.Empty;
 		private DispatcherTimer _clashDetectiveMonitorTimer;
@@ -390,6 +392,7 @@ namespace ClashManager.ManagerCollision.Views
 					mergedRows.AddRange(ungroupedResultRowsMerged);
 				}
 				CollisionsList.ItemsSource = mergedRows;
+				ApplySorting();
 				return;
 			}
 
@@ -434,6 +437,7 @@ namespace ClashManager.ManagerCollision.Views
 
 			var rows = groupRows.Concat(ungroupedResultRows).ToList();
 			CollisionsList.ItemsSource = rows;
+			ApplySorting();
 		}
 
 		private System.Collections.Generic.IEnumerable<(ClashResultGroup Group, int Level)> EnumerateAllGroupsWithLevel(ClashTest test)
@@ -576,6 +580,7 @@ namespace ClashManager.ManagerCollision.Views
 				}).ToList();
 
 				CollisionsList.ItemsSource = sortedItems;
+				ApplySorting();
 			}
 			catch (Exception ex)
 			{
@@ -2371,15 +2376,26 @@ namespace ClashManager.ManagerCollision.Views
 			string propertyName = header.Tag.ToString();
 			bool ascending = !_sortDirections.ContainsKey(propertyName) || !_sortDirections[propertyName];
 			_sortDirections[propertyName] = ascending;
+			
+			// Сохраняем текущую сортировку
+			_currentSortProperty = propertyName;
+			_currentSortAscending = ascending;
 
+			ApplySorting();
+		}	
+
+		private void ApplySorting()
+		{
+			if (string.IsNullOrEmpty(_currentSortProperty)) return;
+			
 			var view = System.Windows.Data.CollectionViewSource.GetDefaultView(CollisionsList.ItemsSource);
 			if (view == null) return;
 
 			view.SortDescriptions.Clear();
-			view.SortDescriptions.Add(new System.ComponentModel.SortDescription(propertyName,
-				ascending ? System.ComponentModel.ListSortDirection.Ascending : System.ComponentModel.ListSortDirection.Descending));
+			view.SortDescriptions.Add(new System.ComponentModel.SortDescription(_currentSortProperty,
+				_currentSortAscending ? System.ComponentModel.ListSortDirection.Ascending : System.ComponentModel.ListSortDirection.Descending));
 			view.Refresh();
-		}	
+		}
 
 		private object GetSortValue(object item, string propertyName)
 		{
