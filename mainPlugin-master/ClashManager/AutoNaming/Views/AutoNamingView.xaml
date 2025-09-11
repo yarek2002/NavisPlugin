@@ -38,8 +38,13 @@
         <GroupBox Header="Информация" Grid.Row="2" Margin="10,0,10,10">
             <StackPanel Margin="10">
                 <TextBlock Text="Будут переименованы группы, заканчивающиеся на '_'" FontWeight="Bold" Margin="0,0,0,5" />
-                <TextBlock Text="К существующему имени будет добавлено название модели первого элемента и название модели второго элемента" TextWrapping="Wrap" />
-                <TextBlock Text="Пример: 'Группа_' → 'Группа_Model1 x Model2'" Margin="0,5,0,0" FontStyle="Italic" />
+                <TextBlock Text="К существующему имени будет добавлено:" TextWrapping="Wrap" Margin="0,0,0,3" />
+                <TextBlock Text="• Название модели первого элемента" Margin="10,0,0,0" />
+                <TextBlock Text="• Название модели второго элемента" Margin="10,0,0,0" />
+                <TextBlock Text="• ID первого элемента" Margin="10,0,0,0" />
+                <TextBlock Text="• ID второго элемента" Margin="10,0,0,0" />
+                <TextBlock Text="• GUID группы коллизий" Margin="10,0,0,0" />
+                <TextBlock Text="Пример: 'Группа_' → 'Группа | Model1 | Model2 | ID1 | ID2 | GUID'" Margin="0,5,0,0" FontStyle="Italic" TextWrapping="Wrap" />
             </StackPanel>
         </GroupBox>
 

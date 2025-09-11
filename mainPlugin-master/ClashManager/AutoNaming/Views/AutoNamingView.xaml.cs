@@ -103,11 +103,12 @@ namespace ClashManager.AutoNaming.Views
                     // Получаем названия моделей из группы
                     string modelNames = GetModelNamesFromGroup(group);
                     
-                    // Формируем новое имя: существующее имя + названия моделей
-                    string finalName = group.DisplayName;
+                    // Формируем новое имя: убираем "_" и добавляем "|" + названия моделей
+                    string baseName = group.DisplayName.TrimEnd('_');
+                    string finalName = baseName;
                     if (!string.IsNullOrEmpty(modelNames))
                     {
-                        finalName = group.DisplayName + modelNames;
+                        finalName = baseName + " | " + modelNames;
                     }
 
                     // Создаем копию теста для изменения
@@ -280,10 +281,10 @@ namespace ClashManager.AutoNaming.Views
         }
 
         /// <summary>
-        /// Получает названия моделей из группы коллизий
+        /// Получает названия моделей из группы коллизий с дополнительной информацией
         /// </summary>
         /// <param name="group">Группа коллизий</param>
-        /// <returns>Строка с названиями моделей или пустая строка</returns>
+        /// <returns>Строка с названиями моделей, ID элементов и GUID группы</returns>
         private string GetModelNamesFromGroup(ClashResultGroup group)
         {
             if (group == null) return "";
@@ -299,23 +300,77 @@ namespace ClashManager.AutoNaming.Views
                 string model1Name = GetModelName(firstResult.CompositeItem1);
                 string model2Name = GetModelName(firstResult.CompositeItem2);
 
-                // Формируем строку с названиями моделей
+                // Получаем ID элементов
+                string element1Id = GetElementId(firstResult.CompositeItem1);
+                string element2Id = GetElementId(firstResult.CompositeItem2);
+
+                // Формируем строку с названиями моделей, ID элементов и GUID группы
+                var parts = new List<string>();
+
+                // Добавляем названия моделей
                 if (model1Name != "Unknown" && model2Name != "Unknown")
                 {
-                    return $"{model1Name} x {model2Name}";
+                    parts.Add($"{model1Name} | {model2Name}");
                 }
                 else if (model1Name != "Unknown")
                 {
-                    return model1Name;
+                    parts.Add(model1Name);
                 }
                 else if (model2Name != "Unknown")
                 {
-                    return model2Name;
+                    parts.Add(model2Name);
                 }
+
+                // Добавляем ID элементов
+                if (!string.IsNullOrEmpty(element1Id))
+                {
+                    parts.Add(element1Id);
+                }
+                if (!string.IsNullOrEmpty(element2Id))
+                {
+                    parts.Add(element2Id);
+                }
+
+                // Добавляем GUID группы
+                parts.Add(group.Guid.ToString());
+
+                return string.Join(" | ", parts);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error getting model names from group: {ex.Message}");
+            }
+
+            return "";
+        }
+
+        /// <summary>
+        /// Получает ID элемента из ModelItem
+        /// </summary>
+        /// <param name="modelItem">Элемент модели</param>
+        /// <returns>ID элемента или пустая строка</returns>
+        private string GetElementId(ModelItem modelItem)
+        {
+            if (modelItem == null) return "";
+
+            try
+            {
+                // Ищем свойство "Id" в категории "Объект"
+                var idProperty = modelItem.PropertyCategories.FindPropertyByDisplayName("Объект", "Id");
+                if (idProperty != null)
+                {
+                    return idProperty.Value?.ToDisplayString() ?? "";
+                }
+
+                // Если не найдено, пробуем поискать в родительском элементе
+                if (modelItem.Parent != null)
+                {
+                    return GetElementId(modelItem.Parent);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error getting element ID: {ex.Message}");
             }
 
             return "";
