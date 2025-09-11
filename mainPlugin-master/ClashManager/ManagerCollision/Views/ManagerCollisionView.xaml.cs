@@ -490,20 +490,10 @@ namespace ClashManager.ManagerCollision.Views
 			{
 				var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
 
-				// Определяем, по каким тестам искать: выбранные через чекбоксы или текущий выбранный
+				// Определяем, по каким тестам искать: выбранные через чекбоксы или все тесты
 				var testsToSearch = _checkedTestIds.Count > 0
 					? allTests.Where(t => _checkedTestIds.Contains(t.Guid)).ToList()
-					: new System.Collections.Generic.List<ClashTest>();
-
-				// Если нет выбранных через чекбоксы, используем текущий выбранный тест
-				if (testsToSearch.Count == 0)
-				{
-					var selectedTest = (TestsList.SelectedItem != null) ? (TestsList.SelectedItem.GetType().GetProperty("Test")?.GetValue(TestsList.SelectedItem) as ClashTest) : null;
-					if (selectedTest != null)
-					{
-						testsToSearch.Add(selectedTest);
-					}
-				}
+					: allTests; // Если нет выбранных через чекбоксы, используем все тесты
 
 				if (testsToSearch.Count == 0)
 				{
