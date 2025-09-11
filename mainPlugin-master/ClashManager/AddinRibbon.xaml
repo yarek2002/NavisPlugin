@@ -59,6 +59,13 @@
 								  Text="Менеджер коллизий"
 								  Orientation="Vertical"
 								  />
+				<local:NWRibbonButton x:Uid="Button_7" Id="AutoNaming"
+								  Size="Large"
+								  KeyTip="B7"
+								  ShowText="True"
+								  Text="Авто-наименование"
+								  Orientation="Vertical"
+								  />
 				
 				
 				
