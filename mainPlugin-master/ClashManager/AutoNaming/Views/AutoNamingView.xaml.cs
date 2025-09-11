@@ -231,13 +231,12 @@ namespace ClashManager.AutoNaming.Views
                 ModelItem rootModel = GetRootModelItem(modelItem);
                 if (rootModel != null)
                 {
-                    // Получаем название из SourceFileName корневого элемента
-                    string sourceFileName = rootModel.SourceFileName;
-                    if (!string.IsNullOrEmpty(sourceFileName))
+                    // Получаем название из DisplayName корневого элемента
+                    string rootDisplayName = rootModel.DisplayName;
+                    if (!string.IsNullOrEmpty(rootDisplayName))
                     {
-                        // Извлекаем название файла без расширения
-                        string fileName = System.IO.Path.GetFileName(sourceFileName);
-                        string fileNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(fileName);
+                        // Убираем расширение файла, если оно есть
+                        string fileNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(rootDisplayName);
                         return fileNameWithoutExtension;
                     }
                 }
