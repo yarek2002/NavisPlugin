@@ -96,13 +96,16 @@ namespace ClashManager.AutoNaming.Views
             // Получаем все группы из теста (включая вложенные)
             var allGroups = GetAllGroupsFromTest(test);
 
+            // Собираем все группы, которые нужно переименовать
+            var groupsToRename = new Dictionary<Guid, string>();
+
             foreach (var group in allGroups)
             {
                 if (group.DisplayName?.EndsWith("_") == true)
                 {
                     // Получаем названия моделей из группы
                     string modelNames = GetModelNamesFromGroup(group);
-                    
+
                     // Формируем новое имя: убираем "_" и добавляем "|" + названия моделей
                     string baseName = group.DisplayName.TrimEnd('_');
                     string finalName = baseName;
@@ -111,21 +114,31 @@ namespace ClashManager.AutoNaming.Views
                         finalName = baseName + " | " + modelNames;
                     }
 
-                    // Создаем копию теста для изменения
-                    var testIndex = _documentClash.TestsData.Tests.IndexOf(test);
-                    if (testIndex >= 0)
-                    {
-                        var testCopy = (ClashTest)test.CreateCopy();
+                    groupsToRename[group.Guid] = finalName;
+                }
+            }
 
-                        // Находим и переименовываем группу в копии
-                        var groupInCopy = FindGroupInTestCopy(testCopy, group.Guid);
+            // Если есть группы для переименования, применяем все изменения за один раз
+            if (groupsToRename.Count > 0)
+            {
+                var testIndex = _documentClash.TestsData.Tests.IndexOf(test);
+                if (testIndex >= 0)
+                {
+                    var testCopy = (ClashTest)test.CreateCopy();
+
+                    // Переименовываем все группы в копии
+                    foreach (var kvp in groupsToRename)
+                    {
+                        var groupInCopy = FindGroupInTestCopy(testCopy, kvp.Key);
                         if (groupInCopy != null)
                         {
-                            groupInCopy.DisplayName = finalName;
-                            _documentClash.TestsData.TestsReplaceWithCopy(testIndex, testCopy);
+                            groupInCopy.DisplayName = kvp.Value;
                             renamedCount++;
                         }
                     }
+
+                    // Заменяем тест копией со всеми изменениями
+                    _documentClash.TestsData.TestsReplaceWithCopy(testIndex, testCopy);
                 }
             }
 
