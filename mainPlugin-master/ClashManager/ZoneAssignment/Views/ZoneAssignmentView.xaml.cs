@@ -66,16 +66,13 @@ namespace ClashManager.ZoneAssignment.Views
                     // Автоматически находим зоны в этой модели
                     FindZonesInModel(nwcFile);
 
-                    // Добавляем только если есть зоны
-                    if (nwcFile.Zones.Count > 0)
-                    {
-                        _nwcFiles.Add(nwcFile);
-                    }
+                    // Добавляем все файлы, независимо от наличия зон
+                    _nwcFiles.Add(nwcFile);
                 }
 
                 if (_nwcFiles.Count == 0)
                 {
-                    MessageBox.Show("Не найдено NWC файлов с зонами. Убедитесь, что загружены модели с bounding box объектами.",
+                    MessageBox.Show("Не найдено загруженных NWC файлов.",
                                   "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
