@@ -158,11 +158,15 @@
     <Compile Include="CollisionCluster\Union.cs" />
     <Compile Include="Externals\ManagerCollisionCmd.cs" />
     <Compile Include="Externals\AutoNamingCmd.cs" />
+    <Compile Include="Externals\ZoneAssignmentCmd.cs" />
     <Compile Include="ManagerCollision\Views\ManagerCollisionView.xaml.cs">
       <DependentUpon>ManagerCollisionView.xaml</DependentUpon>
     </Compile>
     <Compile Include="AutoNaming\Views\AutoNamingView.xaml.cs">
       <DependentUpon>AutoNamingView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ZoneAssignment\Views\ZoneAssignmentView.xaml.cs">
+      <DependentUpon>ZoneAssignmentView.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -193,6 +197,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Page>
     <Page Include="AutoNaming\Views\AutoNamingView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Page>
+    <Page Include="ZoneAssignment\Views\ZoneAssignmentView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -66,10 +66,17 @@
 								  Text="Авто-наименование"
 								  Orientation="Vertical"
 								  />
-				
-				
-				
-				
+				<local:NWRibbonButton x:Uid="Button_8" Id="ZoneAssignment"
+								  Size="Large"
+								  KeyTip="B8"
+								  ShowText="True"
+								  Text="Назначение зон"
+								  Orientation="Vertical"
+								  />
+
+
+
+
             </RibbonPanelSource>
         </RibbonPanel>
     </RibbonTab>
