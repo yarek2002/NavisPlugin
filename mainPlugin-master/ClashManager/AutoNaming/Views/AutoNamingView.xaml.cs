@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.ComponentModel;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
 using Autodesk.Navisworks.Api.Interop.ComApi;
@@ -12,18 +13,41 @@ namespace ClashManager.AutoNaming.Views
     /// <summary>
     /// Класс для элементов списка тестов коллизий
     /// </summary>
-    public class TestItem
+    public class TestItem : INotifyPropertyChanged
     {
+        private bool _isSelected;
+        
         public ClashTest Test { get; set; }
         public string DisplayName { get; set; }
-        public bool IsSelected { get; set; }
+        
+        public bool IsSelected 
+        { 
+            get => _isSelected;
+            set
+            {
+                if (_isSelected != value)
+                {
+                    _isSelected = value;
+                    OnPropertyChanged(nameof(IsSelected));
+                }
+            }
+        }
+        
         public Guid Guid { get; set; }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
     public partial class AutoNamingView : Window
     {
         private Document _doc;
         private DocumentClash _documentClash;
         private readonly HashSet<Guid> _checkedTestIds = new HashSet<Guid>();
+        private List<TestItem> _testItems = new List<TestItem>(); // Кэшируем список тестов
 
         public AutoNamingView()
         {
@@ -36,15 +60,17 @@ namespace ClashManager.AutoNaming.Views
         private void LoadTests()
         {
             var tests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? Enumerable.Empty<ClashTest>().ToList();
-            // Создаем объекты TestItem с правильными свойствами для привязки данных
-            var testItems = tests.Select(t => new TestItem
+            
+            // Создаем объекты TestItem только один раз
+            _testItems = tests.Select(t => new TestItem
             { 
                 Test = t, 
                 DisplayName = t.DisplayName, 
                 IsSelected = _checkedTestIds.Contains(t.Guid), 
                 Guid = t.Guid 
             }).ToList();
-            TestsListBox.ItemsSource = testItems;
+            
+            TestsListBox.ItemsSource = _testItems;
         }
 
         private void TestsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -59,20 +85,15 @@ namespace ClashManager.AutoNaming.Views
         }
 
         /// <summary>
-        /// Обновляет отображение чекбоксов для выделенных элементов
+        /// Обновляет состояние чекбоксов без пересоздания объектов
         /// </summary>
         private void UpdateCheckBoxesForSelectedItems()
         {
-            // Обновляем ItemsSource, чтобы чекбоксы отражали текущее состояние
-            var tests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? Enumerable.Empty<ClashTest>().ToList();
-            var testItems = tests.Select(t => new TestItem
-            { 
-                Test = t, 
-                DisplayName = t.DisplayName, 
-                IsSelected = _checkedTestIds.Contains(t.Guid), 
-                Guid = t.Guid 
-            }).ToList();
-            TestsListBox.ItemsSource = testItems;
+            // Обновляем только состояние IsSelected для существующих объектов
+            foreach (var testItem in _testItems)
+            {
+                testItem.IsSelected = _checkedTestIds.Contains(testItem.Guid);
+            }
         }
 
         private void TestCheckBox_Click(object sender, RoutedEventArgs e)
@@ -103,17 +124,16 @@ namespace ClashManager.AutoNaming.Views
                             if (newCheckedState)
                             {
                                 _checkedTestIds.Add(testItem.Guid);
-                                testItem.IsSelected = true;
                             }
                             else
                             {
                                 _checkedTestIds.Remove(testItem.Guid);
-                                testItem.IsSelected = false;
                             }
+                            testItem.IsSelected = newCheckedState;
                         }
                     }
                     
-                    // Обновляем отображение всех чекбоксов
+                    // Обновляем состояние всех чекбоксов
                     UpdateCheckBoxesForSelectedItems();
                 }
                 else

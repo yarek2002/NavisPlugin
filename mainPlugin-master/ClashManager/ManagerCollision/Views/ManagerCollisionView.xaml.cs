@@ -16,6 +16,7 @@ using System.IO;
 using System.Windows.Media;
 using Application = Autodesk.Navisworks.Api.Application;
 using ClashManager;
+using System.ComponentModel;
 
 namespace ClashManager.ManagerCollision.Views
 {
@@ -948,7 +949,9 @@ namespace ClashManager.ManagerCollision.Views
 			catch { }
 		}
 
-		private void CollisionsList_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+
+
+            private void CollisionsList_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
 		{
 			OnPluginSelectionChanged();
 
