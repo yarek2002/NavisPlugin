@@ -116,6 +116,10 @@ namespace ClashManager.ManagerCollision.Views
 			};
 			_doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
 			_documentClash = _doc.GetClash();
+			
+			// Подписываемся на события изменения модели
+			SubscribeToModelEvents();
+			
 			LoadTests();
 
 			// Initialize search timer for dynamic filtering
@@ -2536,6 +2540,128 @@ namespace ClashManager.ManagerCollision.Views
 		{
 			// Обновляем список коллизий на основе текущего выбора тестов
 			TestsList_SelectionChanged(null, null);
+		}
+
+		/// <summary>
+		/// Подписывается на события изменения модели Navisworks
+		/// </summary>
+		private void SubscribeToModelEvents()
+		{
+			try
+			{
+				// Подписываемся на события изменения документа
+				_doc.FileChanged += OnDocumentChanged;
+				_doc.FileClosing += OnDocumentClosing;
+				
+				// Подписываемся на события изменения тестов коллизий
+				if (_documentClash?.TestsData != null)
+				{
+					_documentClash.TestsData.TestsChanged += OnTestsChanged;
+				}
+			}
+			catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine($"Ошибка при подписке на события модели: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// Обработчик изменения файла документа
+		/// </summary>
+		private void OnDocumentChanged(object sender, EventArgs e)
+		{
+			try
+			{
+				// Очищаем все кэши и состояние при изменении документа
+				ClearAllCachesAndState();
+				
+				// Обновляем ссылки на документ и тесты коллизий
+				_doc = Application.ActiveDocument;
+				_documentClash = _doc?.GetClash();
+				
+				// Переподписываемся на события
+				SubscribeToModelEvents();
+				
+				// Перезагружаем данные
+				LoadTests();
+			}
+			catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine($"Ошибка при обработке изменения документа: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// Обработчик закрытия файла документа
+		/// </summary>
+		private void OnDocumentClosing(object sender, EventArgs e)
+		{
+			try
+			{
+				// Очищаем все кэши и состояние при закрытии документа
+				ClearAllCachesAndState();
+			}
+			catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine($"Ошибка при обработке закрытия документа: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// Обработчик изменения тестов коллизий
+		/// </summary>
+		private void OnTestsChanged(object sender, EventArgs e)
+		{
+			try
+			{
+				// Очищаем кэши и состояние при изменении тестов
+				ClearAllCachesAndState();
+				
+				// Перезагружаем данные
+				LoadTests();
+			}
+			catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine($"Ошибка при обработке изменения тестов: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// Очищает все кэши и состояние выбранных элементов
+		/// </summary>
+		private void ClearAllCachesAndState()
+		{
+			try
+			{
+				// Очищаем состояние выбранных элементов
+				_checkedRowIds.Clear();
+				_checkedTestIds.Clear();
+				
+				// Сбрасываем индексы последних кликов
+				_lastTestClickIndex = -1;
+				_lastCollisionClickIndex = -1;
+				
+				// Очищаем кэши
+				_levelCache.Clear();
+				_gridCache.Clear();
+				
+				// Очищаем состояние поиска
+				_lastSearchQuery = string.Empty;
+				
+				// Очищаем состояние синхронизации
+				_isSyncingFromPlugin = false;
+				_lastDetectedClashGuid = Guid.Empty;
+				
+				// Очищаем списки в UI
+				TestsList.ItemsSource = null;
+				CollisionsList.ItemsSource = null;
+				
+				System.Diagnostics.Debug.WriteLine("Все кэши и состояние очищены");
+			}
+			catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine($"Ошибка при очистке кэшей: {ex.Message}");
+			}
 		}
 
 		private string GetGridIntersectionInfo(ModelItem item1, ModelItem item2)
