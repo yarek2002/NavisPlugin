@@ -846,7 +846,23 @@ namespace ClashManager.ManagerCollision.Views
 			bool isShift = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
 			bool targetChecked = cb.IsChecked == true;
 
-			if (isShift && _lastCollisionClickIndex >= 0)
+			// Если выделено несколько элементов в списке, применяем действие ко всем выделенным
+			if (CollisionsList.SelectedItems.Count > 1 && CollisionsList.SelectedItems.Contains(item))
+			{
+				_suppressCheckboxHandlers = true;
+				try
+				{
+					foreach (var selectedItem in CollisionsList.SelectedItems)
+					{
+						if (selectedItem is CollisionListItem selectedCollisionItem)
+						{
+							selectedCollisionItem.IsSelected = targetChecked;
+						}
+					}
+				}
+				finally { _suppressCheckboxHandlers = false; }
+			}
+			else if (isShift && _lastCollisionClickIndex >= 0)
 			{
 				// Shift-выбор: применяем действие ко всем элементам между последним и текущим кликом
 				int from = Math.Min(_lastCollisionClickIndex, currentIndex);
