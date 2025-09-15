@@ -320,12 +320,28 @@ namespace ClashManager.AutoNaming.Views
                 string model1Name = GetModelName(firstResult.CompositeItem1);
                 string model2Name = GetModelName(firstResult.CompositeItem2);
 
-                // Получаем ID элементов
-                string element1Id = GetElementId(firstResult.CompositeItem1);
-                string element2Id = GetElementId(firstResult.CompositeItem2);
+                // Собираем все уникальные ID элементов из всех результатов
+                var allElementIds = new HashSet<string>();
+                
+                foreach (var result in allResults)
+                {
+                    // Получаем ID первого элемента
+                    string element1Id = GetElementId(result.CompositeItem1);
+                    if (!string.IsNullOrEmpty(element1Id))
+                    {
+                        allElementIds.Add(element1Id);
+                    }
+                    
+                    // Получаем ID второго элемента
+                    string element2Id = GetElementId(result.CompositeItem2);
+                    if (!string.IsNullOrEmpty(element2Id))
+                    {
+                        allElementIds.Add(element2Id);
+                    }
+                }
                 
                 // Отладочная информация
-                System.Diagnostics.Debug.WriteLine($"Element1 ID: '{element1Id}', Element2 ID: '{element2Id}'");
+                System.Diagnostics.Debug.WriteLine($"Found {allElementIds.Count} unique element IDs: {string.Join(", ", allElementIds)}");
 
                 // Формируем строку с названиями моделей, ID элементов и GUID группы
                 var parts = new List<string>();
@@ -344,14 +360,10 @@ namespace ClashManager.AutoNaming.Views
                     parts.Add(model2Name);
                 }
 
-                // Добавляем ID элементов
-                if (!string.IsNullOrEmpty(element1Id))
+                // Добавляем все уникальные ID элементов через запятую
+                if (allElementIds.Count > 0)
                 {
-                    parts.Add(element1Id);
-                }
-                if (!string.IsNullOrEmpty(element2Id))
-                {
-                    parts.Add(element2Id);
+                    parts.Add(string.Join(", ", allElementIds));
                 }
 
                 // Добавляем GUID группы
