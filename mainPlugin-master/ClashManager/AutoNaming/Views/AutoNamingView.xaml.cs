@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
 using Autodesk.Navisworks.Api.Interop.ComApi;
@@ -15,29 +16,28 @@ namespace ClashManager.AutoNaming.Views
     /// </summary>
     public class TestItem : INotifyPropertyChanged
     {
-        private bool _isSelected;
+        private bool _isChecked;
         
         public ClashTest Test { get; set; }
         public string DisplayName { get; set; }
+        public Guid Guid { get; set; }
         
-        public bool IsSelected 
+        public bool IsChecked 
         { 
-            get => _isSelected;
+            get => _isChecked;
             set
             {
-                if (_isSelected != value)
+                if (_isChecked != value)
                 {
-                    _isSelected = value;
-                    OnPropertyChanged(nameof(IsSelected));
+                    _isChecked = value;
+                    OnPropertyChanged();
                 }
             }
         }
-        
-        public Guid Guid { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
-
-        protected virtual void OnPropertyChanged(string propertyName)
+        
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
@@ -48,6 +48,7 @@ namespace ClashManager.AutoNaming.Views
         private DocumentClash _documentClash;
         private readonly HashSet<Guid> _checkedTestIds = new HashSet<Guid>();
         private List<TestItem> _testItems = new List<TestItem>(); // Кэшируем список тестов
+        private int _lastTestClickIndex = -1; // Отслеживаем последний клик для Shift-выбора
 
         public AutoNamingView()
         {
@@ -66,7 +67,7 @@ namespace ClashManager.AutoNaming.Views
             { 
                 Test = t, 
                 DisplayName = t.DisplayName, 
-                IsSelected = _checkedTestIds.Contains(t.Guid), 
+                IsChecked = _checkedTestIds.Contains(t.Guid), 
                 Guid = t.Guid 
             }).ToList();
             
@@ -89,10 +90,10 @@ namespace ClashManager.AutoNaming.Views
         /// </summary>
         private void UpdateCheckBoxesForSelectedItems()
         {
-            // Обновляем только состояние IsSelected для существующих объектов
+            // Обновляем только состояние IsChecked для существующих объектов
             foreach (var testItem in _testItems)
             {
-                testItem.IsSelected = _checkedTestIds.Contains(testItem.Guid);
+                testItem.IsChecked = _checkedTestIds.Contains(testItem.Guid);
             }
         }
 
@@ -101,73 +102,42 @@ namespace ClashManager.AutoNaming.Views
             var cb = sender as CheckBox;
             if (cb == null) return;
 
-            // Получаем DataContext чекбокса (это TestItem)
-            var clickedTestItem = cb.DataContext as TestItem;
-            if (clickedTestItem == null) return;
+            var item = cb.DataContext as TestItem;
+            if (item == null) return;
 
-            // Определяем новое состояние галочки
-            bool newCheckedState = cb.IsChecked == true;
+            int currentIndex = TestsListBox.Items.IndexOf(item);
+            bool isShift = (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Shift) == System.Windows.Input.ModifierKeys.Shift;
+            bool targetChecked = cb.IsChecked == true;
 
-            // Если выделено несколько элементов, применяем действие ко всем выделенным
-            if (TestsListBox.SelectedItems.Count > 1)
+            if (isShift && _lastTestClickIndex >= 0)
             {
-                // Проверяем, есть ли среди выделенных элементов тот, на который кликнули
-                bool clickedItemIsSelected = TestsListBox.SelectedItems.Contains(clickedTestItem);
-                
-                if (clickedItemIsSelected)
+                // Shift-выбор: применяем действие ко всем элементам между последним и текущим кликом
+                int from = Math.Min(_lastTestClickIndex, currentIndex);
+                int to = Math.Max(_lastTestClickIndex, currentIndex);
+
+                for (int i = from; i <= to; i++)
                 {
-                    // Применяем действие ко всем выделенным элементам
-                    foreach (var selectedItem in TestsListBox.SelectedItems)
+                    if (TestsListBox.Items[i] is TestItem shiftItem)
                     {
-                        if (selectedItem is TestItem testItem)
-                        {
-                            if (newCheckedState)
-                            {
-                                _checkedTestIds.Add(testItem.Guid);
-                            }
-                            else
-                            {
-                                _checkedTestIds.Remove(testItem.Guid);
-                            }
-                            testItem.IsSelected = newCheckedState;
-                        }
+                        shiftItem.IsChecked = targetChecked; // меняем состояние через модель
                     }
-                    
-                    // Обновляем состояние всех чекбоксов
-                    UpdateCheckBoxesForSelectedItems();
-                }
-                else
-                {
-                    // Если кликнули на невыделенный элемент, работаем только с ним
-                    if (newCheckedState)
-                    {
-                        _checkedTestIds.Add(clickedTestItem.Guid);
-                    }
-                    else
-                    {
-                        _checkedTestIds.Remove(clickedTestItem.Guid);
-                    }
-                    clickedTestItem.IsSelected = newCheckedState;
                 }
             }
             else
             {
-                // Если выделен только один элемент или ни одного, работаем только с кликнутым
-                if (newCheckedState)
-                {
-                    _checkedTestIds.Add(clickedTestItem.Guid);
-                }
-                else
-                {
-                    _checkedTestIds.Remove(clickedTestItem.Guid);
-                }
-                clickedTestItem.IsSelected = newCheckedState;
+                // Одиночный клик
+                item.IsChecked = targetChecked;
             }
+
+            _lastTestClickIndex = currentIndex;
         }
 
         private void AssignNameButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_checkedTestIds.Count == 0)
+            // Получаем все выбранные элементы из модели
+            var checkedIds = _testItems.Where(x => x.IsChecked).Select(x => x.Guid).ToList();
+            
+            if (checkedIds.Count == 0)
             {
                 MessageBox.Show("Выберите хотя бы один тест!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -176,7 +146,7 @@ namespace ClashManager.AutoNaming.Views
             // Логика авто-наименования групп коллизий
             int renamedGroupsCount = 0;
 
-            foreach (var testGuid in _checkedTestIds)
+            foreach (var testGuid in checkedIds)
             {
                 var test = FindTestByGuid(testGuid);
                 if (test == null) continue;
