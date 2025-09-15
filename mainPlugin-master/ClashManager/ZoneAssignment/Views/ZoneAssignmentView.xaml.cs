@@ -105,6 +105,9 @@ namespace ClashManager.ZoneAssignment.Views
                             ZoneObject = item,
                             BoundingBox = boundingBox
                         });
+
+                        // Ограничиваем количество зон до 100 на файл
+                        if (nwcFile.Zones.Count >= 100) break;
                     }
                 }
             }
@@ -194,16 +197,16 @@ namespace ClashManager.ZoneAssignment.Views
         private List<ModelItem> FindZoneCandidates(ModelItem rootItem)
         {
             var candidates = new List<ModelItem>();
-            TraverseModel(rootItem, candidates);
+            TraverseModel(rootItem, candidates, 5, 0); // Уменьшаем максимальную глубину до 5
             return candidates;
         }
 
         /// <summary>
-        /// Рекурсивно обходит модель для поиска зон
+        /// Рекурсивно обходит модель для поиска зон с ограничением глубины
         /// </summary>
-        private void TraverseModel(ModelItem item, List<ModelItem> candidates)
+        private void TraverseModel(ModelItem item, List<ModelItem> candidates, int maxDepth = 10, int currentDepth = 0)
         {
-            if (item == null) return;
+            if (item == null || currentDepth >= maxDepth) return;
 
             // Критерии для определения зоны:
             // Объекты с геометрией (bounding box)
@@ -212,6 +215,9 @@ namespace ClashManager.ZoneAssignment.Views
                 if (item.Geometry != null && !item.IsHidden)
                 {
                     candidates.Add(item);
+
+                    // Ограничиваем количество найденных объектов до 1000
+                    if (candidates.Count >= 1000) return;
                 }
             }
             catch
@@ -219,10 +225,12 @@ namespace ClashManager.ZoneAssignment.Views
                 // Игнорируем ошибки при получении геометрии
             }
 
-            // Продолжаем обход для дочерних элементов
+            // Продолжаем обход для дочерних элементов с увеличением глубины
             foreach (var child in item.Children)
             {
-                TraverseModel(child, candidates);
+                TraverseModel(child, candidates, maxDepth, currentDepth + 1);
+                // Прерываем если уже нашли достаточно объектов
+                if (candidates.Count >= 1000) return;
             }
         }
 
