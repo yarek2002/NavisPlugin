@@ -226,6 +226,12 @@ namespace ClashManager.AutoNaming.Views
             return null;
         }
 
+        private void NameSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            // TODO: Реализовать настройки наименования
+            MessageBox.Show("Функция настроек наименования будет реализована в следующих версиях.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
