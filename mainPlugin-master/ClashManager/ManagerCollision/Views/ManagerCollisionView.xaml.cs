@@ -2549,16 +2549,14 @@ namespace ClashManager.ManagerCollision.Views
 		{
 			try
 			{
-				// Подписываемся на события изменения документа
-				_doc.FileChanged += OnDocumentChanged;
-				_doc.FileClosing += OnDocumentClosing;
-				
-				// Подписываемся на события изменения тестов коллизий
-				if (_documentClash?.TestsData != null)
-				{
-					_documentClash.TestsData.TestsChanged += OnTestsChanged;
-				}
-			}
+                // Подписываемся на события изменения документа
+                Application.ActiveDocumentChanged += OnDocumentChanged;
+                var clashDoc = Application.ActiveDocument?.Clash as DocumentClash;
+                if (clashDoc?.TestsData != null)
+                {
+                    clashDoc.TestsData.Changed += OnTestsChanged;
+                }
+            }
 			catch (Exception ex)
 			{
 				System.Diagnostics.Debug.WriteLine($"Ошибка при подписке на события модели: {ex.Message}");
