@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
+using Autodesk.Navisworks.Api.Interop.ComApi;
 
 namespace ClashManager.AutoNaming.Views
 {
@@ -364,38 +365,13 @@ namespace ClashManager.AutoNaming.Views
         /// Получает ID элемента из ModelItem
         /// </summary>
         /// <param name="modelItem">Элемент модели</param>
-        /// <returns>ID элемента или пустая строка</returns>
+        /// <returns>ID элемента или null</returns>
         private string GetElementId(ModelItem modelItem)
         {
-            if (modelItem == null) return "";
-
-            try
-            {
-                // Ищем свойство "Id" в категории "Объект"
-                var idProperty = modelItem.PropertyCategories.FindPropertyByDisplayName("Объект", "Id");
-                if (idProperty != null)
-                {
-                    string id = idProperty.Value.ToInt32().ToString();
-                    System.Diagnostics.Debug.WriteLine($"Found ID: '{id}' for element: '{modelItem.DisplayName}'");
-                    return id;
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($"ID property not found for element: '{modelItem.DisplayName}'");
-                }
-
-                // Если не найдено, пробуем поискать в родительском элементе
-                if (modelItem.Parent != null)
-                {
-                    return GetElementId(modelItem.Parent);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error getting element ID: {ex.Message}");
-            }
-
-            return "";
+            DataProperty propertyByDisplayName = modelItem.PropertyCategories.FindPropertyByDisplayName("Объект", "Id");
+            if ((NativeHandle) propertyByDisplayName != (NativeHandle) null)
+                return propertyByDisplayName.Value.ToInt32().ToString();
+            return (NativeHandle) modelItem.Parent != (NativeHandle) null ? this.GetElementId(modelItem.Parent) : (string) null;
         }
     }
 }
