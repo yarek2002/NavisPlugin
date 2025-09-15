@@ -9,6 +9,16 @@ using Autodesk.Navisworks.Api.Interop.ComApi;
 
 namespace ClashManager.AutoNaming.Views
 {
+    /// <summary>
+    /// Класс для элементов списка тестов коллизий
+    /// </summary>
+    public class TestItem
+    {
+        public ClashTest Test { get; set; }
+        public string DisplayName { get; set; }
+        public bool IsSelected { get; set; }
+        public Guid Guid { get; set; }
+    }
     public partial class AutoNamingView : Window
     {
         private Document _doc;
@@ -26,14 +36,15 @@ namespace ClashManager.AutoNaming.Views
         private void LoadTests()
         {
             var tests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? Enumerable.Empty<ClashTest>().ToList();
-            // Оборачиваем в объекты с IsSelected для чекбоксов
-            var testRows = tests.Select(t => new { 
+            // Создаем объекты TestItem с правильными свойствами для привязки данных
+            var testItems = tests.Select(t => new TestItem
+            { 
                 Test = t, 
                 DisplayName = t.DisplayName, 
                 IsSelected = _checkedTestIds.Contains(t.Guid), 
                 Guid = t.Guid 
             }).ToList();
-            TestsListBox.ItemsSource = testRows;
+            TestsListBox.ItemsSource = testItems;
         }
 
         private void TestsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -52,12 +63,10 @@ namespace ClashManager.AutoNaming.Views
                 {
                     foreach (var selectedItem in TestsListBox.SelectedItems)
                     {
-                        // Получаем Guid из выделенного элемента
-                        var guidProperty = selectedItem.GetType().GetProperty("Guid");
-                        if (guidProperty != null)
+                        // Приводим к типу TestItem
+                        if (selectedItem is TestItem testItem)
                         {
-                            var guid = (Guid)guidProperty.GetValue(selectedItem);
-                            _checkedTestIds.Add(guid);
+                            _checkedTestIds.Add(testItem.Guid);
                         }
                     }
                     
@@ -74,13 +83,14 @@ namespace ClashManager.AutoNaming.Views
         {
             // Обновляем ItemsSource, чтобы чекбоксы отражали текущее состояние
             var tests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? Enumerable.Empty<ClashTest>().ToList();
-            var testRows = tests.Select(t => new { 
+            var testItems = tests.Select(t => new TestItem
+            { 
                 Test = t, 
                 DisplayName = t.DisplayName, 
                 IsSelected = _checkedTestIds.Contains(t.Guid), 
                 Guid = t.Guid 
             }).ToList();
-            TestsListBox.ItemsSource = testRows;
+            TestsListBox.ItemsSource = testItems;
         }
 
         private void TestCheckBox_Click(object sender, RoutedEventArgs e)
@@ -88,17 +98,17 @@ namespace ClashManager.AutoNaming.Views
             var cb = sender as CheckBox;
             if (cb == null) return;
 
-            // В шаблоне у нас Tag привязан к Guid
-            var tag = cb.Tag;
-            if (tag is Guid g)
+            // Получаем DataContext чекбокса (это TestItem)
+            var testItem = cb.DataContext as TestItem;
+            if (testItem != null)
             {
                 if (cb.IsChecked == true)
-                    _checkedTestIds.Add(g);
+                    _checkedTestIds.Add(testItem.Guid);
                 else
-                    _checkedTestIds.Remove(g);
+                    _checkedTestIds.Remove(testItem.Guid);
                 
-                // Обновляем отображение для синхронизации состояния
-                UpdateCheckBoxesForSelectedItems();
+                // Обновляем состояние в объекте
+                testItem.IsSelected = cb.IsChecked == true;
             }
         }
 
