@@ -21,7 +21,10 @@
             <ListBox x:Name="TestsListBox"
 					 SelectionMode="Extended"
 					 SelectionChanged="TestsListBox_SelectionChanged"
-					 MouseUp="TestsListBox_MouseUp">
+					 MouseUp="TestsListBox_MouseUp"
+					 ScrollChanged="TestsListBox_ScrollChanged"
+					 VirtualizingPanel.IsVirtualizing="False"
+					 ScrollViewer.CanContentScroll="False">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">

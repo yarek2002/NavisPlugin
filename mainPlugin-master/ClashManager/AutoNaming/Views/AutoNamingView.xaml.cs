@@ -71,12 +71,46 @@ namespace ClashManager.AutoNaming.Views
                 Guid = t.Guid 
             }).ToList();
             
+            // Подписываемся на изменения состояния каждого элемента
+            foreach (var testItem in _testItems)
+            {
+                testItem.PropertyChanged += TestItem_PropertyChanged;
+            }
+            
             TestsListBox.ItemsSource = _testItems;
+        }
+
+        /// <summary>
+        /// Обработчик изменения свойства TestItem
+        /// </summary>
+        private void TestItem_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(TestItem.IsChecked) && sender is TestItem testItem)
+            {
+                // Синхронизируем с HashSet
+                if (testItem.IsChecked)
+                {
+                    _checkedTestIds.Add(testItem.Guid);
+                }
+                else
+                {
+                    _checkedTestIds.Remove(testItem.Guid);
+                }
+            }
         }
 
         private void TestsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Обновление интерфейса при выборе тестов
+        }
+
+        private void TestsListBox_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            // Принудительно синхронизируем состояние при прокрутке
+            if (e.VerticalChange != 0)
+            {
+                ForceSyncCheckboxStates();
+            }
         }
 
         private void TestsListBox_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -86,14 +120,26 @@ namespace ClashManager.AutoNaming.Views
         }
 
         /// <summary>
-        /// Обновляет состояние чекбоксов без пересоздания объектов
+        /// Принудительно синхронизирует состояние чекбоксов с моделью данных
         /// </summary>
-        private void UpdateCheckBoxesForSelectedItems()
+        private void ForceSyncCheckboxStates()
         {
-            // Обновляем только состояние IsChecked для существующих объектов
+            // Временно отписываемся от событий, чтобы избежать циклических вызовов
+            foreach (var testItem in _testItems)
+            {
+                testItem.PropertyChanged -= TestItem_PropertyChanged;
+            }
+
+            // Синхронизируем состояние
             foreach (var testItem in _testItems)
             {
                 testItem.IsChecked = _checkedTestIds.Contains(testItem.Guid);
+            }
+
+            // Подписываемся обратно
+            foreach (var testItem in _testItems)
+            {
+                testItem.PropertyChanged += TestItem_PropertyChanged;
             }
         }
 
@@ -104,6 +150,9 @@ namespace ClashManager.AutoNaming.Views
 
             var item = cb.DataContext as TestItem;
             if (item == null) return;
+
+            // Предотвращаем повторную обработку события
+            e.Handled = true;
 
             int currentIndex = TestsListBox.Items.IndexOf(item);
             bool isShift = (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Shift) == System.Windows.Input.ModifierKeys.Shift;
@@ -125,7 +174,7 @@ namespace ClashManager.AutoNaming.Views
             }
             else
             {
-                // Одиночный клик
+                // Одиночный клик - убеждаемся, что состояние синхронизировано
                 item.IsChecked = targetChecked;
             }
 
