@@ -55,25 +55,7 @@ namespace ClashManager.AutoNaming.Views
         private void TestsListBox_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             // Обработка массового выделения через Shift+клик
-            if (e.ChangedButton == System.Windows.Input.MouseButton.Left && 
-                System.Windows.Input.Keyboard.Modifiers == System.Windows.Input.ModifierKeys.Shift)
-            {
-                // Если выделено несколько элементов, устанавливаем галочки у всех выделенных
-                if (TestsListBox.SelectedItems.Count > 1)
-                {
-                    foreach (var selectedItem in TestsListBox.SelectedItems)
-                    {
-                        // Приводим к типу TestItem
-                        if (selectedItem is TestItem testItem)
-                        {
-                            _checkedTestIds.Add(testItem.Guid);
-                        }
-                    }
-                    
-                    // Обновляем отображение чекбоксов
-                    UpdateCheckBoxesForSelectedItems();
-                }
-            }
+            // Логика массового проставления галочек перенесена в TestCheckBox_Click
         }
 
         /// <summary>
@@ -99,16 +81,67 @@ namespace ClashManager.AutoNaming.Views
             if (cb == null) return;
 
             // Получаем DataContext чекбокса (это TestItem)
-            var testItem = cb.DataContext as TestItem;
-            if (testItem != null)
+            var clickedTestItem = cb.DataContext as TestItem;
+            if (clickedTestItem == null) return;
+
+            // Определяем новое состояние галочки
+            bool newCheckedState = cb.IsChecked == true;
+
+            // Если выделено несколько элементов, применяем действие ко всем выделенным
+            if (TestsListBox.SelectedItems.Count > 1)
             {
-                if (cb.IsChecked == true)
-                    _checkedTestIds.Add(testItem.Guid);
-                else
-                    _checkedTestIds.Remove(testItem.Guid);
+                // Проверяем, есть ли среди выделенных элементов тот, на который кликнули
+                bool clickedItemIsSelected = TestsListBox.SelectedItems.Contains(clickedTestItem);
                 
-                // Обновляем состояние в объекте
-                testItem.IsSelected = cb.IsChecked == true;
+                if (clickedItemIsSelected)
+                {
+                    // Применяем действие ко всем выделенным элементам
+                    foreach (var selectedItem in TestsListBox.SelectedItems)
+                    {
+                        if (selectedItem is TestItem testItem)
+                        {
+                            if (newCheckedState)
+                            {
+                                _checkedTestIds.Add(testItem.Guid);
+                                testItem.IsSelected = true;
+                            }
+                            else
+                            {
+                                _checkedTestIds.Remove(testItem.Guid);
+                                testItem.IsSelected = false;
+                            }
+                        }
+                    }
+                    
+                    // Обновляем отображение всех чекбоксов
+                    UpdateCheckBoxesForSelectedItems();
+                }
+                else
+                {
+                    // Если кликнули на невыделенный элемент, работаем только с ним
+                    if (newCheckedState)
+                    {
+                        _checkedTestIds.Add(clickedTestItem.Guid);
+                    }
+                    else
+                    {
+                        _checkedTestIds.Remove(clickedTestItem.Guid);
+                    }
+                    clickedTestItem.IsSelected = newCheckedState;
+                }
+            }
+            else
+            {
+                // Если выделен только один элемент или ни одного, работаем только с кликнутым
+                if (newCheckedState)
+                {
+                    _checkedTestIds.Add(clickedTestItem.Guid);
+                }
+                else
+                {
+                    _checkedTestIds.Remove(clickedTestItem.Guid);
+                }
+                clickedTestItem.IsSelected = newCheckedState;
             }
         }
 
