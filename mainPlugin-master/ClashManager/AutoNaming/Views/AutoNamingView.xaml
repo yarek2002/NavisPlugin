@@ -20,12 +20,14 @@
         <GroupBox Header="Тесты коллизий" Grid.Row="1" Margin="10,10,10,10">
             <ListBox x:Name="TestsListBox"
 					 SelectionMode="Extended"
-					 SelectionChanged="TestsListBox_SelectionChanged">
+					 SelectionChanged="TestsListBox_SelectionChanged"
+					 MouseUp="TestsListBox_MouseUp">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
                             <CheckBox Margin="0,0,6,0"
 									  Tag="{Binding Guid}"
+									  IsChecked="{Binding IsSelected}"
 									  Click="TestCheckBox_Click"/>
                             <TextBlock Text="{Binding DisplayName}"/>
                         </StackPanel>

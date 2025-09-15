@@ -27,13 +27,60 @@ namespace ClashManager.AutoNaming.Views
         {
             var tests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? Enumerable.Empty<ClashTest>().ToList();
             // Оборачиваем в объекты с IsSelected для чекбоксов
-            var testRows = tests.Select(t => new { Test = t, DisplayName = t.DisplayName, IsSelected = false, Guid = t.Guid }).ToList();
+            var testRows = tests.Select(t => new { 
+                Test = t, 
+                DisplayName = t.DisplayName, 
+                IsSelected = _checkedTestIds.Contains(t.Guid), 
+                Guid = t.Guid 
+            }).ToList();
             TestsListBox.ItemsSource = testRows;
         }
 
         private void TestsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Обновление интерфейса при выборе тестов
+        }
+
+        private void TestsListBox_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            // Обработка массового выделения через Shift+клик
+            if (e.ChangedButton == System.Windows.Input.MouseButton.Left && 
+                System.Windows.Input.Keyboard.Modifiers == System.Windows.Input.ModifierKeys.Shift)
+            {
+                // Если выделено несколько элементов, устанавливаем галочки у всех выделенных
+                if (TestsListBox.SelectedItems.Count > 1)
+                {
+                    foreach (var selectedItem in TestsListBox.SelectedItems)
+                    {
+                        // Получаем Guid из выделенного элемента
+                        var guidProperty = selectedItem.GetType().GetProperty("Guid");
+                        if (guidProperty != null)
+                        {
+                            var guid = (Guid)guidProperty.GetValue(selectedItem);
+                            _checkedTestIds.Add(guid);
+                        }
+                    }
+                    
+                    // Обновляем отображение чекбоксов
+                    UpdateCheckBoxesForSelectedItems();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Обновляет отображение чекбоксов для выделенных элементов
+        /// </summary>
+        private void UpdateCheckBoxesForSelectedItems()
+        {
+            // Обновляем ItemsSource, чтобы чекбоксы отражали текущее состояние
+            var tests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? Enumerable.Empty<ClashTest>().ToList();
+            var testRows = tests.Select(t => new { 
+                Test = t, 
+                DisplayName = t.DisplayName, 
+                IsSelected = _checkedTestIds.Contains(t.Guid), 
+                Guid = t.Guid 
+            }).ToList();
+            TestsListBox.ItemsSource = testRows;
         }
 
         private void TestCheckBox_Click(object sender, RoutedEventArgs e)
@@ -49,6 +96,9 @@ namespace ClashManager.AutoNaming.Views
                     _checkedTestIds.Add(g);
                 else
                     _checkedTestIds.Remove(g);
+                
+                // Обновляем отображение для синхронизации состояния
+                UpdateCheckBoxesForSelectedItems();
             }
         }
 
