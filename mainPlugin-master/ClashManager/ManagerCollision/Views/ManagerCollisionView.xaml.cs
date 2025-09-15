@@ -17,6 +17,7 @@ using System.Windows.Media;
 using Application = Autodesk.Navisworks.Api.Application;
 using ClashManager;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace ClashManager.ManagerCollision.Views
 {
@@ -43,19 +44,41 @@ namespace ClashManager.ManagerCollision.Views
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _gridCache = new System.Collections.Generic.Dictionary<Guid, string>();
 
 		// Класс для оптимизированного отображения элементов списка
-		public class CollisionListItem
+		public class CollisionListItem : INotifyPropertyChanged
 		{
+			private bool _isSelected;
+
 			public string Name { get; set; }
 			public string Status { get; set; }
 			public string AssignedTo { get; set; }
 			public Guid Guid { get; set; }
 			public Guid TestGuid { get; set; }
 			public bool IsGroup { get; set; }
-			public bool IsSelected { get; set; }
+			
+			public bool IsSelected 
+			{ 
+				get => _isSelected;
+				set
+				{
+					if (_isSelected != value)
+					{
+						_isSelected = value;
+						OnPropertyChanged();
+					}
+				}
+			}
+			
 			public string Level { get; set; }
 			public string GridIntersection { get; set; }
 			public string TestName { get; set; }
 			public object Item { get; set; }
+
+			public event PropertyChangedEventHandler PropertyChanged;
+
+			protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+			{
+				PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+			}
 		}
 
 		public ManagerCollisionView()
@@ -387,7 +410,7 @@ namespace ClashManager.ManagerCollision.Views
 							Guid = x.Group.Guid,
 							TestGuid = t.Guid,
 							IsGroup = true,
-							IsSelected = false,
+							IsSelected = _checkedRowIds.Contains(x.Group.Guid),
 							Level = GetCachedLevelFromGroup(x.Group),
 							GridIntersection = GetCachedGridFromGroup(x.Group),
 							TestName = t.DisplayName ?? string.Empty,
@@ -403,7 +426,7 @@ namespace ClashManager.ManagerCollision.Views
 							Guid = r.Guid,
 							TestGuid = t.Guid,
 							IsGroup = false,
-							IsSelected = false,
+							IsSelected = _checkedRowIds.Contains(r.Guid),
 							Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
 							GridIntersection = GetCachedGridFromResult(r),
                             TestName = t.DisplayName ?? string.Empty,
@@ -413,6 +436,7 @@ namespace ClashManager.ManagerCollision.Views
 					mergedRows.AddRange(ungroupedResultRowsMerged);
 				}
 				CollisionsList.ItemsSource = mergedRows;
+				SubscribeToCollisionItemsPropertyChanged(mergedRows);
 				ApplySorting();
 				return;
 			}
@@ -434,7 +458,7 @@ namespace ClashManager.ManagerCollision.Views
 					Guid = x.Group.Guid,
 					TestGuid = selectedTest.Guid,
 					IsGroup = true,
-					IsSelected = false,
+					IsSelected = _checkedRowIds.Contains(x.Group.Guid),
 					Level = GetCachedLevelFromGroup(x.Group),
 					GridIntersection = GetCachedGridFromGroup(x.Group),
 					TestName = selectedTest.DisplayName ?? string.Empty,
@@ -451,7 +475,7 @@ namespace ClashManager.ManagerCollision.Views
 					Guid = r.Guid,
 					TestGuid = selectedTest.Guid,
 					IsGroup = false,
-					IsSelected = false,
+							IsSelected = _checkedRowIds.Contains(r.Guid),
 					Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
 					GridIntersection = GetCachedGridFromResult(r),
                     TestName = selectedTest.DisplayName ?? string.Empty,
@@ -460,6 +484,7 @@ namespace ClashManager.ManagerCollision.Views
 
 			var rows = groupRows.Concat(ungroupedResultRows).ToList();
 			CollisionsList.ItemsSource = rows;
+			SubscribeToCollisionItemsPropertyChanged(rows);
 			ApplySorting();
 		}
 
@@ -543,7 +568,7 @@ namespace ClashManager.ManagerCollision.Views
 							Guid = x.Group.Guid,
 							TestGuid = test.Guid,
 							IsGroup = true,
-							IsSelected = false,
+							IsSelected = _checkedRowIds.Contains(x.Group.Guid),
 							Level = GetCachedLevelFromGroup(x.Group),
 							GridIntersection = GetCachedGridFromGroup(x.Group),
 							TestName = test.DisplayName ?? string.Empty,
@@ -561,7 +586,7 @@ namespace ClashManager.ManagerCollision.Views
 							Guid = r.Guid,
 							TestGuid = test.Guid,
 							IsGroup = false,
-							IsSelected = false,
+							IsSelected = _checkedRowIds.Contains(r.Guid),
 							Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
 							GridIntersection = GetCachedGridFromResult(r),
 							TestName = test.DisplayName ?? string.Empty,
@@ -603,6 +628,7 @@ namespace ClashManager.ManagerCollision.Views
 				}).ToList();
 
 				CollisionsList.ItemsSource = sortedItems;
+				SubscribeToCollisionItemsPropertyChanged(sortedItems);
 				ApplySorting();
 			}
 			catch (Exception ex)
@@ -770,9 +796,37 @@ namespace ClashManager.ManagerCollision.Views
 			return result;
 		}
 
-		private bool IsTestMarkedForRename(ClashTest test)
+		/// <summary>
+		/// Подписывается на события PropertyChanged для элементов списка коллизий
+		/// </summary>
+		private void SubscribeToCollisionItemsPropertyChanged(System.Collections.Generic.IEnumerable<object> items)
 		{
-			return _checkedTestIds.Contains(test.Guid);
+			foreach (var item in items)
+			{
+				if (item is CollisionListItem collisionItem)
+				{
+					collisionItem.PropertyChanged += CollisionItem_PropertyChanged;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Обработчик изменения свойства CollisionListItem
+		/// </summary>
+		private void CollisionItem_PropertyChanged(object sender, PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == nameof(CollisionListItem.IsSelected) && sender is CollisionListItem item)
+			{
+				// Синхронизируем с HashSet
+				if (item.IsSelected)
+				{
+					_checkedRowIds.Add(item.Guid);
+				}
+				else
+				{
+					_checkedRowIds.Remove(item.Guid);
+				}
+			}
 		}
 
 		// Обработчики кликов по чекбоксам в XAML
@@ -781,63 +835,43 @@ namespace ClashManager.ManagerCollision.Views
 			var cb = sender as System.Windows.Controls.CheckBox;
 			if (cb == null) return;
 			if (_suppressCheckboxHandlers) return;
-			// Найдём Guid из DataContext строки
-			if (cb.DataContext != null)
+
+			var item = cb.DataContext as CollisionListItem;
+			if (item == null) return;
+
+			// Предотвращаем повторную обработку события
+			e.Handled = true;
+
+			int currentIndex = CollisionsList.Items.IndexOf(item);
+			bool isShift = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+			bool targetChecked = cb.IsChecked == true;
+
+			if (isShift && _lastCollisionClickIndex >= 0)
 			{
-				var t = cb.DataContext.GetType();
-				Guid id = t.GetProperty("Guid") != null ? (Guid)t.GetProperty("Guid").GetValue(cb.DataContext) : Guid.Empty;
-				if (id != Guid.Empty)
+				// Shift-выбор: применяем действие ко всем элементам между последним и текущим кликом
+				int from = Math.Min(_lastCollisionClickIndex, currentIndex);
+				int to = Math.Max(_lastCollisionClickIndex, currentIndex);
+
+				_suppressCheckboxHandlers = true;
+				try
 				{
-					// Если выделено несколько строк в списке, применяем новое состояние ко всем выделенным
-					bool targetCheckedMulti = cb.IsChecked == true;
-					if (CollisionsList.SelectedItems != null && CollisionsList.SelectedItems.Count > 1 && CollisionsList.SelectedItems.Contains(cb.DataContext))
+					for (int i = from; i <= to; i++)
 					{
-						_suppressCheckboxHandlers = true;
-						try
+						if (CollisionsList.Items[i] is CollisionListItem shiftItem)
 						{
-							foreach (var sel in CollisionsList.SelectedItems.Cast<object>())
-							{
-								var st = sel.GetType();
-								Guid sid = st.GetProperty("Guid") != null ? (Guid)st.GetProperty("Guid").GetValue(sel) : Guid.Empty;
-								if (sid == Guid.Empty) continue;
-								if (targetCheckedMulti) _checkedRowIds.Add(sid); else _checkedRowIds.Remove(sid);
-								SetCheckboxStateForListItem(CollisionsList, sel, targetCheckedMulti);
-							}
+							shiftItem.IsSelected = targetChecked; // меняем состояние через модель
 						}
-						finally { _suppressCheckboxHandlers = false; }
-						return;
 					}
-					// Поддержка Shift-диапазона
-					int currentIndex = CollisionsList.Items.IndexOf(cb.DataContext);
-					bool isShift = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
-					bool targetChecked = cb.IsChecked == true;
-					if (isShift && _lastCollisionClickIndex >= 0)
-					{
-						int from = Math.Min(_lastCollisionClickIndex, currentIndex);
-						int to = Math.Max(_lastCollisionClickIndex, currentIndex);
-						_suppressCheckboxHandlers = true;
-						try
-						{
-							for (int i = from; i <= to; i++)
-							{
-								var item = CollisionsList.Items[i];
-								var it = item.GetType();
-								Guid rid = it.GetProperty("Guid") != null ? (Guid)it.GetProperty("Guid").GetValue(item) : Guid.Empty;
-								if (rid == Guid.Empty) continue;
-								if (targetChecked) _checkedRowIds.Add(rid); else _checkedRowIds.Remove(rid);
-								// Установим визуально чекбокс
-								SetCheckboxStateForListItem(CollisionsList, item, targetChecked);
-							}
-						}
-						finally { _suppressCheckboxHandlers = false; }
-					}
-					else
-					{
-						if (targetChecked) _checkedRowIds.Add(id); else _checkedRowIds.Remove(id);
-					}
-					_lastCollisionClickIndex = currentIndex;
 				}
+				finally { _suppressCheckboxHandlers = false; }
 			}
+			else
+			{
+				// Одиночный клик
+				item.IsSelected = targetChecked;
+			}
+
+			_lastCollisionClickIndex = currentIndex;
 		}
 
 		private void TestCheckBox_Click(object sender, RoutedEventArgs e)

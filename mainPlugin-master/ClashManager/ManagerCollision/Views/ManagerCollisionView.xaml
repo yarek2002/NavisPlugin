@@ -100,7 +100,9 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal">
-                                            <CheckBox Margin="0,0,6,0" Click="CollisionCheckBox_Click"/>
+                                            <CheckBox Margin="0,0,6,0" 
+                                                      IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                      Click="CollisionCheckBox_Click"/>
                                             <TextBlock Text="{Binding Name}"/>
                                         </StackPanel>
                                     </DataTemplate>
