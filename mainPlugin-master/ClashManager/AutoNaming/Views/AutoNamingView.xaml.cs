@@ -413,28 +413,50 @@ namespace ClashManager.AutoNaming.Views
                 string model1Name = GetModelName(firstResult.CompositeItem1);
                 string model2Name = GetModelName(firstResult.CompositeItem2);
 
-                // Собираем все уникальные ID элементов из всех результатов
-                var allElementIds = new HashSet<string>();
+                // Собираем ID элементов, группируя их по моделям
+                var model1ElementIds = new HashSet<string>();
+                var model2ElementIds = new HashSet<string>();
                 
                 foreach (var result in allResults)
                 {
+                    // Получаем название модели для первого элемента
+                    string resultModel1Name = GetModelName(result.CompositeItem1);
+                    string resultModel2Name = GetModelName(result.CompositeItem2);
+                    
                     // Получаем ID первого элемента
                     string element1Id = GetElementId(result.CompositeItem1);
                     if (!string.IsNullOrEmpty(element1Id))
                     {
-                        allElementIds.Add(element1Id);
+                        // Определяем, к какой модели относится элемент
+                        if (resultModel1Name == model1Name)
+                        {
+                            model1ElementIds.Add(element1Id);
+                        }
+                        else if (resultModel1Name == model2Name)
+                        {
+                            model2ElementIds.Add(element1Id);
+                        }
                     }
                     
                     // Получаем ID второго элемента
                     string element2Id = GetElementId(result.CompositeItem2);
                     if (!string.IsNullOrEmpty(element2Id))
                     {
-                        allElementIds.Add(element2Id);
+                        // Определяем, к какой модели относится элемент
+                        if (resultModel2Name == model1Name)
+                        {
+                            model1ElementIds.Add(element2Id);
+                        }
+                        else if (resultModel2Name == model2Name)
+                        {
+                            model2ElementIds.Add(element2Id);
+                        }
                     }
                 }
                 
                 // Отладочная информация
-                System.Diagnostics.Debug.WriteLine($"Found {allElementIds.Count} unique element IDs: {string.Join(", ", allElementIds)}");
+                System.Diagnostics.Debug.WriteLine($"Model1 ({model1Name}) IDs: {string.Join(", ", model1ElementIds)}");
+                System.Diagnostics.Debug.WriteLine($"Model2 ({model2Name}) IDs: {string.Join(", ", model2ElementIds)}");
 
                 // Формируем строку с названиями моделей, ID элементов и GUID группы
                 var parts = new List<string>();
@@ -453,10 +475,25 @@ namespace ClashManager.AutoNaming.Views
                     parts.Add(model2Name);
                 }
 
-                // Добавляем все уникальные ID элементов через запятую
-                if (allElementIds.Count > 0)
+                // Добавляем ID элементов, группируя по моделям
+                var idParts = new List<string>();
+                
+                // Добавляем ID элементов первой модели
+                if (model1ElementIds.Count > 0)
                 {
-                    parts.Add(string.Join(", ", allElementIds));
+                    idParts.Add(string.Join(", ", model1ElementIds));
+                }
+                
+                // Добавляем ID элементов второй модели
+                if (model2ElementIds.Count > 0)
+                {
+                    idParts.Add(string.Join(", ", model2ElementIds));
+                }
+                
+                // Если есть ID элементов, добавляем их в общий список
+                if (idParts.Count > 0)
+                {
+                    parts.Add(string.Join(" | ", idParts));
                 }
 
                 // Добавляем GUID группы
