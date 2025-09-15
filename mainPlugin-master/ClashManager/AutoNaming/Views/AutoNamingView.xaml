@@ -22,9 +22,17 @@
 					 SelectionMode="Extended"
 					 SelectionChanged="TestsListBox_SelectionChanged"
 					 MouseUp="TestsListBox_MouseUp"
-					 ScrollChanged="TestsListBox_ScrollChanged"
 					 VirtualizingPanel.IsVirtualizing="False"
 					 ScrollViewer.CanContentScroll="False">
+                <ListBox.Template>
+                    <ControlTemplate TargetType="ListBox">
+                        <ScrollViewer x:Name="ScrollViewer" 
+                                      Focusable="false" 
+                                      ScrollChanged="TestsListBox_ScrollChanged">
+                            <ItemsPresenter />
+                        </ScrollViewer>
+                    </ControlTemplate>
+                </ListBox.Template>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
