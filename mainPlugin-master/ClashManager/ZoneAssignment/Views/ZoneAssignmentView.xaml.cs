@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Threading.Tasks;
+using System.Threading;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
 
@@ -16,7 +18,6 @@ namespace ClashManager.ZoneAssignment.Views
     {
         public Model Model { get; set; }
         public string DisplayName => Model?.FileName ?? "Неизвестный файл";
-        public List<ZoneItem> Zones { get; set; } = new List<ZoneItem>();
     }
 
     /// <summary>
@@ -43,6 +44,7 @@ namespace ClashManager.ZoneAssignment.Views
 
             NwcFilesListBox.ItemsSource = _nwcFiles;
 
+            // Загружаем файлы - просто список моделей
             LoadNwcFiles();
         }
 
@@ -55,19 +57,10 @@ namespace ClashManager.ZoneAssignment.Views
             {
                 _nwcFiles.Clear();
 
-                // Получаем все загруженные модели
+                // Просто получаем все загруженные модели
                 foreach (var model in _doc.Models)
                 {
-                    var nwcFile = new NwcFileItem
-                    {
-                        Model = model
-                    };
-
-                    // Автоматически находим зоны в этой модели
-                    FindZonesInModel(nwcFile);
-
-                    // Добавляем все файлы, независимо от наличия зон
-                    _nwcFiles.Add(nwcFile);
+                    _nwcFiles.Add(new NwcFileItem { Model = model });
                 }
 
                 if (_nwcFiles.Count == 0)
@@ -84,13 +77,82 @@ namespace ClashManager.ZoneAssignment.Views
         }
 
         /// <summary>
-        /// Находит зоны в указанной модели
+        /// Показывает/скрывает индикатор загрузки
         /// </summary>
-        private void FindZonesInModel(NwcFileItem nwcFile)
+        private void ShowLoadingIndicator(bool show)
         {
+            AssignZonesButton.IsEnabled = !show;
+            CancelButton.IsEnabled = !show;
+        }
+
+        private void AssignZonesButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedNwcFile = NwcFilesListBox.SelectedItem as NwcFileItem;
+            if (selectedNwcFile == null)
+            {
+                MessageBox.Show("Выберите NWC файл с зонами!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (_documentClash?.TestsData?.Tests == null)
+            {
+                MessageBox.Show("Не найдены тесты коллизий!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             try
             {
-                var zoneCandidates = FindZoneCandidates(nwcFile.Model.RootItem);
+                // Показываем индикатор загрузки
+                ShowLoadingIndicator(true);
+                AssignZonesButton.Content = "Зонирование...";
+                
+                // Анализируем зоны для выбранного файла
+                var zones = FindZonesInModel(selectedNwcFile.Model.RootItem);
+                
+                int totalAssigned = 0;
+                int zonesProcessed = 0;
+
+                // Обрабатываем все тесты
+                var tests = _documentClash.TestsData.Tests.OfType<ClashTest>().ToList();
+                foreach (var test in tests)
+                {
+                    var result = AssignZonesToTest(test, zones);
+                    totalAssigned += result.Item1;
+                    zonesProcessed += result.Item2;
+                }
+
+                MessageBox.Show($"Зонирование завершено!\nОбработано зон: {zonesProcessed}\nКоллизий с зонами: {totalAssigned}",
+                              "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                this.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при зонировании: {ex.Message}",
+                              "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                ShowLoadingIndicator(false);
+                AssignZonesButton.Content = "Зонировать";
+            }
+        }
+
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
+
+        /// <summary>
+        /// Находит зоны в указанной модели
+        /// </summary>
+        private List<ZoneItem> FindZonesInModel(ModelItem rootItem)
+        {
+            var zones = new List<ZoneItem>();
+            try
+            {
+                var zoneCandidates = FindZoneCandidates(rootItem);
 
                 foreach (var item in zoneCandidates)
                 {
@@ -99,7 +161,7 @@ namespace ClashManager.ZoneAssignment.Views
                     if (boundingBox.Min != boundingBox.Max)
                     {
                         var zoneName = GenerateZoneName(item);
-                        nwcFile.Zones.Add(new ZoneItem
+                        zones.Add(new ZoneItem
                         {
                             ZoneName = zoneName,
                             ZoneObject = item,
@@ -107,7 +169,7 @@ namespace ClashManager.ZoneAssignment.Views
                         });
 
                         // Ограничиваем количество зон до 100 на файл
-                        if (nwcFile.Zones.Count >= 100) break;
+                        if (zones.Count >= 100) break;
                     }
                 }
             }
@@ -115,6 +177,8 @@ namespace ClashManager.ZoneAssignment.Views
             {
                 System.Diagnostics.Debug.WriteLine($"Error finding zones in model: {ex.Message}");
             }
+            
+            return zones;
         }
 
         /// <summary>
@@ -302,51 +366,6 @@ namespace ClashManager.ZoneAssignment.Views
             }
         }
 
-        private void AssignZonesButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedNwcFile = NwcFilesListBox.SelectedItem as NwcFileItem;
-            if (selectedNwcFile == null)
-            {
-                MessageBox.Show("Выберите NWC файл с зонами!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (selectedNwcFile.Zones.Count == 0)
-            {
-                MessageBox.Show("В выбранном файле не найдено зон!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (_documentClash?.TestsData?.Tests == null)
-            {
-                MessageBox.Show("Не найдены тесты коллизий!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            try
-            {
-                int totalAssigned = 0;
-                int zonesProcessed = 0;
-
-                // Обрабатываем все тесты
-                foreach (var test in _documentClash.TestsData.Tests.OfType<ClashTest>())
-                {
-                    var result = AssignZonesToTest(test, selectedNwcFile.Zones);
-                    totalAssigned += result.Item1;
-                    zonesProcessed += result.Item2;
-                }
-
-                MessageBox.Show($"Зонирование завершено!\nОбработано зон: {zonesProcessed}\nКоллизий с зонами: {totalAssigned}",
-                              "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                this.Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при зонировании: {ex.Message}",
-                              "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
 
         /// <summary>
         /// Назначает зоны коллизиям в тесте
@@ -447,9 +466,5 @@ namespace ClashManager.ZoneAssignment.Views
             return allResults;
         }
 
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.Close();
-        }
     }
 }
