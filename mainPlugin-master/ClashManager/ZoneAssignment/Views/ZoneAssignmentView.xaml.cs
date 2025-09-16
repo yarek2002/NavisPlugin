@@ -94,48 +94,14 @@ namespace ClashManager.ZoneAssignment.Views
                 return;
             }
 
-            if (_documentClash?.TestsData?.Tests == null)
-            {
-                MessageBox.Show("Не найдены тесты коллизий!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+            // Сохраняем выбранный файл в настройки
+            Properties.Settings.Default.SelectedZoneNwcFile = selectedNwcFile.Model.FileName;
+            Properties.Settings.Default.Save();
 
-            try
-            {
-                // Показываем индикатор загрузки
-                ShowLoadingIndicator(true);
-                AssignZonesButton.Content = "Зонирование...";
-                
-                // Анализируем зоны для выбранного файла
-                var zones = FindZonesInModel(selectedNwcFile.Model.RootItem);
-                
-                int totalAssigned = 0;
-                int zonesProcessed = 0;
+            MessageBox.Show($"Выбран файл с зонами: {selectedNwcFile.DisplayName}\n\nТеперь при автогруппировании (MagicWand) группы коллизий будут автоматически получать названия зон.", 
+                  "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                // Обрабатываем все тесты
-                var tests = _documentClash.TestsData.Tests.OfType<ClashTest>().ToList();
-                foreach (var test in tests)
-                {
-                    var result = AssignZonesToTest(test, zones);
-                    totalAssigned += result.Item1;
-                    zonesProcessed += result.Item2;
-                }
-
-                MessageBox.Show($"Зонирование завершено!\nОбработано зон: {zonesProcessed}\nКоллизий с зонами: {totalAssigned}",
-                              "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                this.Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при зонировании: {ex.Message}",
-                              "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                ShowLoadingIndicator(false);
-                AssignZonesButton.Content = "Зонировать";
-            }
+            this.Close();
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
