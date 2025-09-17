@@ -36,14 +36,9 @@
         <GroupBox Header="Информация" Grid.Row="2" Margin="10,0,10,10">
             <StackPanel Margin="10">
                 <TextBlock Text="Автоматическое назначение зон:" FontWeight="Bold" Margin="0,0,0,5" />
-                <TextBlock Text="• Выберите NWC файл, содержащий зоны (коробки) из Revit" TextWrapping="Wrap" Margin="0,0,0,3" />
-                <TextBlock Text="• Система автоматически найдет все bounding box объекты" Margin="0,0,0,3" />
-                <TextBlock Text="• Названия зон берутся из параметров ADSK_этаж и ADSK_зона" Margin="0,0,0,3" />
-                <TextBlock Text="• Все коллизии внутри зон получат соответствующие названия" Margin="0,0,0,3" />
-                <TextBlock Text="Примеры:" Margin="0,5,0,0" FontStyle="Italic" />
-                <TextBlock Text="• ADSK_этаж='5 этаж', ADSK_зона='Мед кабинеты' → '5 этаж | Мед кабинеты'" Margin="10,2,0,0" FontStyle="Italic" />
-                <TextBlock Text="• Только ADSK_этаж='5 этаж' → '5 этаж'" Margin="10,2,0,0" FontStyle="Italic" />
-                <TextBlock Text="• Без параметров → имя объекта" Margin="10,2,0,0" FontStyle="Italic" />
+                <TextBlock Text="• Выберите NWC файл, содержащий зоны (коробки) из Revit и нажмите Зонировать" TextWrapping="Wrap" Margin="0,0,0,3" />
+                <TextBlock Text="• Нажмите Авто-группировка по зонам" Margin="0,0,0,3" />
+                <TextBlock Text="• Все коллизии внутри зон получат названия, соответсвующие комментарию формы (зоны)" Margin="0,0,0,3" />
             </StackPanel>
         </GroupBox>
 

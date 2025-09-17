@@ -284,7 +284,7 @@ namespace ClashManager
         {
             try
             {
-                string comment = GetParameterValue(item, "Комментарии");
+                string comment = GetComments(item);
                 LogToFile($"GenerateZoneName: Элемент DisplayName='{item.DisplayName}', ClassDisplayName='{item.ClassDisplayName}', комментарий: '{comment}'");
                 
                 if (!string.IsNullOrEmpty(comment))
@@ -365,6 +365,43 @@ namespace ClashManager
             {
                 LogToFile($"GetParameterValue: Ошибка поиска параметра '{parameterName}': {ex.Message}");
                 return null;
+            }
+        }
+
+        private string GetComments(ModelItem item)
+        {
+            try
+            {
+                LogToFile($"GetComments: Ищем комментарии в элементе '{item.DisplayName}'");
+                
+                foreach (PropertyCategory cat in item.PropertyCategories)
+                {
+                    LogToFile($"GetComments: Проверяем категорию '{cat.DisplayName}'");
+                    
+                    foreach (DataProperty prop in cat.Properties)
+                    {
+                        if (prop?.DisplayName != null)
+                        {
+                            LogToFile($"GetComments: Найдено свойство '{prop.DisplayName}'");
+                            
+                            if (prop.DisplayName.Equals("Комментарии", StringComparison.InvariantCultureIgnoreCase) ||
+                                prop.DisplayName.Equals("Comments", StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                var result = prop.Value.ToDisplayString();
+                                LogToFile($"GetComments: НАЙДЕН комментарий: '{result}'");
+                                return result;
+                            }
+                        }
+                    }
+                }
+                
+                LogToFile($"GetComments: Комментарии не найдены");
+                return "";
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"GetComments: Ошибка поиска комментариев: {ex.Message}");
+                return "";
             }
         }
 
