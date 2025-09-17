@@ -1,0 +1,107 @@
+=== НАЧАЛО ЗАГРУЗКИ ЗОН 17.09.2025 10:43:14 ===
+10:43:14.525: ZoneHelper: Загружаем зоны из модели: C:\Users\ya.chasovskoy\Downloads\К32_фрагменты_zone.nwc
+10:43:14.525: FindZonesInModel: Начинаем поиск зон в корневом элементе: К32_фрагменты_zone.nwc
+10:43:14.525: FindZoneCandidates: Начинаем поиск кандидатов в зоны
+10:43:14.525: TraverseModel: Обрабатываем элемент 'К32_фрагменты_zone.nwc' на глубине 0, Geometry: False, IsHidden: False
+10:43:14.526: TraverseModel:  Элемент 'К32_фрагменты_zone.nwc' не имеет геометрии
+10:43:14.526: TraverseModel: У элемента 'К32_фрагменты_zone.nwc' 1 дочерних элементов
+10:43:14.526: TraverseModel: Обрабатываем элемент '<Нет уровня>' на глубине 1, Geometry: False, IsHidden: False
+10:43:14.526: TraverseModel:  Элемент '<Нет уровня>' не имеет геометрии
+10:43:14.526: TraverseModel: У элемента '<Нет уровня>' 1 дочерних элементов
+10:43:14.526: TraverseModel: Обрабатываем элемент 'Формы' на глубине 2, Geometry: False, IsHidden: False
+10:43:14.526: TraverseModel:  Элемент 'Формы' не имеет геометрии
+10:43:14.526: TraverseModel: У элемента 'Формы' 5 дочерних элементов
+10:43:14.526: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 3, Geometry: False, IsHidden: False
+10:43:14.526: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+10:43:14.526: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+10:43:14.526: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 4, Geometry: False, IsHidden: False
+10:43:14.526: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+10:43:14.526: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+10:43:14.526: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 5, Geometry: False, IsHidden: False
+10:43:14.526: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+10:43:14.526: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+10:43:14.526: TraverseModel: Обрабатываем элемент '' на глубине 6, Geometry: True, IsHidden: False
+10:43:14.526: TraverseModel:  НАЙДЕН КАНДИДАТ С ГЕОМЕТРИЕЙ: '' на глубине 6, всего кандидатов: 1
+10:43:14.527: TraverseModel: У элемента '' 0 дочерних элементов
+10:43:14.527: TraverseModel: Обрабатываем элемент 'Формы 2' на глубине 3, Geometry: False, IsHidden: False
+10:43:14.527: TraverseModel:  Элемент 'Формы 2' не имеет геометрии
+10:43:14.527: TraverseModel: У элемента 'Формы 2' 1 дочерних элементов
+10:43:14.527: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 4, Geometry: False, IsHidden: False
+10:43:14.527: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+10:43:14.527: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+10:43:14.527: TraverseModel: Обрабатываем элемент 'Формы 2' на глубине 5, Geometry: False, IsHidden: False
+10:43:14.527: TraverseModel:  Элемент 'Формы 2' не имеет геометрии
+10:43:14.527: TraverseModel: У элемента 'Формы 2' 1 дочерних элементов
+10:43:14.527: TraverseModel: Обрабатываем элемент '' на глубине 6, Geometry: True, IsHidden: False
+10:43:14.527: TraverseModel:  НАЙДЕН КАНДИДАТ С ГЕОМЕТРИЕЙ: '' на глубине 6, всего кандидатов: 2
+10:43:14.527: TraverseModel: У элемента '' 0 дочерних элементов
+10:43:14.527: TraverseModel: Обрабатываем элемент 'Формы 3' на глубине 3, Geometry: False, IsHidden: False
+10:43:14.527: TraverseModel:  Элемент 'Формы 3' не имеет геометрии
+10:43:14.527: TraverseModel: У элемента 'Формы 3' 1 дочерних элементов
+10:43:14.527: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 4, Geometry: False, IsHidden: False
+10:43:14.527: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+10:43:14.528: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+10:43:14.528: TraverseModel: Обрабатываем элемент 'Формы 3' на глубине 5, Geometry: False, IsHidden: False
+10:43:14.528: TraverseModel:  Элемент 'Формы 3' не имеет геометрии
+10:43:14.528: TraverseModel: У элемента 'Формы 3' 1 дочерних элементов
+10:43:14.528: TraverseModel: Обрабатываем элемент '' на глубине 6, Geometry: True, IsHidden: False
+10:43:14.528: TraverseModel:  НАЙДЕН КАНДИДАТ С ГЕОМЕТРИЕЙ: '' на глубине 6, всего кандидатов: 3
+10:43:14.528: TraverseModel: У элемента '' 0 дочерних элементов
+10:43:14.528: TraverseModel: Обрабатываем элемент 'Формы 4' на глубине 3, Geometry: False, IsHidden: False
+10:43:14.528: TraverseModel:  Элемент 'Формы 4' не имеет геометрии
+10:43:14.528: TraverseModel: У элемента 'Формы 4' 1 дочерних элементов
+10:43:14.528: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 4, Geometry: False, IsHidden: False
+10:43:14.528: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+10:43:14.528: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+10:43:14.528: TraverseModel: Обрабатываем элемент 'Формы 4' на глубине 5, Geometry: False, IsHidden: False
+10:43:14.528: TraverseModel:  Элемент 'Формы 4' не имеет геометрии
+10:43:14.528: TraverseModel: У элемента 'Формы 4' 1 дочерних элементов
+10:43:14.528: TraverseModel: Обрабатываем элемент '' на глубине 6, Geometry: True, IsHidden: False
+10:43:14.528: TraverseModel:  НАЙДЕН КАНДИДАТ С ГЕОМЕТРИЕЙ: '' на глубине 6, всего кандидатов: 4
+10:43:14.528: TraverseModel: У элемента '' 0 дочерних элементов
+10:43:14.529: TraverseModel: Обрабатываем элемент 'Формы 5' на глубине 3, Geometry: False, IsHidden: False
+10:43:14.529: TraverseModel:  Элемент 'Формы 5' не имеет геометрии
+10:43:14.529: TraverseModel: У элемента 'Формы 5' 1 дочерних элементов
+10:43:14.529: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 4, Geometry: False, IsHidden: False
+10:43:14.529: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+10:43:14.529: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+10:43:14.529: TraverseModel: Обрабатываем элемент 'Формы 5' на глубине 5, Geometry: False, IsHidden: False
+10:43:14.529: TraverseModel:  Элемент 'Формы 5' не имеет геометрии
+10:43:14.529: TraverseModel: У элемента 'Формы 5' 1 дочерних элементов
+10:43:14.529: TraverseModel: Обрабатываем элемент '' на глубине 6, Geometry: True, IsHidden: False
+10:43:14.529: TraverseModel:  НАЙДЕН КАНДИДАТ С ГЕОМЕТРИЕЙ: '' на глубине 6, всего кандидатов: 5
+10:43:14.529: TraverseModel: У элемента '' 0 дочерних элементов
+10:43:14.529: FindZoneCandidates: Найдено кандидатов: 5
+10:43:14.529: FindZonesInModel: Найдено кандидатов в зоны: 5
+10:43:14.529: FindZonesInModel: Обрабатываем кандидата: 
+10:43:14.529: FindZonesInModel: BoundingBox: Min(7131,53, 26404,95, 0,00) Max(7348,98, 26590,05, 16,73)
+10:43:14.530: GenerateZoneName: Элемент '', комментарий: ''
+10:43:14.530: GenerateZoneName: Используем DisplayName: ''
+10:43:14.530: FindZonesInModel: Создаем зону с именем: ''
+10:43:14.530: FindZonesInModel: Обрабатываем кандидата: 
+10:43:14.530: FindZonesInModel: BoundingBox: Min(7063,35, 26510,60, 16,73) Max(7317,53, 26819,04, 32,81)
+10:43:14.530: GenerateZoneName: Элемент '', комментарий: ''
+10:43:14.530: GenerateZoneName: Используем DisplayName: ''
+10:43:14.530: FindZonesInModel: Создаем зону с именем: ''
+10:43:14.530: FindZonesInModel: Обрабатываем кандидата: 
+10:43:14.530: FindZonesInModel: BoundingBox: Min(7063,35, 26510,60, 32,81) Max(7317,53, 26819,04, 47,24)
+10:43:14.530: GenerateZoneName: Элемент '', комментарий: ''
+10:43:14.530: GenerateZoneName: Используем DisplayName: ''
+10:43:14.530: FindZonesInModel: Создаем зону с именем: ''
+10:43:14.530: FindZonesInModel: Обрабатываем кандидата: 
+10:43:14.530: FindZonesInModel: BoundingBox: Min(7063,35, 26510,60, 47,24) Max(7317,53, 26819,04, 61,68)
+10:43:14.531: GenerateZoneName: Элемент '', комментарий: ''
+10:43:14.531: GenerateZoneName: Используем DisplayName: ''
+10:43:14.531: FindZonesInModel: Создаем зону с именем: ''
+10:43:14.531: FindZonesInModel: Обрабатываем кандидата: 
+10:43:14.531: FindZonesInModel: BoundingBox: Min(7063,35, 26510,60, 61,68) Max(7317,53, 26819,04, 76,12)
+10:43:14.531: GenerateZoneName: Элемент '', комментарий: ''
+10:43:14.531: GenerateZoneName: Используем DisplayName: ''
+10:43:14.531: FindZonesInModel: Создаем зону с именем: ''
+10:43:14.531: FindZonesInModel: Итого найдено зон: 5
+10:43:14.531: ZoneHelper: Найдено зон: 5
+10:43:14.531: ZoneHelper: Зона '' - Box: Min(7131,53, 26404,95, 0,00) Max(7348,98, 26590,05, 16,73)
+10:43:14.531: ZoneHelper: Зона '' - Box: Min(7063,35, 26510,60, 16,73) Max(7317,53, 26819,04, 32,81)
+10:43:14.531: ZoneHelper: Зона '' - Box: Min(7063,35, 26510,60, 32,81) Max(7317,53, 26819,04, 47,24)
+10:43:14.531: ZoneHelper: Зона '' - Box: Min(7063,35, 26510,60, 47,24) Max(7317,53, 26819,04, 61,68)
+10:43:14.532: ZoneHelper: Зона '' - Box: Min(7063,35, 26510,60, 61,68) Max(7317,53, 26819,04, 76,12)

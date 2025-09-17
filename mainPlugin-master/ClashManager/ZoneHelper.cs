@@ -285,27 +285,19 @@ namespace ClashManager
             try
             {
                 string comment = GetParameterValue(item, "Комментарий");
-                LogToFile($"GenerateZoneName: Элемент '{item.DisplayName}', комментарий: '{comment}'");
-
+                
                 if (!string.IsNullOrEmpty(comment))
-                {
-                    LogToFile($"GenerateZoneName: Используем комментарий: '{comment}'");
                     return comment;
-                }
+                else if (!string.IsNullOrEmpty(item.ClassDisplayName))
+                    return item.ClassDisplayName;
+                else if (!string.IsNullOrEmpty(item.DisplayName))
+                    return System.IO.Path.GetFileNameWithoutExtension(item.DisplayName);
                 else
-                {
-                    var displayName = item.DisplayName ?? "Unknown";
-                    var result = System.IO.Path.GetFileNameWithoutExtension(displayName);
-                    LogToFile($"GenerateZoneName: Используем DisplayName: '{result}'");
-                    return result;
-                }
+                    return $"Zone_{item.Guid.ToString().Substring(0, 8)}";
             }
-            catch (Exception ex)
+            catch
             {
-                var displayName = item.DisplayName ?? "Unknown";
-                var result = System.IO.Path.GetFileNameWithoutExtension(displayName);
-                LogToFile($"GenerateZoneName: Ошибка, используем DisplayName: '{result}', ошибка: {ex.Message}");
-                return result;
+                return $"Zone_{item.Guid.ToString().Substring(0, 8)}";
             }
         }
 
@@ -342,26 +334,26 @@ namespace ClashManager
         {
             try
             {
-                var item1 = clash.CompositeItem1;
-                var item2 = clash.CompositeItem2;
-
-                var box1 = GetBoundingBox(item1);
-                var box2 = GetBoundingBox(item2);
-
-                if (box1.Min != box1.Max && box2.Min != box2.Max)
+                // Используем центр коллизии напрямую
+                var centerPoint = clash.Center;
+                
+                LogToFile($"Центр коллизии: ({centerPoint.X:F2}, {centerPoint.Y:F2}, {centerPoint.Z:F2})");
+                LogToFile($"Зона Box: Min({zoneBox.Min.X:F2}, {zoneBox.Min.Y:F2}, {zoneBox.Min.Z:F2}) Max({zoneBox.Max.X:F2}, {zoneBox.Max.Y:F2}, {zoneBox.Max.Z:F2})");
+                
+                if (centerPoint.X == 0.5 && centerPoint.Y == 0.5 && centerPoint.Z == 0.5)
                 {
-                    var centerX = (box1.Min.X + box1.Max.X + box2.Min.X + box2.Max.X) / 4;
-                    var centerY = (box1.Min.Y + box1.Max.Y + box2.Min.Y + box2.Max.Y) / 4;
-                    var centerZ = (box1.Min.Z + box1.Max.Z + box2.Min.Z + box2.Max.Z) / 4;
-
-                    var centerPoint = new Point3D(centerX, centerY, centerZ);
-                    return IsPointInsideBox(centerPoint, zoneBox);
+                    LogToFile("ВНИМАНИЕ: Центр коллизии имеет дефолтные координаты (0.5, 0.5, 0.5)");
+                    return false;
                 }
 
-                return false;
+                bool isInside = IsPointInsideBox(centerPoint, zoneBox);
+                LogToFile($"Коллизия внутри зоны: {isInside}");
+                
+                return isInside;
             }
-            catch
+            catch (Exception ex)
             {
+                LogToFile($"Ошибка в IsClashInsideZone: {ex.Message}");
                 return false;
             }
         }
