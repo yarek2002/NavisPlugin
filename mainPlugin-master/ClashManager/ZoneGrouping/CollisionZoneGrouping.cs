@@ -211,31 +211,55 @@ namespace CollisionGrouperPlugin
         {
             try
             {
-                var item1 = clash.CompositeItem1;
-                var item2 = clash.CompositeItem2;
-
-                var box1 = GetBoundingBox(item1);
-                var box2 = GetBoundingBox(item2);
-
-                if (box1.Min != box1.Max && box2.Min != box2.Max)
+                Point3D centerPoint;
+                
+                // Попробуем использовать clash.Center напрямую
+                try
                 {
-                    var centerX = (box1.Min.X + box1.Max.X + box2.Min.X + box2.Max.X) / 4;
-                    var centerY = (box1.Min.Y + box1.Max.Y + box2.Min.Y + box2.Max.Y) / 4;
-                    var centerZ = (box1.Min.Z + box1.Max.Z + box2.Min.Z + box2.Max.Z) / 4;
-
-                    var centerPoint = new Point3D(centerX, centerY, centerZ);
+                    centerPoint = clash.Center;
+                    LogToFile($"Используем clash.Center: ({centerPoint.X:F2}, {centerPoint.Y:F2}, {centerPoint.Z:F2})");
                     
-                    LogToFile($"Центр коллизии: ({centerX:F2}, {centerY:F2}, {centerZ:F2})");
-                    LogToFile($"Зона Box: Min({zoneBox.Min.X:F2}, {zoneBox.Min.Y:F2}, {zoneBox.Min.Z:F2}) Max({zoneBox.Max.X:F2}, {zoneBox.Max.Y:F2}, {zoneBox.Max.Z:F2})");
-                    
-                    bool isInside = IsPointInsideBox(centerPoint, zoneBox);
-                    LogToFile($"Коллизия внутри зоны: {isInside}");
-                    
-                    return isInside;
+                    // Проверяем, что координаты не дефолтные
+                    if (Math.Abs(centerPoint.X - 0.5) < 0.01 && Math.Abs(centerPoint.Y - 0.5) < 0.01 && Math.Abs(centerPoint.Z - 0.5) < 0.01)
+                    {
+                        LogToFile("⚠️ clash.Center возвращает дефолтные координаты, попробуем другой способ");
+                        throw new Exception("Default coordinates");
+                    }
                 }
+                catch
+                {
+                    // Если clash.Center не работает, вычисляем через элементы коллизии
+                    var item1 = clash.CompositeItem1;
+                    var item2 = clash.CompositeItem2;
 
-                LogToFile("Один из элементов коллизии не имеет геометрии");
-                return false;
+                    var box1 = GetBoundingBox(item1);
+                    var box2 = GetBoundingBox(item2);
+
+                    LogToFile($"Item1 BoundingBox: Min({box1.Min.X:F2}, {box1.Min.Y:F2}, {box1.Min.Z:F2}) Max({box1.Max.X:F2}, {box1.Max.Y:F2}, {box1.Max.Z:F2})");
+                    LogToFile($"Item2 BoundingBox: Min({box2.Min.X:F2}, {box2.Min.Y:F2}, {box2.Min.Z:F2}) Max({box2.Max.X:F2}, {box2.Max.Y:F2}, {box2.Max.Z:F2})");
+
+                    if (box1.Min != box1.Max && box2.Min != box2.Max)
+                    {
+                        var centerX = (box1.Min.X + box1.Max.X + box2.Min.X + box2.Max.X) / 4;
+                        var centerY = (box1.Min.Y + box1.Max.Y + box2.Min.Y + box2.Max.Y) / 4;
+                        var centerZ = (box1.Min.Z + box1.Max.Z + box2.Min.Z + box2.Max.Z) / 4;
+
+                        centerPoint = new Point3D(centerX, centerY, centerZ);
+                        LogToFile($"Вычислили центр через BoundingBox: ({centerX:F2}, {centerY:F2}, {centerZ:F2})");
+                    }
+                    else
+                    {
+                        LogToFile("❌ Элементы коллизии не имеют корректной геометрии");
+                        return false;
+                    }
+                }
+                
+                LogToFile($"Зона Box: Min({zoneBox.Min.X:F2}, {zoneBox.Min.Y:F2}, {zoneBox.Min.Z:F2}) Max({zoneBox.Max.X:F2}, {zoneBox.Max.Y:F2}, {zoneBox.Max.Z:F2})");
+                
+                bool isInside = IsPointInsideBox(centerPoint, zoneBox);
+                LogToFile($"Коллизия внутри зоны: {isInside}");
+                
+                return isInside;
             }
             catch (Exception ex)
             {

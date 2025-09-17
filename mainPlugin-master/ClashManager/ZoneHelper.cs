@@ -327,25 +327,43 @@ namespace ClashManager
             {
                 if (item == null) return null;
 
+                LogToFile($"GetParameterValue: Ищем параметр '{parameterName}' в элементе '{item.DisplayName}'");
+                
                 foreach (var category in item.PropertyCategories)
                 {
                     if (category == null) continue;
+                    
+                    LogToFile($"GetParameterValue: Проверяем категорию '{category.DisplayName}'");
 
-                    var property = category.Properties.FirstOrDefault(p =>
-                        p != null &&
-                        p.DisplayName != null &&
-                        p.DisplayName.Contains(parameterName));
-
-                    if (property?.Value != null)
+                    foreach (var property in category.Properties)
                     {
-                        return property.Value.ToString();
+                        if (property?.DisplayName != null)
+                        {
+                            LogToFile($"GetParameterValue: Найдено свойство '{property.DisplayName}' = '{property.Value}'");
+                            
+                            // Проверяем точное совпадение
+                            if (property.DisplayName.Equals(parameterName, StringComparison.OrdinalIgnoreCase))
+                            {
+                                LogToFile($"GetParameterValue: ✅ НАЙДЕН параметр '{parameterName}' = '{property.Value}'");
+                                return property.Value?.ToString();
+                            }
+                            
+                            // Проверяем содержание
+                            if (property.DisplayName.Contains(parameterName))
+                            {
+                                LogToFile($"GetParameterValue: ✅ НАЙДЕН параметр (по содержанию) '{property.DisplayName}' = '{property.Value}'");
+                                return property.Value?.ToString();
+                            }
+                        }
                     }
                 }
 
+                LogToFile($"GetParameterValue: ❌ Параметр '{parameterName}' не найден");
                 return null;
             }
-            catch
+            catch (Exception ex)
             {
+                LogToFile($"GetParameterValue: Ошибка поиска параметра '{parameterName}': {ex.Message}");
                 return null;
             }
         }
