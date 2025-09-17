@@ -189,7 +189,7 @@ namespace ClashManager
         {
             var candidates = new List<ModelItem>();
             LogToFile($"FindZoneCandidates: Начинаем поиск кандидатов в зоны");
-            TraverseModel(rootItem, candidates, 5, 0);
+            TraverseModel(rootItem, candidates, 15, 0); // Увеличиваем глубину с 5 до 15
             LogToFile($"FindZoneCandidates: Найдено кандидатов: {candidates.Count}");
             return candidates;
         }
@@ -207,11 +207,24 @@ namespace ClashManager
             {
                 LogToFile($"TraverseModel: Обрабатываем элемент '{item.DisplayName}' на глубине {currentDepth}, Geometry: {item.Geometry != null}, IsHidden: {item.IsHidden}");
                 
-                if (item.Geometry != null && !item.IsHidden)
+                if (item.Geometry != null)
                 {
-                    candidates.Add(item);
-                    LogToFile($"TraverseModel: Добавлен кандидат '{item.DisplayName}', всего кандидатов: {candidates.Count}");
-                    if (candidates.Count >= 1000) return;
+                    if (!item.IsHidden)
+                    {
+                        candidates.Add(item);
+                        LogToFile($"TraverseModel:  НАЙДЕН КАНДИДАТ С ГЕОМЕТРИЕЙ: '{item.DisplayName}' на глубине {currentDepth}, всего кандидатов: {candidates.Count}");
+                        if (candidates.Count >= 1000) return;
+                    }
+                    else
+                    {
+                        LogToFile($"TraverseModel:  Элемент '{item.DisplayName}' имеет геометрию, но скрыт - добавляем как кандидата");
+                        candidates.Add(item);
+                        if (candidates.Count >= 1000) return;
+                    }
+                }
+                else
+                {
+                    LogToFile($"TraverseModel:  Элемент '{item.DisplayName}' не имеет геометрии");
                 }
             }
             catch (Exception ex)
