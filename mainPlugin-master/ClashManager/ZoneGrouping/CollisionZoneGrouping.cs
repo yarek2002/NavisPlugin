@@ -126,54 +126,108 @@ namespace CollisionGrouperPlugin
 
         public void GroupResult(ClashResult result)
         {
-            // Создаём копию результата и обнуляем GUID
-            result = (ClashResult)result.CreateCopy();
-            result.Guid = Guid.Empty;
-
-            ClashResultGroup group;
-            string zoneName;
-
-            // Определяем зону для коллизии
-            zoneName = GetZoneForClash(result);
-
-            if (!GroupsByZone.TryGetValue(zoneName, out group))
+            try
             {
-                group = new ClashResultGroup();
-                group.DisplayName = "Zone_" + zoneName; // Добавлен префикс для новых групп
-                GroupsByZone.Add(zoneName, group);
+                // Определяем зону для коллизии (используем оригинальный результат)
+                string zoneName = GetZoneForClash(result);
+
+                ClashResultGroup group;
+                if (!GroupsByZone.TryGetValue(zoneName, out group))
+                {
+                    group = new ClashResultGroup();
+                    group.DisplayName = "Zone_" + zoneName; // Добавлен префикс для новых групп
+                    GroupsByZone.Add(zoneName, group);
+                }
+
+                // Создаём копию результата и обнуляем GUID
+                var resultCopy = (ClashResult)result.CreateCopy();
+                resultCopy.Guid = Guid.Empty;
+
+                group.Children.Add(resultCopy);
+
+                // Отладочное логирование
+                Debug.WriteLine($"Добавлена коллизия в зону '{zoneName}'");
             }
-
-            group.Children.Add(result);
-
-            // Отладочное логирование
-            Debug.WriteLine($"Добавлена коллизия в зону '{zoneName}'");
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ошибка при группировке результата: {ex.Message}");
+            }
         }
 
         private string GetZoneForClash(ClashResult clash)
         {
             try
             {
-                // Создаем временную группу для проверки зоны
-                var tempGroup = new ClashResultGroup();
-                tempGroup.Children.Add(clash);
+                // Получаем зоны из ZoneHelper
+                var zones = zoneHelper.GetZones();
                 
-                // Используем ZoneHelper для определения зоны
-                string zoneName = zoneHelper.GetZoneForGroup(tempGroup);
+                // Проверяем, в какой зоне находится коллизия
+                foreach (var zone in zones)
+                {
+                    if (IsClashInsideZone(clash, zone.BoundingBox))
+                    {
+                        return zone.ZoneName;
+                    }
+                }
                 
-                if (!string.IsNullOrEmpty(zoneName))
-                {
-                    return zoneName;
-                }
-                else
-                {
-                    return "Null";
-                }
+                return "Null";
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Ошибка при определении зоны: {ex.Message}");
                 return "Null";
             }
+        }
+
+        private bool IsClashInsideZone(ClashResult clash, BoundingBox3D zoneBox)
+        {
+            try
+            {
+                var item1 = clash.CompositeItem1;
+                var item2 = clash.CompositeItem2;
+
+                var box1 = GetBoundingBox(item1);
+                var box2 = GetBoundingBox(item2);
+
+                if (box1.Min != box1.Max && box2.Min != box2.Max)
+                {
+                    var centerX = (box1.Min.X + box1.Max.X + box2.Min.X + box2.Max.X) / 4;
+                    var centerY = (box1.Min.Y + box1.Max.Y + box2.Min.Y + box2.Max.Y) / 4;
+                    var centerZ = (box1.Min.Z + box1.Max.Z + box2.Min.Z + box2.Max.Z) / 4;
+
+                    var centerPoint = new Point3D(centerX, centerY, centerZ);
+                    return IsPointInsideBox(centerPoint, zoneBox);
+                }
+
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private BoundingBox3D GetBoundingBox(ModelItem item)
+        {
+            try
+            {
+                if (item?.Geometry != null)
+                {
+                    return item.Geometry.BoundingBox;
+                }
+                return new BoundingBox3D();
+            }
+            catch
+            {
+                return new BoundingBox3D();
+            }
+        }
+
+        private bool IsPointInsideBox(Point3D point, BoundingBox3D box)
+        {
+            return point.X >= box.Min.X && point.X <= box.Max.X &&
+                   point.Y >= box.Min.Y && point.Y <= box.Max.Y &&
+                   point.Z >= box.Min.Z && point.Z <= box.Max.Z;
         }
 
         // Метод получения списка клеш тестов
