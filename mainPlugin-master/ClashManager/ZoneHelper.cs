@@ -285,19 +285,39 @@ namespace ClashManager
             try
             {
                 string comment = GetParameterValue(item, "Комментарий");
+                LogToFile($"GenerateZoneName: Элемент DisplayName='{item.DisplayName}', ClassDisplayName='{item.ClassDisplayName}', комментарий: '{comment}'");
                 
                 if (!string.IsNullOrEmpty(comment))
+                {
+                    LogToFile($"GenerateZoneName: Используем комментарий: '{comment}'");
                     return comment;
+                }
                 else if (!string.IsNullOrEmpty(item.ClassDisplayName))
+                {
+                    LogToFile($"GenerateZoneName: Используем ClassDisplayName: '{item.ClassDisplayName}'");
                     return item.ClassDisplayName;
+                }
                 else if (!string.IsNullOrEmpty(item.DisplayName))
-                    return System.IO.Path.GetFileNameWithoutExtension(item.DisplayName);
+                {
+                    var result = System.IO.Path.GetFileNameWithoutExtension(item.DisplayName);
+                    LogToFile($"GenerateZoneName: Используем DisplayName: '{result}'");
+                    return result;
+                }
                 else
-                    return $"Zone_{item.Guid.ToString().Substring(0, 8)}";
+                {
+                    // Используем координаты BoundingBox для создания уникального имени
+                    var bbox = GetBoundingBox(item);
+                    var result = $"Zone_{bbox.Min.X:F0}_{bbox.Min.Y:F0}_{bbox.Min.Z:F0}";
+                    LogToFile($"GenerateZoneName: Используем координаты: '{result}'");
+                    return result;
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                return $"Zone_{item.Guid.ToString().Substring(0, 8)}";
+                var bbox = GetBoundingBox(item);
+                var result = $"Zone_{bbox.Min.X:F0}_{bbox.Min.Y:F0}_{bbox.Min.Z:F0}";
+                LogToFile($"GenerateZoneName: Ошибка, используем координаты: '{result}', ошибка: {ex.Message}");
+                return result;
             }
         }
 
@@ -334,18 +354,48 @@ namespace ClashManager
         {
             try
             {
-                // Используем центр коллизии напрямую
-                var centerPoint = clash.Center;
+                // Сначала попробуем использовать центр коллизии напрямую
+                Point3D centerPoint;
                 
-                LogToFile($"Центр коллизии: ({centerPoint.X:F2}, {centerPoint.Y:F2}, {centerPoint.Z:F2})");
-                LogToFile($"Зона Box: Min({zoneBox.Min.X:F2}, {zoneBox.Min.Y:F2}, {zoneBox.Min.Z:F2}) Max({zoneBox.Max.X:F2}, {zoneBox.Max.Y:F2}, {zoneBox.Max.Z:F2})");
+                try
+                {
+                    centerPoint = clash.Center;
+                    LogToFile($"Используем clash.Center: ({centerPoint.X:F2}, {centerPoint.Y:F2}, {centerPoint.Z:F2})");
+                }
+                catch
+                {
+                    // Если clash.Center не работает, вычисляем центр через BoundingBox элементов
+                    var item1 = clash.CompositeItem1;
+                    var item2 = clash.CompositeItem2;
+
+                    var box1 = GetBoundingBox(item1);
+                    var box2 = GetBoundingBox(item2);
+
+                    if (box1.Min != box1.Max && box2.Min != box2.Max)
+                    {
+                        var centerX = (box1.Min.X + box1.Max.X + box2.Min.X + box2.Max.X) / 4;
+                        var centerY = (box1.Min.Y + box1.Max.Y + box2.Min.Y + box2.Max.Y) / 4;
+                        var centerZ = (box1.Min.Z + box1.Max.Z + box2.Min.Z + box2.Max.Z) / 4;
+
+                        centerPoint = new Point3D(centerX, centerY, centerZ);
+                        LogToFile($"Вычислили центр через BoundingBox: ({centerX:F2}, {centerY:F2}, {centerZ:F2})");
+                    }
+                    else
+                    {
+                        LogToFile("Не удалось получить координаты коллизии");
+                        return false;
+                    }
+                }
                 
-                if (centerPoint.X == 0.5 && centerPoint.Y == 0.5 && centerPoint.Z == 0.5)
+                // Проверяем, что координаты не являются дефолтными
+                if (Math.Abs(centerPoint.X - 0.5) < 0.01 && Math.Abs(centerPoint.Y - 0.5) < 0.01 && Math.Abs(centerPoint.Z - 0.5) < 0.01)
                 {
                     LogToFile("ВНИМАНИЕ: Центр коллизии имеет дефолтные координаты (0.5, 0.5, 0.5)");
                     return false;
                 }
-
+                
+                LogToFile($"Зона Box: Min({zoneBox.Min.X:F2}, {zoneBox.Min.Y:F2}, {zoneBox.Min.Z:F2}) Max({zoneBox.Max.X:F2}, {zoneBox.Max.Y:F2}, {zoneBox.Max.Z:F2})");
+                
                 bool isInside = IsPointInsideBox(centerPoint, zoneBox);
                 LogToFile($"Коллизия внутри зоны: {isInside}");
                 
