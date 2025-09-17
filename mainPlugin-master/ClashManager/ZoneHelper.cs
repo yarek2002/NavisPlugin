@@ -284,7 +284,7 @@ namespace ClashManager
         {
             try
             {
-                string comment = GetParameterValue(item, "Комментарий");
+                string comment = GetParameterValue(item, "Комментарии");
                 LogToFile($"GenerateZoneName: Элемент DisplayName='{item.DisplayName}', ClassDisplayName='{item.ClassDisplayName}', комментарий: '{comment}'");
                 
                 if (!string.IsNullOrEmpty(comment))
