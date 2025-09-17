@@ -184,20 +184,11 @@ namespace ClashManager
         {
             try
             {
-                string floor = GetParameterValue(item, "ADSK_этаж");
-                string zone = GetParameterValue(item, "ADSK_зона");
+                string comment = GetParameterValue(item, "Комментарий");
 
-                if (!string.IsNullOrEmpty(floor) && !string.IsNullOrEmpty(zone))
+                if (!string.IsNullOrEmpty(comment))
                 {
-                    return $"{floor} | {zone}";
-                }
-                else if (!string.IsNullOrEmpty(floor))
-                {
-                    return floor;
-                }
-                else if (!string.IsNullOrEmpty(zone))
-                {
-                    return zone;
+                    return comment;
                 }
                 else
                 {

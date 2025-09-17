@@ -73,6 +73,13 @@
 								  Text="Назначение зон"
 								  Orientation="Vertical"
 								  />
+				<local:NWRibbonButton x:Uid="Button_9" Id="ZoneGrouping"
+								  Size="Large"
+								  KeyTip="B9"
+								  ShowText="True"
+								  Text="Авто-группировка&#x0A;по зонам"
+								  Orientation="Vertical"
+								  />
 
 
 

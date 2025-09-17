@@ -168,6 +168,10 @@
     <Compile Include="ZoneAssignment\Views\ZoneAssignmentView.xaml.cs">
       <DependentUpon>ZoneAssignmentView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Externals\ZoneGroupingCmd.cs" />
+    <Compile Include="ZoneGrouping\ZoneGrouping.cs" />
+    <Compile Include="ZoneGrouping\CollisionZoneGrouping.cs" />
+    <Compile Include="ZoneHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="AddinRibbon.xaml">
