@@ -100,14 +100,23 @@ namespace ClashManager
             var zones = new List<ZoneItem>();
             try
             {
+                LogToFile($"FindZonesInModel: Начинаем поиск зон в корневом элементе: {rootItem?.DisplayName ?? "null"}");
+                
                 var zoneCandidates = FindZoneCandidates(rootItem);
+                LogToFile($"FindZonesInModel: Найдено кандидатов в зоны: {zoneCandidates.Count}");
 
                 foreach (var item in zoneCandidates)
                 {
+                    LogToFile($"FindZonesInModel: Обрабатываем кандидата: {item?.DisplayName ?? "null"}");
+                    
                     var boundingBox = GetBoundingBox(item);
+                    LogToFile($"FindZonesInModel: BoundingBox: Min({boundingBox.Min.X:F2}, {boundingBox.Min.Y:F2}, {boundingBox.Min.Z:F2}) Max({boundingBox.Max.X:F2}, {boundingBox.Max.Y:F2}, {boundingBox.Max.Z:F2})");
+                    
                     if (boundingBox.Min != boundingBox.Max)
                     {
                         var zoneName = GenerateZoneName(item);
+                        LogToFile($"FindZonesInModel: Создаем зону с именем: '{zoneName}'");
+                        
                         zones.Add(new ZoneItem
                         {
                             ZoneName = zoneName,
@@ -117,11 +126,17 @@ namespace ClashManager
 
                         if (zones.Count >= 100) break;
                     }
+                    else
+                    {
+                        LogToFile($"FindZonesInModel: Пропускаем элемент - пустой BoundingBox");
+                    }
                 }
+                
+                LogToFile($"FindZonesInModel: Итого найдено зон: {zones.Count}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error finding zones: {ex.Message}");
+                LogToFile($"FindZonesInModel: Ошибка при поиске зон: {ex.Message}");
             }
             
             return zones;
@@ -173,28 +188,49 @@ namespace ClashManager
         private List<ModelItem> FindZoneCandidates(ModelItem rootItem)
         {
             var candidates = new List<ModelItem>();
+            LogToFile($"FindZoneCandidates: Начинаем поиск кандидатов в зоны");
             TraverseModel(rootItem, candidates, 5, 0);
+            LogToFile($"FindZoneCandidates: Найдено кандидатов: {candidates.Count}");
             return candidates;
         }
 
         private void TraverseModel(ModelItem item, List<ModelItem> candidates, int maxDepth = 10, int currentDepth = 0)
         {
-            if (item == null || currentDepth >= maxDepth) return;
+            if (item == null || currentDepth >= maxDepth) 
+            {
+                if (item == null) LogToFile($"TraverseModel: item == null на глубине {currentDepth}");
+                if (currentDepth >= maxDepth) LogToFile($"TraverseModel: достигнута максимальная глубина {maxDepth}");
+                return;
+            }
 
             try
             {
+                LogToFile($"TraverseModel: Обрабатываем элемент '{item.DisplayName}' на глубине {currentDepth}, Geometry: {item.Geometry != null}, IsHidden: {item.IsHidden}");
+                
                 if (item.Geometry != null && !item.IsHidden)
                 {
                     candidates.Add(item);
+                    LogToFile($"TraverseModel: Добавлен кандидат '{item.DisplayName}', всего кандидатов: {candidates.Count}");
                     if (candidates.Count >= 1000) return;
                 }
             }
-            catch { }
-
-            foreach (var child in item.Children)
+            catch (Exception ex)
             {
-                TraverseModel(child, candidates, maxDepth, currentDepth + 1);
-                if (candidates.Count >= 1000) return;
+                LogToFile($"TraverseModel: Ошибка при обработке элемента '{item?.DisplayName}': {ex.Message}");
+            }
+
+            try
+            {
+                LogToFile($"TraverseModel: У элемента '{item.DisplayName}' {item.Children.Count} дочерних элементов");
+                foreach (var child in item.Children)
+                {
+                    TraverseModel(child, candidates, maxDepth, currentDepth + 1);
+                    if (candidates.Count >= 1000) return;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"TraverseModel: Ошибка при обходе дочерних элементов '{item?.DisplayName}': {ex.Message}");
             }
         }
 
