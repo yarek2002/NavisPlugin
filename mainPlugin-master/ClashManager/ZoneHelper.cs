@@ -280,46 +280,65 @@ namespace ClashManager
             }
         }
 
-        private string GenerateZoneName(ModelItem item)
+       private string GenerateZoneName(ModelItem item)
+{
+    try
+    {
+        string comment = "";
+        // ищем свойство "Комментарии" в категории "Объект" (или "Item")
+        foreach (PropertyCategory cat in item.PropertyCategories)
         {
-            try
+            if (cat.DisplayName.Equals("Объект", StringComparison.InvariantCultureIgnoreCase) ||
+                cat.DisplayName.Equals("Item", StringComparison.InvariantCultureIgnoreCase))
             {
-                string comment = GetComments(item);
-                LogToFile($"GenerateZoneName: Элемент DisplayName='{item.DisplayName}', ClassDisplayName='{item.ClassDisplayName}', комментарий: '{comment}'");
-                
-                if (!string.IsNullOrEmpty(comment))
+                foreach (DataProperty prop in cat.Properties)
                 {
-                    LogToFile($"GenerateZoneName: Используем комментарий: '{comment}'");
-                    return comment;
+                    if (prop.DisplayName.Equals("Комментарии", StringComparison.InvariantCultureIgnoreCase) ||
+                        prop.DisplayName.Equals("Comments", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        comment = prop.Value.ToDisplayString();
+                        break;
+                    }
                 }
-                else if (!string.IsNullOrEmpty(item.ClassDisplayName))
-                {
-                    LogToFile($"GenerateZoneName: Используем ClassDisplayName: '{item.ClassDisplayName}'");
-                    return item.ClassDisplayName;
-                }
-                else if (!string.IsNullOrEmpty(item.DisplayName))
-                {
-                    var result = System.IO.Path.GetFileNameWithoutExtension(item.DisplayName);
-                    LogToFile($"GenerateZoneName: Используем DisplayName: '{result}'");
-                    return result;
-                }
-                else
-                {
-                    // Используем координаты BoundingBox для создания уникального имени
-                    var bbox = GetBoundingBox(item);
-                    var result = $"Zone_{bbox.Min.X:F0}_{bbox.Min.Y:F0}_{bbox.Min.Z:F0}";
-                    LogToFile($"GenerateZoneName: Используем координаты: '{result}'");
-                    return result;
-                }
-            }
-            catch (Exception ex)
-            {
-                var bbox = GetBoundingBox(item);
-                var result = $"Zone_{bbox.Min.X:F0}_{bbox.Min.Y:F0}_{bbox.Min.Z:F0}";
-                LogToFile($"GenerateZoneName: Ошибка, используем координаты: '{result}', ошибка: {ex.Message}");
-                return result;
             }
         }
+
+        LogToFile($"GenerateZoneName: Элемент DisplayName='{item.DisplayName}', ClassDisplayName='{item.ClassDisplayName}', комментарий: '{comment}'");
+
+        if (!string.IsNullOrEmpty(comment))
+        {
+            LogToFile($"GenerateZoneName: Используем комментарий: '{comment}'");
+            return comment;
+        }
+        else if (!string.IsNullOrEmpty(item.ClassDisplayName))
+        {
+            LogToFile($"GenerateZoneName: Используем ClassDisplayName: '{item.ClassDisplayName}'");
+            return item.ClassDisplayName;
+        }
+        else if (!string.IsNullOrEmpty(item.DisplayName))
+        {
+            var result = System.IO.Path.GetFileNameWithoutExtension(item.DisplayName);
+            LogToFile($"GenerateZoneName: Используем DisplayName: '{result}'");
+            return result;
+        }
+        else
+        {
+            // Используем координаты BoundingBox для создания уникального имени
+            var bbox = GetBoundingBox(item);
+            var result = $"Zone_{bbox.Min.X:F0}_{bbox.Min.Y:F0}_{bbox.Min.Z:F0}";
+            LogToFile($"GenerateZoneName: Используем координаты: '{result}'");
+            return result;
+        }
+    }
+    catch (Exception ex)
+    {
+        var bbox = GetBoundingBox(item);
+        var result = $"Zone_{bbox.Min.X:F0}_{bbox.Min.Y:F0}_{bbox.Min.Z:F0}";
+        LogToFile($"GenerateZoneName: Ошибка, используем координаты: '{result}', ошибка: {ex.Message}");
+        return result;
+    }
+}
+
 
         private string GetParameterValue(ModelItem item, string parameterName)
         {
