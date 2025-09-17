@@ -221,11 +221,28 @@ namespace ClashManager
 
             try
             {
-                LogToFile($"TraverseModel: У элемента '{item.DisplayName}' {item.Children.Count} дочерних элементов");
-                foreach (var child in item.Children)
+                // Проверяем, что Children является коллекцией
+                if (item.Children is System.Collections.IEnumerable childrenEnumerable)
                 {
-                    TraverseModel(child, candidates, maxDepth, currentDepth + 1);
-                    if (candidates.Count >= 1000) return;
+                    int childCount = 0;
+                    foreach (var child in childrenEnumerable)
+                    {
+                        childCount++;
+                    }
+                    LogToFile($"TraverseModel: У элемента '{item.DisplayName}' {childCount} дочерних элементов");
+                    
+                    foreach (var child in childrenEnumerable)
+                    {
+                        if (child is ModelItem childItem)
+                        {
+                            TraverseModel(childItem, candidates, maxDepth, currentDepth + 1);
+                            if (candidates.Count >= 1000) return;
+                        }
+                    }
+                }
+                else
+                {
+                    LogToFile($"TraverseModel: Элемент '{item.DisplayName}' не имеет дочерних элементов или Children не является коллекцией");
                 }
             }
             catch (Exception ex)
