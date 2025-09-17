@@ -36,13 +36,37 @@ namespace CollisionGrouperPlugin
             }
         }
 
+        private void LogToFile(string message)
+        {
+            string logPath = @"C:\temp\ZoneGroupingDebug.txt";
+            try
+            {
+                System.IO.File.AppendAllText(logPath, $"{DateTime.Now:HH:mm:ss.fff}: {message}{Environment.NewLine}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ошибка записи лога: {ex.Message}");
+            }
+        }
+
         public void makeGroups(List<ClashTest> selectedClashTests)
         {
+            // Очищаем лог файл в начале
+            string logPath = @"C:\temp\ZoneGroupingDebug.txt";
+            try
+            {
+                System.IO.File.WriteAllText(logPath, $"=== НАЧАЛО ГРУППИРОВКИ ПО ЗОНАМ {DateTime.Now} ==={Environment.NewLine}");
+            }
+            catch { }
+
             // Проверка на null или пустой список тестов
             if (selectedClashTests == null || selectedClashTests.Count == 0)
             {
+                LogToFile("ОШИБКА: selectedClashTests == null или пустой список");
                 return;
             }
+
+            LogToFile($"Начинаем группировку для {selectedClashTests.Count} тестов");
 
             // Список для хранения отчётов по тестам
             List<Tuple<string, int, int>> reports = new List<Tuple<string, int, int>>();
@@ -146,11 +170,11 @@ namespace CollisionGrouperPlugin
                 group.Children.Add(resultCopy);
 
                 // Отладочное логирование
-                Debug.WriteLine($"Добавлена коллизия в зону '{zoneName}'");
+                LogToFile($"Добавлена коллизия в зону '{zoneName}'");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Ошибка при группировке результата: {ex.Message}");
+                LogToFile($"Ошибка при группировке результата: {ex.Message}");
             }
         }
 
@@ -160,21 +184,25 @@ namespace CollisionGrouperPlugin
             {
                 // Получаем зоны из ZoneHelper
                 var zones = zoneHelper.GetZones();
+                LogToFile($"Найдено зон: {zones.Count}");
                 
                 // Проверяем, в какой зоне находится коллизия
                 foreach (var zone in zones)
                 {
+                    LogToFile($"Проверяем зону: {zone.ZoneName}");
                     if (IsClashInsideZone(clash, zone.BoundingBox))
                     {
+                        LogToFile($"Коллизия попала в зону: {zone.ZoneName}");
                         return zone.ZoneName;
                     }
                 }
                 
+                LogToFile("Коллизия не попала ни в одну зону, отправляем в Null");
                 return "Null";
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Ошибка при определении зоны: {ex.Message}");
+                LogToFile($"Ошибка при определении зоны: {ex.Message}");
                 return "Null";
             }
         }
@@ -196,13 +224,22 @@ namespace CollisionGrouperPlugin
                     var centerZ = (box1.Min.Z + box1.Max.Z + box2.Min.Z + box2.Max.Z) / 4;
 
                     var centerPoint = new Point3D(centerX, centerY, centerZ);
-                    return IsPointInsideBox(centerPoint, zoneBox);
+                    
+                    LogToFile($"Центр коллизии: ({centerX:F2}, {centerY:F2}, {centerZ:F2})");
+                    LogToFile($"Зона Box: Min({zoneBox.Min.X:F2}, {zoneBox.Min.Y:F2}, {zoneBox.Min.Z:F2}) Max({zoneBox.Max.X:F2}, {zoneBox.Max.Y:F2}, {zoneBox.Max.Z:F2})");
+                    
+                    bool isInside = IsPointInsideBox(centerPoint, zoneBox);
+                    LogToFile($"Коллизия внутри зоны: {isInside}");
+                    
+                    return isInside;
                 }
 
+                LogToFile("Один из элементов коллизии не имеет геометрии");
                 return false;
             }
-            catch
+            catch (Exception ex)
             {
+                LogToFile($"Ошибка в IsClashInsideZone: {ex.Message}");
                 return false;
             }
         }

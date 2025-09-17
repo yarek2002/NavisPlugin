@@ -21,6 +21,19 @@ namespace ClashManager
             LoadSelectedZoneModel();
         }
 
+        private void LogToFile(string message)
+        {
+            string logPath = @"C:\temp\ZoneHelperDebug.txt";
+            try
+            {
+                System.IO.File.AppendAllText(logPath, $"{DateTime.Now:HH:mm:ss.fff}: {message}{Environment.NewLine}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Ошибка записи лога: {ex.Message}");
+            }
+        }
+
         /// <summary>
         /// Загружает выбранную модель с зонами из настроек
         /// </summary>
@@ -53,9 +66,30 @@ namespace ClashManager
         /// </summary>
         public List<ZoneItem> GetZones()
         {
-            if (_selectedZoneModel == null) return new List<ZoneItem>();
+            // Очищаем лог файл в начале
+            string logPath = @"C:\temp\ZoneHelperDebug.txt";
+            try
+            {
+                System.IO.File.WriteAllText(logPath, $"=== НАЧАЛО ЗАГРУЗКИ ЗОН {DateTime.Now} ==={Environment.NewLine}");
+            }
+            catch { }
+
+            if (_selectedZoneModel == null) 
+            {
+                LogToFile("ZoneHelper: _selectedZoneModel == null");
+                return new List<ZoneItem>();
+            }
             
-            return FindZonesInModel(_selectedZoneModel.RootItem);
+            LogToFile($"ZoneHelper: Загружаем зоны из модели: {_selectedZoneModel.FileName}");
+            var zones = FindZonesInModel(_selectedZoneModel.RootItem);
+            LogToFile($"ZoneHelper: Найдено зон: {zones.Count}");
+            
+            foreach (var zone in zones)
+            {
+                LogToFile($"ZoneHelper: Зона '{zone.ZoneName}' - Box: Min({zone.BoundingBox.Min.X:F2}, {zone.BoundingBox.Min.Y:F2}, {zone.BoundingBox.Min.Z:F2}) Max({zone.BoundingBox.Max.X:F2}, {zone.BoundingBox.Max.Y:F2}, {zone.BoundingBox.Max.Z:F2})");
+            }
+            
+            return zones;
         }
 
         /// <summary>
@@ -185,21 +219,27 @@ namespace ClashManager
             try
             {
                 string comment = GetParameterValue(item, "Комментарий");
+                LogToFile($"GenerateZoneName: Элемент '{item.DisplayName}', комментарий: '{comment}'");
 
                 if (!string.IsNullOrEmpty(comment))
                 {
+                    LogToFile($"GenerateZoneName: Используем комментарий: '{comment}'");
                     return comment;
                 }
                 else
                 {
                     var displayName = item.DisplayName ?? "Unknown";
-                    return System.IO.Path.GetFileNameWithoutExtension(displayName);
+                    var result = System.IO.Path.GetFileNameWithoutExtension(displayName);
+                    LogToFile($"GenerateZoneName: Используем DisplayName: '{result}'");
+                    return result;
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 var displayName = item.DisplayName ?? "Unknown";
-                return System.IO.Path.GetFileNameWithoutExtension(displayName);
+                var result = System.IO.Path.GetFileNameWithoutExtension(displayName);
+                LogToFile($"GenerateZoneName: Ошибка, используем DisplayName: '{result}', ошибка: {ex.Message}");
+                return result;
             }
         }
 
