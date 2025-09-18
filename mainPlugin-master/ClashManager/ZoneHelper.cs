@@ -86,7 +86,15 @@ namespace ClashManager
             
             foreach (var zone in zones)
             {
-                LogToFile($"ZoneHelper: Зона '{zone.ZoneName}' - Box: Min({zone.BoundingBox.Min.X:F2}, {zone.BoundingBox.Min.Y:F2}, {zone.BoundingBox.Min.Z:F2}) Max({zone.BoundingBox.Max.X:F2}, {zone.BoundingBox.Max.Y:F2}, {zone.BoundingBox.Max.Z:F2})");
+                if (zone.UsePolygonGeometry)
+                {
+                    LogToFile($"ZoneHelper: Зона '{zone.ZoneName}' - ✅ ПОЛИГОН с {zone.Vertices.Count} вершинами" + 
+                        (zone.HasZoneHeight ? $", высота: {zone.ZoneHeight:F2}" : ""));
+                }
+                else
+                {
+                    LogToFile($"ZoneHelper: Зона '{zone.ZoneName}' - ⚠️ BoundingBox: Min({zone.BoundingBox.Min.X:F2}, {zone.BoundingBox.Min.Y:F2}, {zone.BoundingBox.Min.Z:F2}) Max({zone.BoundingBox.Max.X:F2}, {zone.BoundingBox.Max.Y:F2}, {zone.BoundingBox.Max.Z:F2})");
+                }
             }
             
             return zones;
@@ -117,12 +125,40 @@ namespace ClashManager
                         var zoneName = GenerateZoneName(item);
                         LogToFile($"FindZonesInModel: Создаем зону с именем: '{zoneName}'");
                         
-                        zones.Add(new ZoneItem
+                        // Пытаемся извлечь полигональную геометрию
+                        var vertices = TryExtractPolygonVertices(item);
+                        bool usePolygon = vertices.Count >= 3;
+                        
+                        var zoneItem = new ZoneItem
                         {
                             ZoneName = zoneName,
                             ZoneObject = item,
-                            BoundingBox = boundingBox
-                        });
+                            BoundingBox = boundingBox,
+                            Vertices = vertices,
+                            UsePolygonGeometry = usePolygon
+                        };
+                        
+                        // Попытка определить высоту зоны
+                        if (usePolygon)
+                        {
+                            if (TryExtractZoneHeight(item, boundingBox, out double extractedHeight))
+                            {
+                                zoneItem.ZoneHeight = extractedHeight;
+                                zoneItem.HasZoneHeight = true;
+                            }
+                            
+                            LogToFile($"FindZonesInModel: ✅ Зона '{zoneName}' использует полигональную геометрию с {vertices.Count} вершинами");
+                            if (zoneItem.HasZoneHeight)
+                            {
+                                LogToFile($"FindZonesInModel: Высота зоны: {zoneItem.ZoneHeight:F2}");
+                            }
+                        }
+                        else
+                        {
+                            LogToFile($"FindZonesInModel: ⚠️ Зона '{zoneName}' использует стандартный BoundingBox");
+                        }
+                        
+                        zones.Add(zoneItem);
 
                         if (zones.Count >= 100) break;
                     }
@@ -156,7 +192,7 @@ namespace ClashManager
             {
                 foreach (var zone in zones)
                 {
-                    if (IsClashInsideZone(result, zone.BoundingBox))
+                    if (IsClashInsideZone(result, zone))
                     {
                         return zone.ZoneName;
                     }
@@ -277,6 +313,287 @@ namespace ClashManager
             catch
             {
                 return new BoundingBox3D();
+            }
+        }
+
+        /// <summary>
+        /// Пытается извлечь вершины полигона из свойств объекта зоны
+        /// </summary>
+        private List<Point3D> TryExtractPolygonVertices(ModelItem item)
+        {
+            var vertices = new List<Point3D>();
+            
+            try
+            {
+                LogToFile($"TryExtractPolygonVertices: Ищем вершины полигона в элементе '{item.DisplayName}'");
+                
+                foreach (var category in item.PropertyCategories)
+                {
+                    LogToFile($"TryExtractPolygonVertices: Проверяем категорию '{category.DisplayName}'");
+                    
+                    foreach (var property in category.Properties)
+                    {
+                        if (property?.DisplayName != null && property.Value != null)
+                        {
+                            var propName = property.DisplayName.ToLower();
+                            var propValue = property.Value.ToString();
+                            
+                            // Поиск координат вершин в различных форматах
+                            if (propName.Contains("vertex") || propName.Contains("point") || 
+                                propName.Contains("coordinate") || propName.Contains("corner") ||
+                                propName.Contains("вершина") || propName.Contains("точка") ||
+                                propName.Contains("координата") || propName.Contains("угол"))
+                            {
+                                LogToFile($"TryExtractPolygonVertices: Найдено свойство с координатами '{property.DisplayName}' = '{propValue}'");
+                                
+                                if (TryParsePointFromProperty(propValue, out Point3D point))
+                                {
+                                    vertices.Add(point);
+                                    LogToFile($"TryExtractPolygonVertices: Добавлена вершина ({point.X:F2}, {point.Y:F2}, {point.Z:F2})");
+                                }
+                            }
+                            
+                            // Поиск полного списка координат в одном свойстве
+                            if (propName.Contains("polygon") || propName.Contains("boundary") || 
+                                propName.Contains("outline") || propName.Contains("полигон") ||
+                                propName.Contains("граница") || propName.Contains("контур"))
+                            {
+                                LogToFile($"TryExtractPolygonVertices: Найдено свойство полигона '{property.DisplayName}' = '{propValue}'");
+                                
+                                var polygonPoints = ParsePolygonFromProperty(propValue);
+                                if (polygonPoints.Count > 0)
+                                {
+                                    vertices.AddRange(polygonPoints);
+                                    LogToFile($"TryExtractPolygonVertices: Добавлено {polygonPoints.Count} вершин из полигона");
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Убираем дубликаты и сортируем по часовой стрелке (если это 2D полигон)
+                if (vertices.Count >= 3)
+                {
+                    vertices = RemoveDuplicateVertices(vertices);
+                    vertices = SortVerticesClockwise(vertices);
+                    LogToFile($"TryExtractPolygonVertices: Итого найдено {vertices.Count} уникальных вершин");
+                }
+                else
+                {
+                    LogToFile($"TryExtractPolygonVertices: Недостаточно вершин для полигона ({vertices.Count} < 3)");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"TryExtractPolygonVertices: Ошибка извлечения вершин: {ex.Message}");
+            }
+            
+            return vertices;
+        }
+
+        /// <summary>
+        /// Парсит координаты точки из строки
+        /// </summary>
+        private bool TryParsePointFromProperty(string value, out Point3D point)
+        {
+            point = new Point3D(0, 0, 0); // Значение по умолчанию
+            
+            try
+            {
+                if (string.IsNullOrWhiteSpace(value)) return false;
+                
+                // Очищаем строку от скобок и лишних символов
+                var cleanValue = value.Trim()
+                    .Replace("(", "").Replace(")", "")
+                    .Replace("[", "").Replace("]", "")
+                    .Replace("{", "").Replace("}", "");
+                
+                // Разделяем по различным разделителям
+                var parts = cleanValue.Split(new char[] { ',', ';', ' ', '\t', '|' }, 
+                    StringSplitOptions.RemoveEmptyEntries);
+                
+                if (parts.Length >= 3)
+                {
+                    if (double.TryParse(parts[0], out double x) &&
+                        double.TryParse(parts[1], out double y) &&
+                        double.TryParse(parts[2], out double z))
+                    {
+                        point = new Point3D(x, y, z);
+                        return true;
+                    }
+                }
+                else if (parts.Length == 2)
+                {
+                    // 2D координаты - добавляем Z = 0
+                    if (double.TryParse(parts[0], out double x) &&
+                        double.TryParse(parts[1], out double y))
+                    {
+                        point = new Point3D(x, y, 0);
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"TryParsePointFromProperty: Ошибка парсинга '{value}': {ex.Message}");
+            }
+            
+            return false;
+        }
+
+        /// <summary>
+        /// Парсит множественные координаты из одного свойства
+        /// </summary>
+        private List<Point3D> ParsePolygonFromProperty(string value)
+        {
+            var points = new List<Point3D>();
+            
+            try
+            {
+                if (string.IsNullOrWhiteSpace(value)) return points;
+                
+                // Попробуем найти координаты в различных форматах
+                // Формат: "x1,y1,z1;x2,y2,z2;x3,y3,z3"
+                var pointStrings = value.Split(new char[] { ';', '|', '\n' }, 
+                    StringSplitOptions.RemoveEmptyEntries);
+                
+                foreach (var pointStr in pointStrings)
+                {
+                    if (TryParsePointFromProperty(pointStr.Trim(), out Point3D point))
+                    {
+                        points.Add(point);
+                    }
+                }
+                
+                // Если не получилось, попробуем другой формат
+                if (points.Count == 0)
+                {
+                    // Формат: "x1 y1 z1 x2 y2 z2 x3 y3 z3"
+                    var numbers = value.Split(new char[] { ' ', ',', '\t' }, 
+                        StringSplitOptions.RemoveEmptyEntries);
+                    
+                    for (int i = 0; i + 2 < numbers.Length; i += 3)
+                    {
+                        if (double.TryParse(numbers[i], out double x) &&
+                            double.TryParse(numbers[i + 1], out double y) &&
+                            double.TryParse(numbers[i + 2], out double z))
+                        {
+                            points.Add(new Point3D(x, y, z));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"ParsePolygonFromProperty: Ошибка парсинга полигона '{value}': {ex.Message}");
+            }
+            
+            return points;
+        }
+
+        /// <summary>
+        /// Удаляет дублирующиеся вершины
+        /// </summary>
+        private List<Point3D> RemoveDuplicateVertices(List<Point3D> vertices)
+        {
+            var unique = new List<Point3D>();
+            const double tolerance = 0.01; // Допуск для сравнения координат
+            
+            foreach (var vertex in vertices)
+            {
+                bool isDuplicate = false;
+                foreach (var existing in unique)
+                {
+                    if (Math.Abs(existing.X - vertex.X) < tolerance &&
+                        Math.Abs(existing.Y - vertex.Y) < tolerance &&
+                        Math.Abs(existing.Z - vertex.Z) < tolerance)
+                    {
+                        isDuplicate = true;
+                        break;
+                    }
+                }
+                
+                if (!isDuplicate)
+                {
+                    unique.Add(vertex);
+                }
+            }
+            
+            return unique;
+        }
+
+        /// <summary>
+        /// Сортирует вершины по часовой стрелке (для 2D полигона в плоскости XY)
+        /// </summary>
+        private List<Point3D> SortVerticesClockwise(List<Point3D> vertices)
+        {
+            if (vertices.Count < 3) return vertices;
+            
+            try
+            {
+                // Находим центр полигона
+                double centerX = vertices.Average(v => v.X);
+                double centerY = vertices.Average(v => v.Y);
+                
+                // Сортируем по углу относительно центра
+                return vertices.OrderBy(v => Math.Atan2(v.Y - centerY, v.X - centerX)).ToList();
+            }
+            catch
+            {
+                return vertices; // Возвращаем исходный порядок при ошибке
+            }
+        }
+
+        /// <summary>
+        /// Пытается определить высоту зоны из свойств объекта
+        /// </summary>
+        private bool TryExtractZoneHeight(ModelItem item, BoundingBox3D boundingBox, out double height)
+        {
+            height = 0;
+            
+            try
+            {
+                LogToFile($"TryExtractZoneHeight: Ищем высоту зоны в элементе '{item.DisplayName}'");
+                
+                // Сначала ищем в свойствах
+                foreach (var category in item.PropertyCategories)
+                {
+                    foreach (var property in category.Properties)
+                    {
+                        if (property?.DisplayName != null && property.Value != null)
+                        {
+                            var propName = property.DisplayName.ToLower();
+                            
+                            if (propName.Contains("height") || propName.Contains("высота") ||
+                                propName.Contains("thickness") || propName.Contains("толщина") ||
+                                propName.Contains("depth") || propName.Contains("глубина"))
+                            {
+                                if (double.TryParse(property.Value.ToString(), out height) && height > 0)
+                                {
+                                    LogToFile($"TryExtractZoneHeight: Найдена высота в свойстве '{property.DisplayName}' = {height:F2}");
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Если не нашли в свойствах, используем высоту BoundingBox
+                double boxHeight = boundingBox.Max.Z - boundingBox.Min.Z;
+                if (boxHeight > 0.1) // Минимальная значимая высота
+                {
+                    height = boxHeight;
+                    LogToFile($"TryExtractZoneHeight: Используем высоту BoundingBox = {height:F2}");
+                    return true;
+                }
+                
+                LogToFile($"TryExtractZoneHeight: Высота зоны не определена");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"TryExtractZoneHeight: Ошибка определения высоты: {ex.Message}");
+                return false;
             }
         }
 
@@ -424,7 +741,7 @@ namespace ClashManager
             }
         }
 
-        private bool IsClashInsideZone(ClashResult clash, BoundingBox3D zoneBox)
+        private bool IsClashInsideZone(ClashResult clash, ZoneItem zone)
         {
             try
             {
@@ -468,9 +785,21 @@ namespace ClashManager
                     return false;
                 }
                 
-                LogToFile($"Зона Box: Min({zoneBox.Min.X:F2}, {zoneBox.Min.Y:F2}, {zoneBox.Min.Z:F2}) Max({zoneBox.Max.X:F2}, {zoneBox.Max.Y:F2}, {zoneBox.Max.Z:F2})");
+                if (zone.UsePolygonGeometry)
+                {
+                    LogToFile($"Зона '{zone.ZoneName}': полигон из {zone.Vertices.Count} вершин");
+                    for (int i = 0; i < zone.Vertices.Count; i++)
+                    {
+                        var v = zone.Vertices[i];
+                        LogToFile($"  Вершина {i}: ({v.X:F2}, {v.Y:F2}, {v.Z:F2})");
+                    }
+                }
+                else
+                {
+                    LogToFile($"Зона '{zone.ZoneName}' Box: Min({zone.BoundingBox.Min.X:F2}, {zone.BoundingBox.Min.Y:F2}, {zone.BoundingBox.Min.Z:F2}) Max({zone.BoundingBox.Max.X:F2}, {zone.BoundingBox.Max.Y:F2}, {zone.BoundingBox.Max.Z:F2})");
+                }
                 
-                bool isInside = IsPointInsideBox(centerPoint, zoneBox);
+                bool isInside = IsPointInsideZone(centerPoint, zone);
                 LogToFile($"Коллизия внутри зоны: {isInside}");
                 
                 return isInside;
@@ -487,6 +816,111 @@ namespace ClashManager
             return point.X >= box.Min.X && point.X <= box.Max.X &&
                    point.Y >= box.Min.Y && point.Y <= box.Max.Y &&
                    point.Z >= box.Min.Z && point.Z <= box.Max.Z;
+        }
+
+        /// <summary>
+        /// Проверяет, находится ли точка внутри зоны (полигон или BoundingBox)
+        /// </summary>
+        private bool IsPointInsideZone(Point3D point, ZoneItem zone)
+        {
+            if (zone.UsePolygonGeometry && zone.Vertices.Count >= 3)
+            {
+                // Используем полигональную геометрию
+                bool isInsidePolygon = IsPointInsidePolygon(point, zone.Vertices);
+                
+                // Дополнительная проверка по высоте, если задана
+                if (isInsidePolygon && zone.HasZoneHeight)
+                {
+                    double zoneBaseZ = zone.Vertices.Min(v => v.Z);
+                    double zoneTopZ = zoneBaseZ + zone.ZoneHeight;
+                    
+                    if (point.Z < zoneBaseZ || point.Z > zoneTopZ)
+                    {
+                        LogToFile($"IsPointInsideZone: Точка вне зоны по высоте. Point.Z={point.Z:F2}, Zone Z={zoneBaseZ:F2}-{zoneTopZ:F2}");
+                        return false;
+                    }
+                }
+                
+                LogToFile($"IsPointInsideZone: Полигональная проверка - {(isInsidePolygon ? "внутри" : "снаружи")}");
+                return isInsidePolygon;
+            }
+            else
+            {
+                // Используем стандартный BoundingBox
+                bool isInsideBox = IsPointInsideBox(point, zone.BoundingBox);
+                LogToFile($"IsPointInsideZone: BoundingBox проверка - {(isInsideBox ? "внутри" : "снаружи")}");
+                return isInsideBox;
+            }
+        }
+
+        /// <summary>
+        /// Алгоритм Ray Casting для определения точки внутри полигона (2D)
+        /// </summary>
+        private bool IsPointInsidePolygon(Point3D point, List<Point3D> vertices)
+        {
+            if (vertices.Count < 3) return false;
+            
+            try
+            {
+                LogToFile($"IsPointInsidePolygon: Проверяем точку ({point.X:F2}, {point.Y:F2}) в полигоне из {vertices.Count} вершин");
+                
+                int intersectCount = 0;
+                int vertexCount = vertices.Count;
+                
+                for (int i = 0; i < vertexCount; i++)
+                {
+                    var v1 = vertices[i];
+                    var v2 = vertices[(i + 1) % vertexCount];
+                    
+                    // Проверяем пересечение луча с ребром полигона
+                    if (((v1.Y > point.Y) != (v2.Y > point.Y)) &&
+                        (point.X < (v2.X - v1.X) * (point.Y - v1.Y) / (v2.Y - v1.Y) + v1.X))
+                    {
+                        intersectCount++;
+                    }
+                }
+                
+                // Нечетное количество пересечений = точка внутри
+                bool isInside = (intersectCount % 2) == 1;
+                LogToFile($"IsPointInsidePolygon: Количество пересечений = {intersectCount}, результат = {isInside}");
+                
+                return isInside;
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"IsPointInsidePolygon: Ошибка в алгоритме: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Альтернативный алгоритм для 3D полигонов (проекция на плоскость XY)
+        /// </summary>
+        private bool IsPointInsidePolygon3D(Point3D point, List<Point3D> vertices, bool hasZoneHeight = false, double zoneHeight = 0)
+        {
+            try
+            {
+                // Сначала проверяем высоту, если задана
+                if (hasZoneHeight)
+                {
+                    double minZ = vertices.Min(v => v.Z);
+                    double maxZ = minZ + zoneHeight;
+                    
+                    if (point.Z < minZ || point.Z > maxZ)
+                    {
+                        LogToFile($"IsPointInsidePolygon3D: Точка вне зоны по высоте Z={point.Z:F2}, диапазон={minZ:F2}-{maxZ:F2}");
+                        return false;
+                    }
+                }
+                
+                // Проецируем на плоскость XY и используем 2D алгоритм
+                return IsPointInsidePolygon(point, vertices);
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"IsPointInsidePolygon3D: Ошибка: {ex.Message}");
+                return false;
+            }
         }
 
         private List<ClashResult> GetAllResultsFromGroup(ClashResultGroup group)
@@ -515,5 +949,11 @@ namespace ClashManager
         public string ZoneName { get; set; }
         public ModelItem ZoneObject { get; set; }
         public BoundingBox3D BoundingBox { get; set; }
+        
+        // Полигональная геометрия
+        public List<Point3D> Vertices { get; set; } = new List<Point3D>();
+        public bool UsePolygonGeometry { get; set; } = false;
+        public double ZoneHeight { get; set; } = 0; // Высота зоны для 3D проверки
+        public bool HasZoneHeight { get; set; } = false; // Флаг наличия высоты
     }
 }
