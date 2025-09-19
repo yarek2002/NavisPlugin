@@ -497,9 +497,12 @@ namespace ClashManager.AutoNaming.Views
                 bool isSameModel = model1Name == model2Name;
                 
                 // Отладочная информация
-                System.Diagnostics.Debug.WriteLine($"Model1 ({model1Name}) IDs: {string.Join(", ", model1ElementIds)}");
-                System.Diagnostics.Debug.WriteLine($"Model2 ({model2Name}) IDs: {string.Join(", ", model2ElementIds)}");
-                System.Diagnostics.Debug.WriteLine($"Same model: {isSameModel}");
+                System.Diagnostics.Debug.WriteLine($"=== DEBUG AutoNaming ===");
+                System.Diagnostics.Debug.WriteLine($"Model1 name: '{model1Name}'");
+                System.Diagnostics.Debug.WriteLine($"Model2 name: '{model2Name}'");
+                System.Diagnostics.Debug.WriteLine($"Model1 ({model1Name}) IDs: [{string.Join(", ", model1ElementIds)}] (Count: {model1ElementIds.Count})");
+                System.Diagnostics.Debug.WriteLine($"Model2 ({model2Name}) IDs: [{string.Join(", ", model2ElementIds)}] (Count: {model2ElementIds.Count})");
+                System.Diagnostics.Debug.WriteLine($"Same model: {isSameModel} (model1Name == model2Name: {model1Name == model2Name})");
 
                 // Формируем строку с названиями моделей, ID элементов и GUID группы
                 var parts = new List<string>();
@@ -511,20 +514,28 @@ namespace ClashManager.AutoNaming.Views
                     {
                         // Если модели одинаковые, дублируем название модели
                         parts.Add($"{model1Name} | {model1Name}");
+                        System.Diagnostics.Debug.WriteLine($"Added same model names: '{model1Name} | {model1Name}'");
                     }
                     else
                     {
                         // Если модели разные, добавляем оба названия
                         parts.Add($"{model1Name} | {model2Name}");
+                        System.Diagnostics.Debug.WriteLine($"Added different model names: '{model1Name} | {model2Name}'");
                     }
                 }
                 else if (model1Name != "Unknown")
                 {
                     parts.Add(model1Name);
+                    System.Diagnostics.Debug.WriteLine($"Added only model1 name: '{model1Name}' (model2 is Unknown)");
                 }
                 else if (model2Name != "Unknown")
                 {
                     parts.Add(model2Name);
+                    System.Diagnostics.Debug.WriteLine($"Added only model2 name: '{model2Name}' (model1 is Unknown)");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("Both models are Unknown - no model names added");
                 }
 
                 // Добавляем ID элементов, группируя по моделям
