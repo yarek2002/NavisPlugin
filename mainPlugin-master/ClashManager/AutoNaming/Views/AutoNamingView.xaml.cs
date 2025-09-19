@@ -496,6 +496,31 @@ namespace ClashManager.AutoNaming.Views
                 // Проверяем, одинаковые ли модели
                 bool isSameModel = model1Name == model2Name;
                 
+                // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Если у нас есть ID только в одной коллекции,
+                // но оба элемента из одной коллизии, то модели должны быть одинаковыми
+                if (!isSameModel && (model1ElementIds.Count > 0 && model2ElementIds.Count == 0) || 
+                    (model2ElementIds.Count > 0 && model1ElementIds.Count == 0))
+                {
+                    // Проверяем, есть ли коллизии где оба элемента из одной модели
+                    bool hasSameModelCollision = false;
+                    foreach (var result in allResults)
+                    {
+                        string resultModel1Name = GetModelName(result.CompositeItem1);
+                        string resultModel2Name = GetModelName(result.CompositeItem2);
+                        if (resultModel1Name == resultModel2Name && resultModel1Name != "Unknown")
+                        {
+                            hasSameModelCollision = true;
+                            break;
+                        }
+                    }
+                    
+                    if (hasSameModelCollision)
+                    {
+                        isSameModel = true;
+                        System.Diagnostics.Debug.WriteLine($"FORCED isSameModel = true due to same model collision detected");
+                    }
+                }
+                
                 // Отладочная информация
                 System.Diagnostics.Debug.WriteLine($"=== DEBUG AutoNaming ===");
                 System.Diagnostics.Debug.WriteLine($"Model1 name: '{model1Name}'");
@@ -568,18 +593,38 @@ namespace ClashManager.AutoNaming.Views
                     // Если модели разные, добавляем ID отдельно для каждой модели
                     System.Diagnostics.Debug.WriteLine($"Different models processing: model1ElementIds.Count={model1ElementIds.Count}, model2ElementIds.Count={model2ElementIds.Count}");
                     
-                    if (model1ElementIds.Count > 0)
+                    // ВАЖНО: Если у нас есть ID только в одной коллекции, но модели должны быть одинаковыми,
+                    // принудительно дублируем ID
+                    if (model1ElementIds.Count > 0 && model2ElementIds.Count == 0)
                     {
                         string model1Ids = string.Join(", ", model1ElementIds.OrderBy(id => id));
                         idParts.Add(model1Ids);
-                        System.Diagnostics.Debug.WriteLine($"Added model1 IDs: '{model1Ids}'");
+                        idParts.Add(model1Ids); // Дублируем
+                        System.Diagnostics.Debug.WriteLine($"FORCED DUPLICATION: Added model1 IDs twice: '{model1Ids}' | '{model1Ids}'");
                     }
-                    
-                    if (model2ElementIds.Count > 0)
+                    else if (model2ElementIds.Count > 0 && model1ElementIds.Count == 0)
                     {
                         string model2Ids = string.Join(", ", model2ElementIds.OrderBy(id => id));
                         idParts.Add(model2Ids);
-                        System.Diagnostics.Debug.WriteLine($"Added model2 IDs: '{model2Ids}'");
+                        idParts.Add(model2Ids); // Дублируем
+                        System.Diagnostics.Debug.WriteLine($"FORCED DUPLICATION: Added model2 IDs twice: '{model2Ids}' | '{model2Ids}'");
+                    }
+                    else
+                    {
+                        // Обычная логика для разных моделей
+                        if (model1ElementIds.Count > 0)
+                        {
+                            string model1Ids = string.Join(", ", model1ElementIds.OrderBy(id => id));
+                            idParts.Add(model1Ids);
+                            System.Diagnostics.Debug.WriteLine($"Added model1 IDs: '{model1Ids}'");
+                        }
+                        
+                        if (model2ElementIds.Count > 0)
+                        {
+                            string model2Ids = string.Join(", ", model2ElementIds.OrderBy(id => id));
+                            idParts.Add(model2Ids);
+                            System.Diagnostics.Debug.WriteLine($"Added model2 IDs: '{model2Ids}'");
+                        }
                     }
                 }
         
