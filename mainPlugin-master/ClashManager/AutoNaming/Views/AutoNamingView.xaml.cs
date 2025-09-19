@@ -523,11 +523,17 @@ namespace ClashManager.AutoNaming.Views
                     idParts.Add(string.Join(", ", model1ElementIds));
                 }
                 
-                // Добавляем ID элементов второй модели
+                // Добавляем ID элементов второй модели, если есть. Если нет, то добавляем ID элементов первой модели
                 if (model2ElementIds.Count > 0)
                 {
                     idParts.Add(string.Join(", ", model2ElementIds));
                 }
+
+                else
+                {
+                    idParts.Add(string.Join(", ", model1ElementIds));
+                }
+        
                 
                 // Если есть ID элементов, добавляем их в общий список
                 if (idParts.Count > 0)
