@@ -537,24 +537,38 @@ namespace ClashManager.AutoNaming.Views
                     allIds.UnionWith(model1ElementIds);
                     allIds.UnionWith(model2ElementIds);
                     
+                    System.Diagnostics.Debug.WriteLine($"Same model processing: model1ElementIds.Count={model1ElementIds.Count}, model2ElementIds.Count={model2ElementIds.Count}, allIds.Count={allIds.Count}");
+                    
                     if (allIds.Count > 0)
                     {
                         string idsString = string.Join(", ", allIds.OrderBy(id => id));
                         idParts.Add(idsString); // Для первой модели
                         idParts.Add(idsString); // Для второй модели (дублируем)
+                        
+                        System.Diagnostics.Debug.WriteLine($"Added duplicate IDs: '{idsString}' | '{idsString}'");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("No IDs found for same model case");
                     }
                 }
                 else
                 {
                     // Если модели разные, добавляем ID отдельно для каждой модели
+                    System.Diagnostics.Debug.WriteLine($"Different models processing: model1ElementIds.Count={model1ElementIds.Count}, model2ElementIds.Count={model2ElementIds.Count}");
+                    
                     if (model1ElementIds.Count > 0)
                     {
-                        idParts.Add(string.Join(", ", model1ElementIds.OrderBy(id => id)));
+                        string model1Ids = string.Join(", ", model1ElementIds.OrderBy(id => id));
+                        idParts.Add(model1Ids);
+                        System.Diagnostics.Debug.WriteLine($"Added model1 IDs: '{model1Ids}'");
                     }
                     
                     if (model2ElementIds.Count > 0)
                     {
-                        idParts.Add(string.Join(", ", model2ElementIds.OrderBy(id => id)));
+                        string model2Ids = string.Join(", ", model2ElementIds.OrderBy(id => id));
+                        idParts.Add(model2Ids);
+                        System.Diagnostics.Debug.WriteLine($"Added model2 IDs: '{model2Ids}'");
                     }
                 }
         
@@ -562,7 +576,13 @@ namespace ClashManager.AutoNaming.Views
                 // Если есть ID элементов, добавляем их в общий список
                 if (idParts.Count > 0)
                 {
-                    parts.Add(string.Join(" | ", idParts));
+                    string joinedIds = string.Join(" | ", idParts);
+                    parts.Add(joinedIds);
+                    System.Diagnostics.Debug.WriteLine($"Final ID parts: {idParts.Count} parts -> '{joinedIds}'");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("No ID parts to add");
                 }
 
                 // Добавляем GUID группы
