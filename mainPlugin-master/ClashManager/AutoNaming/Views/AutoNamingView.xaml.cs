@@ -493,10 +493,13 @@ namespace ClashManager.AutoNaming.Views
                     }
                 }
                 
+                // Проверяем, одинаковые ли модели
+                bool isSameModel = model1Name == model2Name;
+                
                 // Отладочная информация
                 System.Diagnostics.Debug.WriteLine($"Model1 ({model1Name}) IDs: {string.Join(", ", model1ElementIds)}");
                 System.Diagnostics.Debug.WriteLine($"Model2 ({model2Name}) IDs: {string.Join(", ", model2ElementIds)}");
-                System.Diagnostics.Debug.WriteLine($"Same model: {model1Name == model2Name}");
+                System.Diagnostics.Debug.WriteLine($"Same model: {isSameModel}");
 
                 // Формируем строку с названиями моделей, ID элементов и GUID группы
                 var parts = new List<string>();
@@ -526,9 +529,6 @@ namespace ClashManager.AutoNaming.Views
 
                 // Добавляем ID элементов, группируя по моделям
                 var idParts = new List<string>();
-                
-                // Проверяем, одинаковые ли модели
-                bool isSameModel = model1Name == model2Name;
                 
                 if (isSameModel)
                 {
@@ -568,10 +568,10 @@ namespace ClashManager.AutoNaming.Views
                 // Добавляем GUID группы
                 parts.Add(group.Guid.ToString());
 
-                string result = string.Join(" | ", parts);
-                System.Diagnostics.Debug.WriteLine($"Final result: {result}");
+                string finalResult = string.Join(" | ", parts);
+                System.Diagnostics.Debug.WriteLine($"Final result: {finalResult}");
                 
-                return result;
+                return finalResult;
             }
             catch (Exception ex)
             {
