@@ -509,8 +509,8 @@ namespace ClashManager.AutoNaming.Views
                 {
                     if (isSameModel)
                     {
-                        // Если модели одинаковые, добавляем название только один раз
-                        parts.Add(model1Name);
+                        // Если модели одинаковые, дублируем название модели
+                        parts.Add($"{model1Name} | {model1Name}");
                     }
                     else
                     {
