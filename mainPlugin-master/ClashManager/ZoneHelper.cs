@@ -241,21 +241,22 @@ namespace ClashManager
 
             try
             {
-                LogToFile($"TraverseModel: Обрабатываем элемент '{item.DisplayName}' на глубине {currentDepth}, Geometry: {item.Geometry != null}, IsHidden: {item.IsHidden}");
+                LogToFile($"TraverseModel: Обрабатываем элемент '{item.DisplayName}' на глубине {currentDepth}, Geometry: {item.Geometry != null}, IsHidden: {item.IsHidden}, ClassDisplayName: '{item.ClassDisplayName}'");
                 
                 if (item.Geometry != null)
                 {
-                    if (!item.IsHidden)
+                    // Проверяем, является ли объект потенциальной зоной
+                    bool isPotentialZone = IsPotentialZone(item);
+                    
+                    if (isPotentialZone)
                     {
                         candidates.Add(item);
-                        LogToFile($"TraverseModel:  НАЙДЕН КАНДИДАТ С ГЕОМЕТРИЕЙ: '{item.DisplayName}' на глубине {currentDepth}, всего кандидатов: {candidates.Count}");
+                        LogToFile($"TraverseModel: ✅ НАЙДЕН КАНДИДАТ ЗОНЫ: '{item.DisplayName}' (Class: '{item.ClassDisplayName}') на глубине {currentDepth}, всего кандидатов: {candidates.Count}");
                         if (candidates.Count >= 1000) return;
                     }
                     else
                     {
-                        LogToFile($"TraverseModel:  Элемент '{item.DisplayName}' имеет геометрию, но скрыт - добавляем как кандидата");
-                        candidates.Add(item);
-                        if (candidates.Count >= 1000) return;
+                        LogToFile($"TraverseModel: ⚠️ Элемент '{item.DisplayName}' имеет геометрию, но не подходит как зона");
                     }
                 }
                 else
@@ -297,6 +298,74 @@ namespace ClashManager
             catch (Exception ex)
             {
                 LogToFile($"TraverseModel: Ошибка при обходе дочерних элементов '{item?.DisplayName}': {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Проверяет, является ли объект потенциальной зоной
+        /// </summary>
+        private bool IsPotentialZone(ModelItem item)
+        {
+            try
+            {
+                // Проверяем по имени класса
+                string className = item.ClassDisplayName?.ToLower() ?? "";
+                string displayName = item.DisplayName?.ToLower() ?? "";
+                
+                // Исключаем объекты, которые точно не являются зонами
+                string[] excludeClasses = { "стена", "wall", "дверь", "door", "окно", "window", "потолок", "ceiling", 
+                                          "пол", "floor", "колонна", "column", "балка", "beam", "труба", "pipe",
+                                          "кабель", "cable", "воздуховод", "duct", "элемент", "element" };
+                
+                foreach (var excludeClass in excludeClasses)
+                {
+                    if (className.Contains(excludeClass) || displayName.Contains(excludeClass))
+                    {
+                        LogToFile($"IsPotentialZone: Исключаем '{item.DisplayName}' - содержит '{excludeClass}'");
+                        return false;
+                    }
+                }
+                
+                // Ищем признаки зоны в свойствах
+                bool hasZoneProperties = false;
+                foreach (var category in item.PropertyCategories)
+                {
+                    foreach (var property in category.Properties)
+                    {
+                        if (property?.DisplayName != null && property.Value != null)
+                        {
+                            var propName = property.DisplayName.ToLower();
+                            var propValue = property.Value.ToString().ToLower();
+                            
+                            // Ищем свойства, указывающие на зону
+                            if (propName.Contains("зона") || propName.Contains("zone") ||
+                                propName.Contains("этаж") || propName.Contains("floor") ||
+                                propName.Contains("комментар") || propName.Contains("comment") ||
+                                propName.Contains("назначение") || propName.Contains("purpose"))
+                            {
+                                hasZoneProperties = true;
+                                LogToFile($"IsPotentialZone: Найдено свойство зоны '{property.DisplayName}' = '{property.Value}'");
+                                break;
+                            }
+                        }
+                    }
+                    if (hasZoneProperties) break;
+                }
+                
+                // Если есть свойства зоны или это геометрический объект без явных исключений
+                if (hasZoneProperties || (!string.IsNullOrEmpty(className) && !excludeClasses.Any(c => className.Contains(c))))
+                {
+                    LogToFile($"IsPotentialZone: ✅ '{item.DisplayName}' - потенциальная зона (свойства: {hasZoneProperties}, класс: '{className}')");
+                    return true;
+                }
+                
+                LogToFile($"IsPotentialZone: ❌ '{item.DisplayName}' - не подходит как зона");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"IsPotentialZone: Ошибка проверки '{item?.DisplayName}': {ex.Message}");
+                return false;
             }
         }
 
@@ -602,35 +671,74 @@ namespace ClashManager
     try
     {
         string comment = "";
-        // ищем свойство "Комментарии" в категории "Объект" (или "Item")
+        string zoneName = "";
+        string floorName = "";
+        
+        // Ищем различные свойства для определения имени зоны
         foreach (PropertyCategory cat in item.PropertyCategories)
         {
-            if (cat.DisplayName.Equals("Объект", StringComparison.InvariantCultureIgnoreCase) ||
-                cat.DisplayName.Equals("Item", StringComparison.InvariantCultureIgnoreCase))
+            LogToFile($"GenerateZoneName: Проверяем категорию '{cat.DisplayName}'");
+            
+            foreach (DataProperty prop in cat.Properties)
             {
-                foreach (DataProperty prop in cat.Properties)
+                if (prop?.DisplayName != null && prop.Value != null)
                 {
-                    if (prop.DisplayName.Equals("Комментарии", StringComparison.InvariantCultureIgnoreCase) ||
-                        prop.DisplayName.Equals("Comments", StringComparison.InvariantCultureIgnoreCase))
+                    var propName = prop.DisplayName.ToLower();
+                    var propValue = prop.Value.ToString();
+                    
+                    LogToFile($"GenerateZoneName: Свойство '{prop.DisplayName}' = '{propValue}'");
+                    
+                    // Ищем комментарии
+                    if (propName.Contains("комментар") || propName.Contains("comment"))
                     {
-                        comment = prop.Value.ToDisplayString();
-                        break;
+                        comment = propValue;
+                    }
+                    // Ищем зону
+                    else if (propName.Contains("зона") || propName.Contains("zone"))
+                    {
+                        zoneName = propValue;
+                    }
+                    // Ищем этаж
+                    else if (propName.Contains("этаж") || propName.Contains("floor") || propName.Contains("level"))
+                    {
+                        floorName = propValue;
                     }
                 }
             }
         }
 
-        LogToFile($"GenerateZoneName: Элемент DisplayName='{item.DisplayName}', ClassDisplayName='{item.ClassDisplayName}', комментарий: '{comment}'");
+        LogToFile($"GenerateZoneName: Элемент DisplayName='{item.DisplayName}', ClassDisplayName='{item.ClassDisplayName}'");
+        LogToFile($"GenerateZoneName: Найденные свойства - комментарий: '{comment}', зона: '{zoneName}', этаж: '{floorName}'");
 
+        // Приоритет: комментарий > зона+этаж > зона > этаж > ClassDisplayName > координаты
         if (!string.IsNullOrEmpty(comment))
         {
             LogToFile($"GenerateZoneName: Используем комментарий: '{comment}'");
             return comment;
         }
+        else if (!string.IsNullOrEmpty(zoneName) && !string.IsNullOrEmpty(floorName))
+        {
+            var result = $"{floorName} | {zoneName}";
+            LogToFile($"GenerateZoneName: Используем этаж+зона: '{result}'");
+            return result;
+        }
+        else if (!string.IsNullOrEmpty(zoneName))
+        {
+            LogToFile($"GenerateZoneName: Используем зону: '{zoneName}'");
+            return zoneName;
+        }
+        else if (!string.IsNullOrEmpty(floorName))
+        {
+            LogToFile($"GenerateZoneName: Используем этаж: '{floorName}'");
+            return floorName;
+        }
         else if (!string.IsNullOrEmpty(item.ClassDisplayName))
         {
-            LogToFile($"GenerateZoneName: Используем ClassDisplayName: '{item.ClassDisplayName}'");
-            return item.ClassDisplayName;
+            // Для ClassDisplayName добавляем координаты чтобы сделать уникальным
+            var bbox = GetBoundingBox(item);
+            var result = $"{item.ClassDisplayName}_{bbox.Min.X:F0}_{bbox.Min.Y:F0}_{bbox.Min.Z:F0}";
+            LogToFile($"GenerateZoneName: Используем ClassDisplayName с координатами: '{result}'");
+            return result;
         }
         else if (!string.IsNullOrEmpty(item.DisplayName))
         {
@@ -741,7 +849,7 @@ namespace ClashManager
             }
         }
 
-        private bool IsClashInsideZone(ClashResult clash, ZoneItem zone)
+        public bool IsClashInsideZone(ClashResult clash, ZoneItem zone)
         {
             try
             {

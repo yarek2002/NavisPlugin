@@ -184,25 +184,49 @@ namespace CollisionGrouperPlugin
             {
                 // Получаем зоны из ZoneHelper
                 var zones = zoneHelper.GetZones();
-                LogToFile($"Найдено зон: {zones.Count}");
+                LogToFile($"GetZoneForClash: Найдено зон: {zones.Count}");
+                
+                if (zones.Count == 0)
+                {
+                    LogToFile("GetZoneForClash: ❌ Зоны не найдены, отправляем в Null");
+                    return "Null";
+                }
+                
+                // Логируем информацию о коллизии
+                try
+                {
+                    var item1 = clash.CompositeItem1;
+                    var item2 = clash.CompositeItem2;
+                    LogToFile($"GetZoneForClash: Коллизия между '{item1?.DisplayName}' и '{item2?.DisplayName}'");
+                }
+                catch (Exception ex)
+                {
+                    LogToFile($"GetZoneForClash: Ошибка получения информации о коллизии: {ex.Message}");
+                }
                 
                 // Проверяем, в какой зоне находится коллизия
                 foreach (var zone in zones)
                 {
-                    LogToFile($"Проверяем зону: {zone.ZoneName}");
-                    if (IsClashInsideZone(clash, zone.BoundingBox))
+                    LogToFile($"GetZoneForClash: Проверяем зону: '{zone.ZoneName}'");
+                    
+                    // Используем улучшенную проверку из ZoneHelper
+                    if (zoneHelper.IsClashInsideZone(clash, zone))
                     {
-                        LogToFile($"Коллизия попала в зону: {zone.ZoneName}");
+                        LogToFile($"GetZoneForClash: ✅ Коллизия попала в зону: '{zone.ZoneName}'");
                         return zone.ZoneName;
+                    }
+                    else
+                    {
+                        LogToFile($"GetZoneForClash: ❌ Коллизия НЕ попала в зону: '{zone.ZoneName}'");
                     }
                 }
                 
-                LogToFile("Коллизия не попала ни в одну зону, отправляем в Null");
+                LogToFile("GetZoneForClash: ❌ Коллизия не попала ни в одну зону, отправляем в Null");
                 return "Null";
             }
             catch (Exception ex)
             {
-                LogToFile($"Ошибка при определении зоны: {ex.Message}");
+                LogToFile($"GetZoneForClash: Ошибка при определении зоны: {ex.Message}");
                 return "Null";
             }
         }
