@@ -80,7 +80,13 @@
                         <RadioButton x:Name="SearchByNameRadioButton" Content="По имени" IsChecked="True" Checked="SearchByNameRadioButton_Checked" Margin="0,0,16,0"/>
                         <RadioButton x:Name="SearchByGuidRadioButton" Content="По GUID" Checked="SearchByGuidRadioButton_Checked"/>
                     </StackPanel>
-                    
+
+                    <!-- Счетчик коллизий -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock x:Name="TotalCollisionsText" Text="Всего: 0" FontWeight="Bold" Margin="0,0,16,0"/>
+                        <TextBlock x:Name="SelectedCollisionsText" Text="Выделено: 0" FontWeight="Bold"/>
+                    </StackPanel>
+
                     <!-- Поле поиска и кнопки -->
                     <DockPanel LastChildFill="True">
                         <TextBox Name="SearchBox" DockPanel.Dock="Left" Width="260" Margin="0,0,6,0" KeyDown="SearchBox_KeyDown" TextChanged="SearchBox_TextChanged" />
@@ -171,11 +177,6 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
-                <!-- Счетчик коллизий -->
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Grid.Row="2">
-                    <TextBlock x:Name="TotalCollisionsText" Text="Всего: 0" FontWeight="Bold" Margin="0,0,16,0"/>
-                    <TextBlock x:Name="SelectedCollisionsText" Text="Выделено: 0" FontWeight="Bold"/>
-                </StackPanel>
             </Grid>
         </GroupBox>
     </Grid>
