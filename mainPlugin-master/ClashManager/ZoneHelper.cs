@@ -1066,7 +1066,7 @@ namespace ClashManager
         /// <summary>
         /// Проверяет, находится ли точка внутри зоны, используя треугольники
         /// </summary>
-        private bool IsPointInsideTriangles(Point3D point, List<Triangle3D> triangles)
+        private bool IsPointInsideTriangles(Point3D point, List<PrimitiveTriangle> triangles)
         {
             try
             {
@@ -1094,7 +1094,7 @@ namespace ClashManager
         /// <summary>
         /// Проверяет, находится ли точка внутри треугольника
         /// </summary>
-        private bool IsPointInsideTriangle(Point3D point, Triangle3D triangle)
+        private bool IsPointInsideTriangle(Point3D point, PrimitiveTriangle triangle)
         {
             try
             {
