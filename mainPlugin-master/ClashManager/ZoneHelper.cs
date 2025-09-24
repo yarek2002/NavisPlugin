@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
-using ComApi = Autodesk.Navisworks.Interop.ComApi;
 
 namespace ClashManager
 {
@@ -420,10 +419,10 @@ namespace ClashManager
 				// 1) Извлечь геометрию текущего элемента через COM API (InwOaTriMeshGeom)
 				try
 				{
-					ComApi.InwOaPath comPath = Autodesk.Navisworks.Api.ComApi.ComApiBridge.ToInwOaPath(item);
+					var comPath = Autodesk.Navisworks.Api.ComApi.ComApiBridge.ToInwOaPath(item);
 					dynamic state = Autodesk.Navisworks.Api.ComApi.ComApiBridge.State;
 					// Получаем коллекцию геометрии фрагментов (тип: InwLGeomColl)
-					dynamic geomColl = state.GetGeometry(comPath, true);
+						dynamic geomColl = state.GetGeometry((object)comPath, true);
 					if (geomColl != null)
 					{
 						foreach (var frag in geomColl)
@@ -433,7 +432,7 @@ namespace ClashManager
 							if (geomObj == null) continue;
 
 							// Ищем треугольную сетку (InwOaTriMeshGeom)
-							if (geomObj is ComApi.InwOaTriMeshGeom triMesh)
+							if (geomObj is Autodesk.Navisworks.Interop.ComApi.InwOaTriMeshGeom triMesh)
 							{
 								var coords = (Array)triMesh.get_Coords();
 								var indices = (Array)triMesh.get_CoordIndex();
