@@ -421,13 +421,24 @@ namespace ClashManager
 				{
 					var comPath = Autodesk.Navisworks.Api.ComApi.ComApiBridge.ToInwOaPath(item);
 					var state = Autodesk.Navisworks.Api.ComApi.ComApiBridge.State;
+					LogToFile($"ExtractTrianglesFromGeometry: COM Path создан: {comPath != null}");
+					LogToFile($"ExtractTrianglesFromGeometry: State получен: {state != null}");
+					
 					// Получаем коллекцию геометрии фрагментов (тип: InwLGeomColl) через рефлексию
 					var getGeometryMethod = state.GetType().GetMethod("GetGeometry");
+					LogToFile($"ExtractTrianglesFromGeometry: GetGeometry метод найден: {getGeometryMethod != null}");
+					
 					var geomColl = getGeometryMethod?.Invoke(state, new object[] { comPath, true });
+					LogToFile($"ExtractTrianglesFromGeometry: Геометрия получена: {geomColl != null}");
+					
 					if (geomColl != null && geomColl is System.Collections.IEnumerable geomEnumerable)
 					{
+						int fragmentCount = 0;
 						foreach (var frag in geomEnumerable)
 						{
+							fragmentCount++;
+							LogToFile($"ExtractTrianglesFromGeometry: Обрабатываем фрагмент #{fragmentCount}");
+							
 							object geomObj = null;
 							var getGeomMethod = frag.GetType().GetMethod("GetGeom");
 							if (getGeomMethod != null)
@@ -435,20 +446,32 @@ namespace ClashManager
 								var args = new object[] { null };
 								getGeomMethod.Invoke(frag, args);
 								geomObj = args[0];
+								LogToFile($"ExtractTrianglesFromGeometry: Геометрия фрагмента #{fragmentCount}: {geomObj != null}");
 							}
 							if (geomObj == null) continue;
 
 							// Ищем треугольную сетку (InwOaTriMeshGeom) без прямой ссылки на тип
+							var typeName = geomObj.GetType().Name;
+							LogToFile($"ExtractTrianglesFromGeometry: Тип геометрии фрагмента #{fragmentCount}: {typeName}");
+							
+							if (string.Equals(typeName, "InwOaTriMeshGeom", StringComparison.Ordinal))
 							{
-								var typeName = geomObj.GetType().Name;
-								if (string.Equals(typeName, "InwOaTriMeshGeom", StringComparison.Ordinal))
-								{
-									var triType = geomObj.GetType();
-									var getCoords = triType.GetMethod("get_Coords");
-									var getCoordIndex = triType.GetMethod("get_CoordIndex");
-									if (getCoords == null || getCoordIndex == null) continue;
-									var coords = (Array)getCoords.Invoke(geomObj, null);
-									var indices = (Array)getCoordIndex.Invoke(geomObj, null);
+								LogToFile($"ExtractTrianglesFromGeometry: Найден InwOaTriMeshGeom в фрагменте #{fragmentCount}");
+								
+								var triType = geomObj.GetType();
+								var getCoords = triType.GetMethod("get_Coords");
+								var getCoordIndex = triType.GetMethod("get_CoordIndex");
+								
+								LogToFile($"ExtractTrianglesFromGeometry: get_Coords метод: {getCoords != null}");
+								LogToFile($"ExtractTrianglesFromGeometry: get_CoordIndex метод: {getCoordIndex != null}");
+								
+								if (getCoords == null || getCoordIndex == null) continue;
+								
+								var coords = (Array)getCoords.Invoke(geomObj, null);
+								var indices = (Array)getCoordIndex.Invoke(geomObj, null);
+								
+								LogToFile($"ExtractTrianglesFromGeometry: Координаты получены: {coords?.Length ?? 0} точек");
+								LogToFile($"ExtractTrianglesFromGeometry: Индексы получены: {indices?.Length ?? 0} индексов");
 
 								// coords: x1,y1,z1, x2,y2,z2, ...
 								// indices: i1,i2,i3, -1, i4,i5,i6, -1, ... (полилинии/полигоны)
@@ -460,8 +483,10 @@ namespace ClashManager
 									double z = Convert.ToDouble(coords.GetValue(i + 2));
 									points.Add(new Point3D(x, y, z));
 								}
+								LogToFile($"ExtractTrianglesFromGeometry: Создано точек: {points.Count}");
 
 								var current = new List<int>();
+								int triangleCount = 0;
 								for (int k = 0; k < indices.Length; k++)
 								{
 									int idx = Convert.ToInt32(indices.GetValue(k));
@@ -475,6 +500,7 @@ namespace ClashManager
 												a < points.Count && b < points.Count && c < points.Count)
 											{
 												triangles.Add((points[a], points[b], points[c]));
+												triangleCount++;
 											}
 										}
 										current.Clear();
@@ -484,9 +510,14 @@ namespace ClashManager
 										current.Add(idx);
 									}
 								}
-								}
+								LogToFile($"ExtractTrianglesFromGeometry: Создано треугольников из фрагмента #{fragmentCount}: {triangleCount}");
 							}
 						}
+						LogToFile($"ExtractTrianglesFromGeometry: Всего обработано фрагментов: {fragmentCount}");
+					}
+					else
+					{
+						LogToFile($"ExtractTrianglesFromGeometry: Геометрия не получена или не является IEnumerable");
 					}
 				}
 				catch (Exception ex)
@@ -494,7 +525,90 @@ namespace ClashManager
 					LogToFile($"ExtractTrianglesFromGeometry COM: Ошибка: {ex.Message}");
 				}
 
-				// 2) Рекурсивно обходим детей
+				// 2) Альтернативный способ через стандартный Navisworks API
+				if (triangles.Count == 0)
+				{
+					try
+					{
+						LogToFile($"ExtractTrianglesFromGeometry: Пробуем альтернативный способ через Navisworks API");
+						
+						// Получаем геометрию через стандартный API
+						var geometry = item.Geometry;
+						LogToFile($"ExtractTrianglesFromGeometry: Стандартная геометрия получена: {geometry != null}");
+						
+						if (geometry != null)
+						{
+							LogToFile($"ExtractTrianglesFromGeometry: Тип геометрии: {geometry.GetType().Name}");
+							
+							// Пытаемся получить треугольники через рефлексию
+							var geometryType = geometry.GetType();
+							var getCoordsMethod = geometryType.GetMethod("get_Coords");
+							var getCoordIndexMethod = geometryType.GetMethod("get_CoordIndex");
+							
+							if (getCoordsMethod != null && getCoordIndexMethod != null)
+							{
+								LogToFile($"ExtractTrianglesFromGeometry: Найдены методы get_Coords и get_CoordIndex в геометрии");
+								
+								var coords = (Array)getCoordsMethod.Invoke(geometry, null);
+								var indices = (Array)getCoordIndexMethod.Invoke(geometry, null);
+								
+								LogToFile($"ExtractTrianglesFromGeometry: Координаты из геометрии: {coords?.Length ?? 0}, Индексы: {indices?.Length ?? 0}");
+								
+								if (coords != null && indices != null && coords.Length > 0 && indices.Length > 0)
+								{
+									// Создаем точки из координат
+									var points = new List<Point3D>();
+									for (int i = 0; i + 2 < coords.Length; i += 3)
+									{
+										double x = Convert.ToDouble(coords.GetValue(i));
+										double y = Convert.ToDouble(coords.GetValue(i + 1));
+										double z = Convert.ToDouble(coords.GetValue(i + 2));
+										points.Add(new Point3D(x, y, z));
+									}
+									
+									// Создаем треугольники из индексов
+									var current = new List<int>();
+									int triangleCount = 0;
+									for (int k = 0; k < indices.Length; k++)
+									{
+										int idx = Convert.ToInt32(indices.GetValue(k));
+										if (idx == -1)
+										{
+											// Триангулируем текущий полигон
+											for (int t = 1; t + 1 < current.Count; t++)
+											{
+												int a = current[0], b = current[t], c = current[t + 1];
+												if (a >= 0 && b >= 0 && c >= 0 &&
+													a < points.Count && b < points.Count && c < points.Count)
+												{
+													triangles.Add((points[a], points[b], points[c]));
+													triangleCount++;
+												}
+											}
+											current.Clear();
+										}
+										else
+										{
+											current.Add(idx);
+										}
+									}
+									
+									LogToFile($"ExtractTrianglesFromGeometry: Создано треугольников из геометрии: {triangleCount}");
+								}
+							}
+							else
+							{
+								LogToFile($"ExtractTrianglesFromGeometry: Методы get_Coords/get_CoordIndex не найдены в геометрии");
+							}
+						}
+					}
+					catch (Exception ex)
+					{
+						LogToFile($"ExtractTrianglesFromGeometry API: Ошибка: {ex.Message}");
+					}
+				}
+
+				// 3) Рекурсивно обходим детей
 				if (item.Children is System.Collections.IEnumerable childrenEnumerable)
 				{
 					foreach (var child in childrenEnumerable)
@@ -514,6 +628,86 @@ namespace ClashManager
 			{
 				LogToFile($"ExtractTrianglesFromGeometry: Ошибка: {ex.Message}");
 			}
+			return triangles;
+		}
+
+		/// <summary>
+		/// Извлекает треугольники из фрагмента геометрии через стандартный Navisworks API
+		/// </summary>
+		private List<(Point3D, Point3D, Point3D)> ExtractTrianglesFromFragment(object fragment)
+		{
+			var triangles = new List<(Point3D, Point3D, Point3D)>();
+			
+			try
+			{
+				LogToFile($"ExtractTrianglesFromFragment: Обрабатываем фрагмент типа {fragment.GetType().Name}");
+				
+				// Пытаемся получить треугольники через рефлексию
+				var fragmentType = fragment.GetType();
+				
+				// Ищем методы для получения координат и индексов
+				var getCoordsMethod = fragmentType.GetMethod("get_Coords");
+				var getCoordIndexMethod = fragmentType.GetMethod("get_CoordIndex");
+				
+				if (getCoordsMethod != null && getCoordIndexMethod != null)
+				{
+					LogToFile($"ExtractTrianglesFromFragment: Найдены методы get_Coords и get_CoordIndex");
+					
+					var coords = (Array)getCoordsMethod.Invoke(fragment, null);
+					var indices = (Array)getCoordIndexMethod.Invoke(fragment, null);
+					
+					LogToFile($"ExtractTrianglesFromFragment: Координаты: {coords?.Length ?? 0}, Индексы: {indices?.Length ?? 0}");
+					
+					if (coords != null && indices != null)
+					{
+						// Создаем точки из координат
+						var points = new List<Point3D>();
+						for (int i = 0; i + 2 < coords.Length; i += 3)
+						{
+							double x = Convert.ToDouble(coords.GetValue(i));
+							double y = Convert.ToDouble(coords.GetValue(i + 1));
+							double z = Convert.ToDouble(coords.GetValue(i + 2));
+							points.Add(new Point3D(x, y, z));
+						}
+						
+						// Создаем треугольники из индексов
+						var current = new List<int>();
+						for (int k = 0; k < indices.Length; k++)
+						{
+							int idx = Convert.ToInt32(indices.GetValue(k));
+							if (idx == -1)
+							{
+								// Триангулируем текущий полигон
+								for (int t = 1; t + 1 < current.Count; t++)
+								{
+									int a = current[0], b = current[t], c = current[t + 1];
+									if (a >= 0 && b >= 0 && c >= 0 &&
+										a < points.Count && b < points.Count && c < points.Count)
+									{
+										triangles.Add((points[a], points[b], points[c]));
+									}
+								}
+								current.Clear();
+							}
+							else
+							{
+								current.Add(idx);
+							}
+						}
+						
+						LogToFile($"ExtractTrianglesFromFragment: Создано треугольников: {triangles.Count}");
+					}
+				}
+				else
+				{
+					LogToFile($"ExtractTrianglesFromFragment: Методы get_Coords/get_CoordIndex не найдены");
+				}
+			}
+			catch (Exception ex)
+			{
+				LogToFile($"ExtractTrianglesFromFragment: Ошибка: {ex.Message}");
+			}
+			
 			return triangles;
 		}
 
