@@ -49,6 +49,7 @@ namespace ClashManager.AutoNaming.Views
         private readonly HashSet<Guid> _checkedTestIds = new HashSet<Guid>();
         private List<TestItem> _testItems = new List<TestItem>(); // Кэшируем список тестов
         private int _lastTestClickIndex = -1; // Отслеживаем последний клик для Shift-выбора
+        private bool _suppressCheckboxHandlers = false; // Предотвращает рекурсивные вызовы обработчиков чекбоксов
 
         public AutoNamingView()
         {
@@ -147,6 +148,7 @@ namespace ClashManager.AutoNaming.Views
         {
             var cb = sender as CheckBox;
             if (cb == null) return;
+            if (_suppressCheckboxHandlers) return;
 
             var item = cb.DataContext as TestItem;
             if (item == null) return;
@@ -158,19 +160,40 @@ namespace ClashManager.AutoNaming.Views
             bool isShift = (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Shift) == System.Windows.Input.ModifierKeys.Shift;
             bool targetChecked = cb.IsChecked == true;
 
-            if (isShift && _lastTestClickIndex >= 0)
+            // Если выделено несколько элементов в списке, применяем действие ко всем выделенным
+            if (TestsListBox.SelectedItems.Count > 1 && TestsListBox.SelectedItems.Contains(item))
+            {
+                _suppressCheckboxHandlers = true;
+                try
+                {
+                    foreach (var selectedItem in TestsListBox.SelectedItems)
+                    {
+                        if (selectedItem is TestItem selectedTestItem)
+                        {
+                            selectedTestItem.IsChecked = targetChecked;
+                        }
+                    }
+                }
+                finally { _suppressCheckboxHandlers = false; }
+            }
+            else if (isShift && _lastTestClickIndex >= 0)
             {
                 // Shift-выбор: применяем действие ко всем элементам между последним и текущим кликом
                 int from = Math.Min(_lastTestClickIndex, currentIndex);
                 int to = Math.Max(_lastTestClickIndex, currentIndex);
 
-                for (int i = from; i <= to; i++)
+                _suppressCheckboxHandlers = true;
+                try
                 {
-                    if (TestsListBox.Items[i] is TestItem shiftItem)
+                    for (int i = from; i <= to; i++)
                     {
-                        shiftItem.IsChecked = targetChecked; // меняем состояние через модель
+                        if (TestsListBox.Items[i] is TestItem shiftItem)
+                        {
+                            shiftItem.IsChecked = targetChecked; // меняем состояние через модель
+                        }
                     }
                 }
+                finally { _suppressCheckboxHandlers = false; }
             }
             else
             {
