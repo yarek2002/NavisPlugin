@@ -1144,6 +1144,7 @@ namespace ClashManager
                 LogToFile($"IsPointInsideTriangle: Ошибка: {ex.Message}");
                 return false;
             }
+        }
 
 		/// <summary>
 		/// Пересечение луча и треугольника (Möller–Trumbore). Возвращает true, если есть пересечение, и t по лучу.
