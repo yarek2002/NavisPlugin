@@ -603,16 +603,116 @@ namespace ClashManager
 							
 							LogToFile($"ExtractTrianglesFromGeometry: Свойства координат: {string.Join(", ", coordProperties.Select(p => p.Name))}");
 							
-							// Пытаемся получить треугольники через рефлексию
-							var getCoordsMethod = geometryType.GetMethod("get_Coords");
-							var getCoordIndexMethod = geometryType.GetMethod("get_CoordIndex");
+							// Пробуем использовать FragmentCount и Item для доступа к фрагментам
+							var fragmentCountProperty = geometryType.GetProperty("FragmentCount");
+							var itemProperty = geometryType.GetProperty("Item");
 							
-							if (getCoordsMethod != null && getCoordIndexMethod != null)
+							LogToFile($"ExtractTrianglesFromGeometry: FragmentCount свойство: {fragmentCountProperty != null}");
+							LogToFile($"ExtractTrianglesFromGeometry: Item свойство: {itemProperty != null}");
+							
+							if (fragmentCountProperty != null && itemProperty != null)
+							{
+								try
+								{
+									var fragmentCount = (int)fragmentCountProperty.GetValue(geometry);
+									LogToFile($"ExtractTrianglesFromGeometry: Количество фрагментов: {fragmentCount}");
+									
+									if (fragmentCount > 0)
+									{
+										// Пытаемся получить фрагменты через Item
+										for (int i = 0; i < fragmentCount; i++)
+										{
+											try
+											{
+												var fragment = itemProperty.GetValue(geometry, new object[] { i });
+												LogToFile($"ExtractTrianglesFromGeometry: Фрагмент {i}: {fragment?.GetType().Name ?? "null"}");
+												
+												if (fragment != null)
+												{
+													var fragmentType = fragment.GetType();
+													var fragmentMethods = fragmentType.GetMethods();
+													LogToFile($"ExtractTrianglesFromGeometry: Методы фрагмента {i}: {string.Join(", ", fragmentMethods.Select(m => m.Name))}");
+													
+													// Ищем методы для получения координат в фрагменте
+													var getCoordsMethod = fragmentType.GetMethod("get_Coords");
+													var getCoordIndexMethod = fragmentType.GetMethod("get_CoordIndex");
+													
+													if (getCoordsMethod != null && getCoordIndexMethod != null)
+													{
+														LogToFile($"ExtractTrianglesFromGeometry: Найдены методы get_Coords/get_CoordIndex в фрагменте {i}");
+														
+														var coords = (Array)getCoordsMethod.Invoke(fragment, null);
+														var indices = (Array)getCoordIndexMethod.Invoke(fragment, null);
+														
+														LogToFile($"ExtractTrianglesFromGeometry: Фрагмент {i} - координаты: {coords?.Length ?? 0}, индексы: {indices?.Length ?? 0}");
+														
+														if (coords != null && indices != null && coords.Length > 0 && indices.Length > 0)
+														{
+															// Создаем точки из координат
+															var points = new List<Point3D>();
+															for (int j = 0; j + 2 < coords.Length; j += 3)
+															{
+																double x = Convert.ToDouble(coords.GetValue(j));
+																double y = Convert.ToDouble(coords.GetValue(j + 1));
+																double z = Convert.ToDouble(coords.GetValue(j + 2));
+																points.Add(new Point3D(x, y, z));
+															}
+															
+															// Создаем треугольники из индексов
+															var current = new List<int>();
+															int triangleCount = 0;
+															for (int k = 0; k < indices.Length; k++)
+															{
+																int idx = Convert.ToInt32(indices.GetValue(k));
+																if (idx == -1)
+																{
+																	// Триангулируем текущий полигон
+																	for (int t = 1; t + 1 < current.Count; t++)
+																	{
+																		int a = current[0], b = current[t], c = current[t + 1];
+																		if (a >= 0 && b >= 0 && c >= 0 &&
+																			a < points.Count && b < points.Count && c < points.Count)
+																		{
+																			triangles.Add((points[a], points[b], points[c]));
+																			triangleCount++;
+																		}
+																	}
+																	current.Clear();
+																}
+																else
+																{
+																	current.Add(idx);
+																}
+															}
+															
+															LogToFile($"ExtractTrianglesFromGeometry: Создано треугольников из фрагмента {i}: {triangleCount}");
+														}
+													}
+												}
+											}
+											catch (Exception ex)
+											{
+												LogToFile($"ExtractTrianglesFromGeometry: Ошибка обработки фрагмента {i}: {ex.Message}");
+											}
+										}
+									}
+								}
+								catch (Exception ex)
+								{
+									LogToFile($"ExtractTrianglesFromGeometry: Ошибка работы с фрагментами: {ex.Message}");
+								}
+							}
+							
+							// Пытаемся получить треугольники через рефлексию (резервный способ)
+							var getCoordsMethod2 = geometryType.GetMethod("get_Coords");
+							var getCoordIndexMethod2 = geometryType.GetMethod("get_CoordIndex");
+							
+							if (getCoordsMethod2 != null && getCoordIndexMethod2 != null)
 							{
 								LogToFile($"ExtractTrianglesFromGeometry: Найдены методы get_Coords и get_CoordIndex в геометрии");
 								
-								var coords = (Array)getCoordsMethod.Invoke(geometry, null);
-								var indices = (Array)getCoordIndexMethod.Invoke(geometry, null);
+								var coords = (Array)getCoordsMethod2.Invoke(geometry, null);
+								var indices = (Array)getCoordIndexMethod2.Invoke(geometry, null);
 								
 								LogToFile($"ExtractTrianglesFromGeometry: Координаты из геометрии: {coords?.Length ?? 0}, Индексы: {indices?.Length ?? 0}");
 								
