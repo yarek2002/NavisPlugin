@@ -1099,9 +1099,9 @@ namespace ClashManager
             try
             {
                 // Получаем вершины треугольника
-                var v1 = triangle.V1;
-                var v2 = triangle.V2;
-                var v3 = triangle.V3;
+                var v1 = triangle.Item1;
+                var v2 = triangle.Item2;
+                var v3 = triangle.Item3;
 
                 // Используем barycentric coordinates для проверки
                 var barycentric = CalculateBarycentricCoordinates(point, v1, v2, v3);
