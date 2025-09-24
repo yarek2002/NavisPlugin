@@ -1,0 +1,364 @@
+=== НАЧАЛО ЗАГРУЗКИ ЗОН 24.09.2025 17:06:14 ===
+17:06:14.916: ZoneHelper: Загружаем зоны из модели: C:\Users\ya.chasovskoy\Downloads\К32_фрагменты_zone.nwc
+17:06:14.916: FindZonesInModel: Начинаем поиск зон в корневом элементе: К32_фрагменты_zone.nwc
+17:06:14.916: FindZoneCandidates: Начинаем поиск кандидатов в зоны
+17:06:14.916: TraverseModel: Обрабатываем элемент 'К32_фрагменты_zone.nwc' на глубине 0, Geometry: False, IsHidden: False, ClassDisplayName: 'Файл'
+17:06:14.916: TraverseModel:  Элемент 'К32_фрагменты_zone.nwc' не имеет геометрии
+17:06:14.916: TraverseModel: У элемента 'К32_фрагменты_zone.nwc' 1 дочерних элементов
+17:06:14.916: TraverseModel: Обрабатываем элемент '<Нет уровня>' на глубине 1, Geometry: False, IsHidden: False, ClassDisplayName: 'Слой'
+17:06:14.916: TraverseModel:  Элемент '<Нет уровня>' не имеет геометрии
+17:06:14.916: TraverseModel: У элемента '<Нет уровня>' 1 дочерних элементов
+17:06:14.916: TraverseModel: Обрабатываем элемент 'Формы' на глубине 2, Geometry: False, IsHidden: False, ClassDisplayName: 'Категория'
+17:06:14.917: TraverseModel:  Элемент 'Формы' не имеет геометрии
+17:06:14.917: TraverseModel: У элемента 'Формы' 5 дочерних элементов
+17:06:14.917: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 3, Geometry: False, IsHidden: False, ClassDisplayName: 'Семейство'
+17:06:14.917: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+17:06:14.917: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+17:06:14.917: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 4, Geometry: False, IsHidden: False, ClassDisplayName: 'Тип'
+17:06:14.917: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+17:06:14.917: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+17:06:14.917: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 5, Geometry: False, IsHidden: False, ClassDisplayName: 'Формы: Формы 1: Формы 1'
+17:06:14.917: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+17:06:14.917: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+17:06:14.917: TraverseModel: Обрабатываем элемент '' на глубине 6, Geometry: True, IsHidden: False, ClassDisplayName: 'Твердое тело'
+17:06:14.917: IsPotentialZone: ✅ '' - потенциальная зона (свойства: False, класс: 'твердое тело')
+17:06:14.917: TraverseModel: ✅ НАЙДЕН КАНДИДАТ ЗОНЫ: '' (Class: 'Твердое тело') на глубине 6, всего кандидатов: 1
+17:06:14.917: TraverseModel: У элемента '' 0 дочерних элементов
+17:06:14.917: TraverseModel: Обрабатываем элемент 'Формы 2' на глубине 3, Geometry: False, IsHidden: False, ClassDisplayName: 'Семейство'
+17:06:14.918: TraverseModel:  Элемент 'Формы 2' не имеет геометрии
+17:06:14.918: TraverseModel: У элемента 'Формы 2' 1 дочерних элементов
+17:06:14.918: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 4, Geometry: False, IsHidden: False, ClassDisplayName: 'Тип'
+17:06:14.918: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+17:06:14.918: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+17:06:14.918: TraverseModel: Обрабатываем элемент 'Формы 2' на глубине 5, Geometry: False, IsHidden: False, ClassDisplayName: 'Формы: Формы 2: Формы 1'
+17:06:14.918: TraverseModel:  Элемент 'Формы 2' не имеет геометрии
+17:06:14.918: TraverseModel: У элемента 'Формы 2' 1 дочерних элементов
+17:06:14.918: TraverseModel: Обрабатываем элемент '' на глубине 6, Geometry: True, IsHidden: False, ClassDisplayName: 'Твердое тело'
+17:06:14.918: IsPotentialZone: ✅ '' - потенциальная зона (свойства: False, класс: 'твердое тело')
+17:06:14.918: TraverseModel: ✅ НАЙДЕН КАНДИДАТ ЗОНЫ: '' (Class: 'Твердое тело') на глубине 6, всего кандидатов: 2
+17:06:14.918: TraverseModel: У элемента '' 0 дочерних элементов
+17:06:14.918: TraverseModel: Обрабатываем элемент 'Формы 3' на глубине 3, Geometry: False, IsHidden: False, ClassDisplayName: 'Семейство'
+17:06:14.918: TraverseModel:  Элемент 'Формы 3' не имеет геометрии
+17:06:14.918: TraverseModel: У элемента 'Формы 3' 1 дочерних элементов
+17:06:14.918: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 4, Geometry: False, IsHidden: False, ClassDisplayName: 'Тип'
+17:06:14.919: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+17:06:14.919: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+17:06:14.919: TraverseModel: Обрабатываем элемент 'Формы 3' на глубине 5, Geometry: False, IsHidden: False, ClassDisplayName: 'Формы: Формы 3: Формы 1'
+17:06:14.919: TraverseModel:  Элемент 'Формы 3' не имеет геометрии
+17:06:14.919: TraverseModel: У элемента 'Формы 3' 1 дочерних элементов
+17:06:14.919: TraverseModel: Обрабатываем элемент '' на глубине 6, Geometry: True, IsHidden: False, ClassDisplayName: 'Твердое тело'
+17:06:14.919: IsPotentialZone: ✅ '' - потенциальная зона (свойства: False, класс: 'твердое тело')
+17:06:14.919: TraverseModel: ✅ НАЙДЕН КАНДИДАТ ЗОНЫ: '' (Class: 'Твердое тело') на глубине 6, всего кандидатов: 3
+17:06:14.919: TraverseModel: У элемента '' 0 дочерних элементов
+17:06:14.919: TraverseModel: Обрабатываем элемент 'Формы 4' на глубине 3, Geometry: False, IsHidden: False, ClassDisplayName: 'Семейство'
+17:06:14.919: TraverseModel:  Элемент 'Формы 4' не имеет геометрии
+17:06:14.919: TraverseModel: У элемента 'Формы 4' 1 дочерних элементов
+17:06:14.919: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 4, Geometry: False, IsHidden: False, ClassDisplayName: 'Тип'
+17:06:14.919: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+17:06:14.919: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+17:06:14.919: TraverseModel: Обрабатываем элемент 'Формы 4' на глубине 5, Geometry: False, IsHidden: False, ClassDisplayName: 'Формы: Формы 4: Формы 1'
+17:06:14.919: TraverseModel:  Элемент 'Формы 4' не имеет геометрии
+17:06:14.920: TraverseModel: У элемента 'Формы 4' 1 дочерних элементов
+17:06:14.920: TraverseModel: Обрабатываем элемент '' на глубине 6, Geometry: True, IsHidden: False, ClassDisplayName: 'Твердое тело'
+17:06:14.920: IsPotentialZone: ✅ '' - потенциальная зона (свойства: False, класс: 'твердое тело')
+17:06:14.920: TraverseModel: ✅ НАЙДЕН КАНДИДАТ ЗОНЫ: '' (Class: 'Твердое тело') на глубине 6, всего кандидатов: 4
+17:06:14.920: TraverseModel: У элемента '' 0 дочерних элементов
+17:06:14.920: TraverseModel: Обрабатываем элемент 'Формы 5' на глубине 3, Geometry: False, IsHidden: False, ClassDisplayName: 'Семейство'
+17:06:14.920: TraverseModel:  Элемент 'Формы 5' не имеет геометрии
+17:06:14.920: TraverseModel: У элемента 'Формы 5' 1 дочерних элементов
+17:06:14.920: TraverseModel: Обрабатываем элемент 'Формы 1' на глубине 4, Geometry: False, IsHidden: False, ClassDisplayName: 'Тип'
+17:06:14.920: TraverseModel:  Элемент 'Формы 1' не имеет геометрии
+17:06:14.920: TraverseModel: У элемента 'Формы 1' 1 дочерних элементов
+17:06:14.920: TraverseModel: Обрабатываем элемент 'Формы 5' на глубине 5, Geometry: False, IsHidden: False, ClassDisplayName: 'Формы: Формы 5: Формы 1'
+17:06:14.920: TraverseModel:  Элемент 'Формы 5' не имеет геометрии
+17:06:14.920: TraverseModel: У элемента 'Формы 5' 1 дочерних элементов
+17:06:14.921: TraverseModel: Обрабатываем элемент '' на глубине 6, Geometry: True, IsHidden: False, ClassDisplayName: 'Твердое тело'
+17:06:14.921: IsPotentialZone: ✅ '' - потенциальная зона (свойства: False, класс: 'твердое тело')
+17:06:14.921: TraverseModel: ✅ НАЙДЕН КАНДИДАТ ЗОНЫ: '' (Class: 'Твердое тело') на глубине 6, всего кандидатов: 5
+17:06:14.921: TraverseModel: У элемента '' 0 дочерних элементов
+17:06:14.921: FindZoneCandidates: Найдено кандидатов: 5
+17:06:14.921: FindZonesInModel: Найдено кандидатов в зоны: 5
+17:06:14.921: FindZonesInModel: Обрабатываем кандидата: 
+17:06:14.921: FindZonesInModel: BoundingBox: Min(7131,53, 26404,95, 0,00) Max(7348,98, 26590,05, 16,73)
+17:06:14.921: GenerateZoneName: Проверяем категорию 'Элемент'
+17:06:14.921: GenerateZoneName: Свойство 'Тип' = 'DisplayString:Твердое тело'
+17:06:14.921: GenerateZoneName: Свойство 'Внутренний тип' = 'DisplayString:LcRevitSolid'
+17:06:14.921: GenerateZoneName: Свойство 'Значок' = 'NamedConstant:LcOaNodeIcon:8(Геометрия)'
+17:06:14.921: GenerateZoneName: Свойство 'Скрытый' = 'Boolean:False'
+17:06:14.921: GenerateZoneName: Свойство 'Обязательный' = 'Boolean:False'
+17:06:14.921: GenerateZoneName: Свойство 'Материал' = 'DisplayString:'
+17:06:14.922: GenerateZoneName: Свойство 'Файл источника' = 'DisplayString:К32_фрагменты_new.rvt'
+17:06:14.922: GenerateZoneName: Свойство 'Слой' = 'DisplayString:<Нет уровня>'
+17:06:14.922: GenerateZoneName: Проверяем категорию 'Геометрия'
+17:06:14.922: GenerateZoneName: Свойство 'Элементарные объекты' = 'Int32:12'
+17:06:14.922: GenerateZoneName: Свойство 'Фрагменты' = 'Int32:1'
+17:06:14.922: GenerateZoneName: Свойство 'Треугольники' = 'Boolean:True'
+17:06:14.922: GenerateZoneName: Свойство 'Линии' = 'Boolean:False'
+17:06:14.922: GenerateZoneName: Свойство 'Точки' = 'Boolean:False'
+17:06:14.922: GenerateZoneName: Свойство 'Точки привязки' = 'Boolean:False'
+17:06:14.922: GenerateZoneName: Свойство 'Текст' = 'Boolean:False'
+17:06:14.922: GenerateZoneName: Свойство 'Твердое тело' = 'Boolean:False'
+17:06:14.922: GenerateZoneName: Проверяем категорию 'TimeLiner'
+17:06:14.922: GenerateZoneName: Элемент DisplayName='', ClassDisplayName='Твердое тело'
+17:06:14.922: GenerateZoneName: Найденные свойства - комментарий: '', зона: '', этаж: ''
+17:06:14.922: GenerateZoneName: Используем ClassDisplayName с координатами: 'Твердое тело_7132_26405_0'
+17:06:14.922: FindZonesInModel: Создаем зону с именем: 'Твердое тело_7132_26405_0'
+17:06:14.923: ExtractTrianglesFromGeometry: Извлекаем треугольники из '' (COM API)
+17:06:14.923: ExtractTrianglesFromGeometry: COM Path создан: True
+17:06:14.923: ExtractTrianglesFromGeometry: State получен: True
+17:06:14.923: ExtractTrianglesFromGeometry: State тип: __ComObject
+17:06:14.923: ExtractTrianglesFromGeometry: Найдено методов в State: 7
+17:06:14.923: ExtractTrianglesFromGeometry: Методы геометрии: 
+17:06:14.923: ExtractTrianglesFromGeometry: GetGeometry метод найден: False
+17:06:14.923: ExtractTrianglesFromGeometry: Геометрия получена: False
+17:06:14.923: ExtractTrianglesFromGeometry: Геометрия не получена или не является IEnumerable
+17:06:14.923: ExtractTrianglesFromGeometry: Пробуем альтернативный способ через Navisworks API
+17:06:14.923: ExtractTrianglesFromGeometry: Стандартная геометрия получена: True
+17:06:14.923: ExtractTrianglesFromGeometry: Тип геометрии: ModelGeometry
+17:06:14.925: ExtractTrianglesFromGeometry: Свойства ModelGeometry: ActiveTransform, OriginalTransform, BoundingBox, OriginalTransparency, OriginalColor, ActiveTransparency, ActiveColor, IsSolid, PrimitiveTypes, PrimitiveCount, FragmentCount, Item, IsReadOnly, PermanentTransform, PermanentOverrideTransform, PermanentTransparency, PermanentColor, IsDisposed
+17:06:14.926: ExtractTrianglesFromGeometry: Методы ModelGeometry: GetHashCode, get_PermanentColor, get_PermanentTransparency, get_PermanentOverrideTransform, get_PermanentTransform, InternalCustomCreator, InternalFactory, get_IsReadOnly, InternalCreator, Equals, get_Item, get_FragmentCount, get_PrimitiveCount, get_PrimitiveTypes, get_IsSolid, get_ActiveColor, get_ActiveTransparency, get_OriginalColor, get_OriginalTransparency, get_BoundingBox, get_OriginalTransform, get_ActiveTransform, ToString, get_IsDisposed, Dispose, GetType
+17:06:14.926: ExtractTrianglesFromGeometry: Свойства координат: 
+17:06:14.926: ExtractTrianglesFromGeometry: FragmentCount свойство: True
+17:06:14.926: ExtractTrianglesFromGeometry: Item свойство: True
+17:06:14.926: ExtractTrianglesFromGeometry: Количество фрагментов: 1
+17:06:14.926: ExtractTrianglesFromGeometry: Ошибка обработки фрагмента 0: Несоответствие числа параметров.
+17:06:14.926: ExtractTrianglesFromGeometry: Методы get_Coords/get_CoordIndex не найдены в геометрии
+17:06:14.926: ExtractTrianglesFromGeometry: Итого треугольников собрано: 0
+17:06:14.926: TryExtractPolygonVertices: Ищем вершины полигона в элементе ''
+17:06:14.926: TryExtractPolygonVertices: Проверяем категорию 'Элемент'
+17:06:14.926: TryExtractPolygonVertices: Проверяем категорию 'Геометрия'
+17:06:14.926: TryExtractPolygonVertices: Найдено свойство с координатами 'Треугольники' = 'Boolean:True'
+17:06:14.926: TryExtractPolygonVertices: Проверяем категорию 'TimeLiner'
+17:06:14.927: TryExtractPolygonVertices: Недостаточно вершин для полигона (0 < 3)
+17:06:14.927: FindZonesInModel: ⚠️ Зона 'Твердое тело_7132_26405_0' использует стандартный BoundingBox
+17:06:14.927: FindZonesInModel: Обрабатываем кандидата: 
+17:06:14.927: FindZonesInModel: BoundingBox: Min(7063,35, 26510,60, 16,73) Max(7317,53, 26819,04, 32,81)
+17:06:14.927: GenerateZoneName: Проверяем категорию 'Элемент'
+17:06:14.927: GenerateZoneName: Свойство 'Тип' = 'DisplayString:Твердое тело'
+17:06:14.927: GenerateZoneName: Свойство 'Внутренний тип' = 'DisplayString:LcRevitSolid'
+17:06:14.927: GenerateZoneName: Свойство 'Значок' = 'NamedConstant:LcOaNodeIcon:8(Геометрия)'
+17:06:14.927: GenerateZoneName: Свойство 'Скрытый' = 'Boolean:False'
+17:06:14.927: GenerateZoneName: Свойство 'Обязательный' = 'Boolean:False'
+17:06:14.927: GenerateZoneName: Свойство 'Материал' = 'DisplayString:'
+17:06:14.927: GenerateZoneName: Свойство 'Файл источника' = 'DisplayString:К32_фрагменты_new.rvt'
+17:06:14.927: GenerateZoneName: Свойство 'Слой' = 'DisplayString:<Нет уровня>'
+17:06:14.927: GenerateZoneName: Проверяем категорию 'Геометрия'
+17:06:14.928: GenerateZoneName: Свойство 'Элементарные объекты' = 'Int32:12'
+17:06:14.928: GenerateZoneName: Свойство 'Фрагменты' = 'Int32:1'
+17:06:14.928: GenerateZoneName: Свойство 'Треугольники' = 'Boolean:True'
+17:06:14.928: GenerateZoneName: Свойство 'Линии' = 'Boolean:False'
+17:06:14.928: GenerateZoneName: Свойство 'Точки' = 'Boolean:False'
+17:06:14.928: GenerateZoneName: Свойство 'Точки привязки' = 'Boolean:False'
+17:06:14.928: GenerateZoneName: Свойство 'Текст' = 'Boolean:False'
+17:06:14.928: GenerateZoneName: Свойство 'Твердое тело' = 'Boolean:False'
+17:06:14.928: GenerateZoneName: Проверяем категорию 'TimeLiner'
+17:06:14.928: GenerateZoneName: Элемент DisplayName='', ClassDisplayName='Твердое тело'
+17:06:14.928: GenerateZoneName: Найденные свойства - комментарий: '', зона: '', этаж: ''
+17:06:14.928: GenerateZoneName: Используем ClassDisplayName с координатами: 'Твердое тело_7063_26511_17'
+17:06:14.928: FindZonesInModel: Создаем зону с именем: 'Твердое тело_7063_26511_17'
+17:06:14.928: ExtractTrianglesFromGeometry: Извлекаем треугольники из '' (COM API)
+17:06:14.934: ExtractTrianglesFromGeometry: COM Path создан: True
+17:06:14.934: ExtractTrianglesFromGeometry: State получен: True
+17:06:14.934: ExtractTrianglesFromGeometry: State тип: __ComObject
+17:06:14.934: ExtractTrianglesFromGeometry: Найдено методов в State: 7
+17:06:14.934: ExtractTrianglesFromGeometry: Методы геометрии: 
+17:06:14.934: ExtractTrianglesFromGeometry: GetGeometry метод найден: False
+17:06:14.934: ExtractTrianglesFromGeometry: Геометрия получена: False
+17:06:14.934: ExtractTrianglesFromGeometry: Геометрия не получена или не является IEnumerable
+17:06:14.934: ExtractTrianglesFromGeometry: Пробуем альтернативный способ через Navisworks API
+17:06:14.934: ExtractTrianglesFromGeometry: Стандартная геометрия получена: True
+17:06:14.934: ExtractTrianglesFromGeometry: Тип геометрии: ModelGeometry
+17:06:14.934: ExtractTrianglesFromGeometry: Свойства ModelGeometry: ActiveTransform, OriginalTransform, BoundingBox, OriginalTransparency, OriginalColor, ActiveTransparency, ActiveColor, IsSolid, PrimitiveTypes, PrimitiveCount, FragmentCount, Item, IsReadOnly, PermanentTransform, PermanentOverrideTransform, PermanentTransparency, PermanentColor, IsDisposed
+17:06:14.934: ExtractTrianglesFromGeometry: Методы ModelGeometry: get_ActiveTransform, get_OriginalTransform, get_BoundingBox, get_OriginalTransparency, get_OriginalColor, get_ActiveTransparency, get_ActiveColor, get_IsSolid, get_PrimitiveTypes, get_PrimitiveCount, get_FragmentCount, get_Item, get_IsReadOnly, get_PermanentTransform, get_PermanentOverrideTransform, get_PermanentTransparency, get_PermanentColor, get_IsDisposed, GetHashCode, InternalCustomCreator, InternalFactory, InternalCreator, Equals, ToString, Dispose, GetType
+17:06:14.934: ExtractTrianglesFromGeometry: Свойства координат: 
+17:06:14.934: ExtractTrianglesFromGeometry: FragmentCount свойство: True
+17:06:14.934: ExtractTrianglesFromGeometry: Item свойство: True
+17:06:14.935: ExtractTrianglesFromGeometry: Количество фрагментов: 1
+17:06:14.935: ExtractTrianglesFromGeometry: Ошибка обработки фрагмента 0: Несоответствие числа параметров.
+17:06:14.935: ExtractTrianglesFromGeometry: Методы get_Coords/get_CoordIndex не найдены в геометрии
+17:06:14.935: ExtractTrianglesFromGeometry: Итого треугольников собрано: 0
+17:06:14.935: TryExtractPolygonVertices: Ищем вершины полигона в элементе ''
+17:06:14.935: TryExtractPolygonVertices: Проверяем категорию 'Элемент'
+17:06:14.935: TryExtractPolygonVertices: Проверяем категорию 'Геометрия'
+17:06:14.935: TryExtractPolygonVertices: Найдено свойство с координатами 'Треугольники' = 'Boolean:True'
+17:06:14.935: TryExtractPolygonVertices: Проверяем категорию 'TimeLiner'
+17:06:14.935: TryExtractPolygonVertices: Недостаточно вершин для полигона (0 < 3)
+17:06:14.935: FindZonesInModel: ⚠️ Зона 'Твердое тело_7063_26511_17' использует стандартный BoundingBox
+17:06:14.935: FindZonesInModel: Обрабатываем кандидата: 
+17:06:14.935: FindZonesInModel: BoundingBox: Min(7063,35, 26510,60, 32,81) Max(7317,53, 26819,04, 47,24)
+17:06:14.936: GenerateZoneName: Проверяем категорию 'Элемент'
+17:06:14.936: GenerateZoneName: Свойство 'Тип' = 'DisplayString:Твердое тело'
+17:06:14.936: GenerateZoneName: Свойство 'Внутренний тип' = 'DisplayString:LcRevitSolid'
+17:06:14.936: GenerateZoneName: Свойство 'Значок' = 'NamedConstant:LcOaNodeIcon:8(Геометрия)'
+17:06:14.936: GenerateZoneName: Свойство 'Скрытый' = 'Boolean:False'
+17:06:14.936: GenerateZoneName: Свойство 'Обязательный' = 'Boolean:False'
+17:06:14.936: GenerateZoneName: Свойство 'Материал' = 'DisplayString:'
+17:06:14.936: GenerateZoneName: Свойство 'Файл источника' = 'DisplayString:К32_фрагменты_new.rvt'
+17:06:14.936: GenerateZoneName: Свойство 'Слой' = 'DisplayString:<Нет уровня>'
+17:06:14.936: GenerateZoneName: Проверяем категорию 'Геометрия'
+17:06:14.936: GenerateZoneName: Свойство 'Элементарные объекты' = 'Int32:12'
+17:06:14.936: GenerateZoneName: Свойство 'Фрагменты' = 'Int32:1'
+17:06:14.936: GenerateZoneName: Свойство 'Треугольники' = 'Boolean:True'
+17:06:14.936: GenerateZoneName: Свойство 'Линии' = 'Boolean:False'
+17:06:14.936: GenerateZoneName: Свойство 'Точки' = 'Boolean:False'
+17:06:14.936: GenerateZoneName: Свойство 'Точки привязки' = 'Boolean:False'
+17:06:14.936: GenerateZoneName: Свойство 'Текст' = 'Boolean:False'
+17:06:14.937: GenerateZoneName: Свойство 'Твердое тело' = 'Boolean:False'
+17:06:14.937: GenerateZoneName: Проверяем категорию 'TimeLiner'
+17:06:14.937: GenerateZoneName: Элемент DisplayName='', ClassDisplayName='Твердое тело'
+17:06:14.937: GenerateZoneName: Найденные свойства - комментарий: '', зона: '', этаж: ''
+17:06:14.937: GenerateZoneName: Используем ClassDisplayName с координатами: 'Твердое тело_7063_26511_33'
+17:06:14.937: FindZonesInModel: Создаем зону с именем: 'Твердое тело_7063_26511_33'
+17:06:14.937: ExtractTrianglesFromGeometry: Извлекаем треугольники из '' (COM API)
+17:06:14.937: ExtractTrianglesFromGeometry: COM Path создан: True
+17:06:14.937: ExtractTrianglesFromGeometry: State получен: True
+17:06:14.937: ExtractTrianglesFromGeometry: State тип: __ComObject
+17:06:14.937: ExtractTrianglesFromGeometry: Найдено методов в State: 7
+17:06:14.937: ExtractTrianglesFromGeometry: Методы геометрии: 
+17:06:14.937: ExtractTrianglesFromGeometry: GetGeometry метод найден: False
+17:06:14.937: ExtractTrianglesFromGeometry: Геометрия получена: False
+17:06:14.937: ExtractTrianglesFromGeometry: Геометрия не получена или не является IEnumerable
+17:06:14.937: ExtractTrianglesFromGeometry: Пробуем альтернативный способ через Navisworks API
+17:06:14.937: ExtractTrianglesFromGeometry: Стандартная геометрия получена: True
+17:06:14.938: ExtractTrianglesFromGeometry: Тип геометрии: ModelGeometry
+17:06:14.938: ExtractTrianglesFromGeometry: Свойства ModelGeometry: ActiveTransform, OriginalTransform, BoundingBox, OriginalTransparency, OriginalColor, ActiveTransparency, ActiveColor, IsSolid, PrimitiveTypes, PrimitiveCount, FragmentCount, Item, IsReadOnly, PermanentTransform, PermanentOverrideTransform, PermanentTransparency, PermanentColor, IsDisposed
+17:06:14.938: ExtractTrianglesFromGeometry: Методы ModelGeometry: get_ActiveTransform, get_OriginalTransform, get_BoundingBox, get_OriginalTransparency, get_OriginalColor, get_ActiveTransparency, get_ActiveColor, get_IsSolid, get_PrimitiveTypes, get_PrimitiveCount, get_FragmentCount, get_Item, get_IsReadOnly, get_PermanentTransform, get_PermanentOverrideTransform, get_PermanentTransparency, get_PermanentColor, get_IsDisposed, GetHashCode, InternalCustomCreator, InternalFactory, InternalCreator, Equals, ToString, Dispose, GetType
+17:06:14.938: ExtractTrianglesFromGeometry: Свойства координат: 
+17:06:14.938: ExtractTrianglesFromGeometry: FragmentCount свойство: True
+17:06:14.938: ExtractTrianglesFromGeometry: Item свойство: True
+17:06:14.938: ExtractTrianglesFromGeometry: Количество фрагментов: 1
+17:06:14.938: ExtractTrianglesFromGeometry: Ошибка обработки фрагмента 0: Несоответствие числа параметров.
+17:06:14.938: ExtractTrianglesFromGeometry: Методы get_Coords/get_CoordIndex не найдены в геометрии
+17:06:14.938: ExtractTrianglesFromGeometry: Итого треугольников собрано: 0
+17:06:14.938: TryExtractPolygonVertices: Ищем вершины полигона в элементе ''
+17:06:14.938: TryExtractPolygonVertices: Проверяем категорию 'Элемент'
+17:06:14.938: TryExtractPolygonVertices: Проверяем категорию 'Геометрия'
+17:06:14.938: TryExtractPolygonVertices: Найдено свойство с координатами 'Треугольники' = 'Boolean:True'
+17:06:14.938: TryExtractPolygonVertices: Проверяем категорию 'TimeLiner'
+17:06:14.939: TryExtractPolygonVertices: Недостаточно вершин для полигона (0 < 3)
+17:06:14.939: FindZonesInModel: ⚠️ Зона 'Твердое тело_7063_26511_33' использует стандартный BoundingBox
+17:06:14.939: FindZonesInModel: Обрабатываем кандидата: 
+17:06:14.939: FindZonesInModel: BoundingBox: Min(7063,35, 26510,60, 47,24) Max(7317,53, 26819,04, 61,68)
+17:06:14.939: GenerateZoneName: Проверяем категорию 'Элемент'
+17:06:14.939: GenerateZoneName: Свойство 'Тип' = 'DisplayString:Твердое тело'
+17:06:14.939: GenerateZoneName: Свойство 'Внутренний тип' = 'DisplayString:LcRevitSolid'
+17:06:14.939: GenerateZoneName: Свойство 'Значок' = 'NamedConstant:LcOaNodeIcon:8(Геометрия)'
+17:06:14.939: GenerateZoneName: Свойство 'Скрытый' = 'Boolean:False'
+17:06:14.939: GenerateZoneName: Свойство 'Обязательный' = 'Boolean:False'
+17:06:14.939: GenerateZoneName: Свойство 'Материал' = 'DisplayString:'
+17:06:14.939: GenerateZoneName: Свойство 'Файл источника' = 'DisplayString:К32_фрагменты_new.rvt'
+17:06:14.939: GenerateZoneName: Свойство 'Слой' = 'DisplayString:<Нет уровня>'
+17:06:14.939: GenerateZoneName: Проверяем категорию 'Геометрия'
+17:06:14.939: GenerateZoneName: Свойство 'Элементарные объекты' = 'Int32:12'
+17:06:14.939: GenerateZoneName: Свойство 'Фрагменты' = 'Int32:1'
+17:06:14.940: GenerateZoneName: Свойство 'Треугольники' = 'Boolean:True'
+17:06:14.940: GenerateZoneName: Свойство 'Линии' = 'Boolean:False'
+17:06:14.940: GenerateZoneName: Свойство 'Точки' = 'Boolean:False'
+17:06:14.940: GenerateZoneName: Свойство 'Точки привязки' = 'Boolean:False'
+17:06:14.940: GenerateZoneName: Свойство 'Текст' = 'Boolean:False'
+17:06:14.940: GenerateZoneName: Свойство 'Твердое тело' = 'Boolean:False'
+17:06:14.940: GenerateZoneName: Проверяем категорию 'TimeLiner'
+17:06:14.940: GenerateZoneName: Элемент DisplayName='', ClassDisplayName='Твердое тело'
+17:06:14.940: GenerateZoneName: Найденные свойства - комментарий: '', зона: '', этаж: ''
+17:06:14.940: GenerateZoneName: Используем ClassDisplayName с координатами: 'Твердое тело_7063_26511_47'
+17:06:14.940: FindZonesInModel: Создаем зону с именем: 'Твердое тело_7063_26511_47'
+17:06:14.940: ExtractTrianglesFromGeometry: Извлекаем треугольники из '' (COM API)
+17:06:14.940: ExtractTrianglesFromGeometry: COM Path создан: True
+17:06:14.940: ExtractTrianglesFromGeometry: State получен: True
+17:06:14.940: ExtractTrianglesFromGeometry: State тип: __ComObject
+17:06:14.940: ExtractTrianglesFromGeometry: Найдено методов в State: 7
+17:06:14.940: ExtractTrianglesFromGeometry: Методы геометрии: 
+17:06:14.941: ExtractTrianglesFromGeometry: GetGeometry метод найден: False
+17:06:14.941: ExtractTrianglesFromGeometry: Геометрия получена: False
+17:06:14.941: ExtractTrianglesFromGeometry: Геометрия не получена или не является IEnumerable
+17:06:14.941: ExtractTrianglesFromGeometry: Пробуем альтернативный способ через Navisworks API
+17:06:14.941: ExtractTrianglesFromGeometry: Стандартная геометрия получена: True
+17:06:14.941: ExtractTrianglesFromGeometry: Тип геометрии: ModelGeometry
+17:06:14.941: ExtractTrianglesFromGeometry: Свойства ModelGeometry: ActiveTransform, OriginalTransform, BoundingBox, OriginalTransparency, OriginalColor, ActiveTransparency, ActiveColor, IsSolid, PrimitiveTypes, PrimitiveCount, FragmentCount, Item, IsReadOnly, PermanentTransform, PermanentOverrideTransform, PermanentTransparency, PermanentColor, IsDisposed
+17:06:14.941: ExtractTrianglesFromGeometry: Методы ModelGeometry: get_ActiveTransform, get_OriginalTransform, get_BoundingBox, get_OriginalTransparency, get_OriginalColor, get_ActiveTransparency, get_ActiveColor, get_IsSolid, get_PrimitiveTypes, get_PrimitiveCount, get_FragmentCount, get_Item, get_IsReadOnly, get_PermanentTransform, get_PermanentOverrideTransform, get_PermanentTransparency, get_PermanentColor, get_IsDisposed, GetHashCode, InternalCustomCreator, InternalFactory, InternalCreator, Equals, ToString, Dispose, GetType
+17:06:14.941: ExtractTrianglesFromGeometry: Свойства координат: 
+17:06:14.941: ExtractTrianglesFromGeometry: FragmentCount свойство: True
+17:06:14.941: ExtractTrianglesFromGeometry: Item свойство: True
+17:06:14.941: ExtractTrianglesFromGeometry: Количество фрагментов: 1
+17:06:14.941: ExtractTrianglesFromGeometry: Ошибка обработки фрагмента 0: Несоответствие числа параметров.
+17:06:14.941: ExtractTrianglesFromGeometry: Методы get_Coords/get_CoordIndex не найдены в геометрии
+17:06:14.941: ExtractTrianglesFromGeometry: Итого треугольников собрано: 0
+17:06:14.941: TryExtractPolygonVertices: Ищем вершины полигона в элементе ''
+17:06:14.942: TryExtractPolygonVertices: Проверяем категорию 'Элемент'
+17:06:14.942: TryExtractPolygonVertices: Проверяем категорию 'Геометрия'
+17:06:14.942: TryExtractPolygonVertices: Найдено свойство с координатами 'Треугольники' = 'Boolean:True'
+17:06:14.942: TryExtractPolygonVertices: Проверяем категорию 'TimeLiner'
+17:06:14.942: TryExtractPolygonVertices: Недостаточно вершин для полигона (0 < 3)
+17:06:14.942: FindZonesInModel: ⚠️ Зона 'Твердое тело_7063_26511_47' использует стандартный BoundingBox
+17:06:14.942: FindZonesInModel: Обрабатываем кандидата: 
+17:06:14.942: FindZonesInModel: BoundingBox: Min(7063,35, 26510,60, 61,68) Max(7317,53, 26819,04, 76,12)
+17:06:14.942: GenerateZoneName: Проверяем категорию 'Элемент'
+17:06:14.942: GenerateZoneName: Свойство 'Тип' = 'DisplayString:Твердое тело'
+17:06:14.942: GenerateZoneName: Свойство 'Внутренний тип' = 'DisplayString:LcRevitSolid'
+17:06:14.942: GenerateZoneName: Свойство 'Значок' = 'NamedConstant:LcOaNodeIcon:8(Геометрия)'
+17:06:14.942: GenerateZoneName: Свойство 'Скрытый' = 'Boolean:False'
+17:06:14.942: GenerateZoneName: Свойство 'Обязательный' = 'Boolean:False'
+17:06:14.942: GenerateZoneName: Свойство 'Материал' = 'DisplayString:'
+17:06:14.942: GenerateZoneName: Свойство 'Файл источника' = 'DisplayString:К32_фрагменты_new.rvt'
+17:06:14.943: GenerateZoneName: Свойство 'Слой' = 'DisplayString:<Нет уровня>'
+17:06:14.943: GenerateZoneName: Проверяем категорию 'Геометрия'
+17:06:14.943: GenerateZoneName: Свойство 'Элементарные объекты' = 'Int32:12'
+17:06:14.943: GenerateZoneName: Свойство 'Фрагменты' = 'Int32:1'
+17:06:14.943: GenerateZoneName: Свойство 'Треугольники' = 'Boolean:True'
+17:06:14.943: GenerateZoneName: Свойство 'Линии' = 'Boolean:False'
+17:06:14.943: GenerateZoneName: Свойство 'Точки' = 'Boolean:False'
+17:06:14.943: GenerateZoneName: Свойство 'Точки привязки' = 'Boolean:False'
+17:06:14.943: GenerateZoneName: Свойство 'Текст' = 'Boolean:False'
+17:06:14.943: GenerateZoneName: Свойство 'Твердое тело' = 'Boolean:False'
+17:06:14.943: GenerateZoneName: Проверяем категорию 'TimeLiner'
+17:06:14.943: GenerateZoneName: Элемент DisplayName='', ClassDisplayName='Твердое тело'
+17:06:14.943: GenerateZoneName: Найденные свойства - комментарий: '', зона: '', этаж: ''
+17:06:14.943: GenerateZoneName: Используем ClassDisplayName с координатами: 'Твердое тело_7063_26511_62'
+17:06:14.943: FindZonesInModel: Создаем зону с именем: 'Твердое тело_7063_26511_62'
+17:06:14.943: ExtractTrianglesFromGeometry: Извлекаем треугольники из '' (COM API)
+17:06:14.943: ExtractTrianglesFromGeometry: COM Path создан: True
+17:06:14.944: ExtractTrianglesFromGeometry: State получен: True
+17:06:14.944: ExtractTrianglesFromGeometry: State тип: __ComObject
+17:06:14.944: ExtractTrianglesFromGeometry: Найдено методов в State: 7
+17:06:14.944: ExtractTrianglesFromGeometry: Методы геометрии: 
+17:06:14.944: ExtractTrianglesFromGeometry: GetGeometry метод найден: False
+17:06:14.944: ExtractTrianglesFromGeometry: Геометрия получена: False
+17:06:14.944: ExtractTrianglesFromGeometry: Геометрия не получена или не является IEnumerable
+17:06:14.944: ExtractTrianglesFromGeometry: Пробуем альтернативный способ через Navisworks API
+17:06:14.944: ExtractTrianglesFromGeometry: Стандартная геометрия получена: True
+17:06:14.944: ExtractTrianglesFromGeometry: Тип геометрии: ModelGeometry
+17:06:14.944: ExtractTrianglesFromGeometry: Свойства ModelGeometry: ActiveTransform, OriginalTransform, BoundingBox, OriginalTransparency, OriginalColor, ActiveTransparency, ActiveColor, IsSolid, PrimitiveTypes, PrimitiveCount, FragmentCount, Item, IsReadOnly, PermanentTransform, PermanentOverrideTransform, PermanentTransparency, PermanentColor, IsDisposed
+17:06:14.944: ExtractTrianglesFromGeometry: Методы ModelGeometry: get_ActiveTransform, get_OriginalTransform, get_BoundingBox, get_OriginalTransparency, get_OriginalColor, get_ActiveTransparency, get_ActiveColor, get_IsSolid, get_PrimitiveTypes, get_PrimitiveCount, get_FragmentCount, get_Item, get_IsReadOnly, get_PermanentTransform, get_PermanentOverrideTransform, get_PermanentTransparency, get_PermanentColor, get_IsDisposed, GetHashCode, InternalCustomCreator, InternalFactory, InternalCreator, Equals, ToString, Dispose, GetType
+17:06:14.944: ExtractTrianglesFromGeometry: Свойства координат: 
+17:06:14.944: ExtractTrianglesFromGeometry: FragmentCount свойство: True
+17:06:14.944: ExtractTrianglesFromGeometry: Item свойство: True
+17:06:14.944: ExtractTrianglesFromGeometry: Количество фрагментов: 1
+17:06:14.945: ExtractTrianglesFromGeometry: Ошибка обработки фрагмента 0: Несоответствие числа параметров.
+17:06:14.945: ExtractTrianglesFromGeometry: Методы get_Coords/get_CoordIndex не найдены в геометрии
+17:06:14.945: ExtractTrianglesFromGeometry: Итого треугольников собрано: 0
+17:06:14.945: TryExtractPolygonVertices: Ищем вершины полигона в элементе ''
+17:06:14.945: TryExtractPolygonVertices: Проверяем категорию 'Элемент'
+17:06:14.945: TryExtractPolygonVertices: Проверяем категорию 'Геометрия'
+17:06:14.945: TryExtractPolygonVertices: Найдено свойство с координатами 'Треугольники' = 'Boolean:True'
+17:06:14.945: TryExtractPolygonVertices: Проверяем категорию 'TimeLiner'
+17:06:14.945: TryExtractPolygonVertices: Недостаточно вершин для полигона (0 < 3)
+17:06:14.945: FindZonesInModel: ⚠️ Зона 'Твердое тело_7063_26511_62' использует стандартный BoundingBox
+17:06:14.945: FindZonesInModel: Итого найдено зон: 5
+17:06:14.945: ZoneHelper: Найдено зон: 5
+17:06:14.945: ZoneHelper: Зона 'Твердое тело_7132_26405_0' - ⚠️ BoundingBox: Min(7131,53, 26404,95, 0,00) Max(7348,98, 26590,05, 16,73)
+17:06:14.945: ZoneHelper: Зона 'Твердое тело_7063_26511_17' - ⚠️ BoundingBox: Min(7063,35, 26510,60, 16,73) Max(7317,53, 26819,04, 32,81)
+17:06:14.945: ZoneHelper: Зона 'Твердое тело_7063_26511_33' - ⚠️ BoundingBox: Min(7063,35, 26510,60, 32,81) Max(7317,53, 26819,04, 47,24)
+17:06:14.945: ZoneHelper: Зона 'Твердое тело_7063_26511_47' - ⚠️ BoundingBox: Min(7063,35, 26510,60, 47,24) Max(7317,53, 26819,04, 61,68)
+17:06:14.946: ZoneHelper: Зона 'Твердое тело_7063_26511_62' - ⚠️ BoundingBox: Min(7063,35, 26510,60, 61,68) Max(7317,53, 26819,04, 76,12)
+17:06:14.946: Используем clash.Center: (7182,41, 26721,05, 43,92)
+17:06:14.946: Зона 'Твердое тело_7132_26405_0' Box: Min(7131,53, 26404,95, 0,00) Max(7348,98, 26590,05, 16,73)
+17:06:14.946: IsPointInsideZone: BoundingBox проверка - снаружи
+17:06:14.946: Коллизия внутри зоны: False
+17:06:14.946: Используем clash.Center: (7182,41, 26721,05, 43,92)
+17:06:14.946: Зона 'Твердое тело_7063_26511_17' Box: Min(7063,35, 26510,60, 16,73) Max(7317,53, 26819,04, 32,81)
+17:06:14.946: IsPointInsideZone: BoundingBox проверка - снаружи
+17:06:14.946: Коллизия внутри зоны: False
+17:06:14.947: Используем clash.Center: (7182,41, 26721,05, 43,92)
+17:06:14.947: Зона 'Твердое тело_7063_26511_33' Box: Min(7063,35, 26510,60, 32,81) Max(7317,53, 26819,04, 47,24)
+17:06:14.947: IsPointInsideZone: BoundingBox проверка - внутри
+17:06:14.947: Коллизия внутри зоны: True

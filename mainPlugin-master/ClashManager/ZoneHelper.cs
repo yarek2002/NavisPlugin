@@ -624,7 +624,43 @@ namespace ClashManager
 										{
 											try
 											{
-												var fragment = itemProperty.GetValue(geometry, new object[] { i });
+												// Пробуем разные способы вызова индексатора Item
+												object fragment = null;
+												try
+												{
+													// Способ 1: через GetValue с массивом параметров
+													fragment = itemProperty.GetValue(geometry, new object[] { i });
+												}
+												catch
+												{
+													try
+													{
+														// Способ 2: через прямой вызов метода get_Item
+														var getItemMethod = geometryType.GetMethod("get_Item");
+														if (getItemMethod != null)
+														{
+															fragment = getItemMethod.Invoke(geometry, new object[] { i });
+														}
+													}
+													catch
+													{
+														try
+														{
+															// Способ 3: через рефлексию с правильными параметрами
+															var parameters = itemProperty.GetIndexParameters();
+															LogToFile($"ExtractTrianglesFromGeometry: Параметры индексатора Item: {parameters.Length}");
+															if (parameters.Length == 1)
+															{
+																fragment = itemProperty.GetValue(geometry, new object[] { i });
+															}
+														}
+														catch
+														{
+															LogToFile($"ExtractTrianglesFromGeometry: Не удалось получить фрагмент {i} ни одним способом");
+														}
+													}
+												}
+												
 												LogToFile($"ExtractTrianglesFromGeometry: Фрагмент {i}: {fragment?.GetType().Name ?? "null"}");
 												
 												if (fragment != null)
