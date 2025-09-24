@@ -403,41 +403,57 @@ namespace ClashManager
             }
         }
 
-        /// <summary>
-        /// Извлекает треугольники из геометрии объекта зоны с помощью GenerateSimplePrimitives
-        /// </summary>
-        private List<(Point3D, Point3D, Point3D)> ExtractTrianglesFromGeometry(ModelItem item)
-        {
-            var triangles = new List<(Point3D, Point3D, Point3D)>();
-            try
-            {
-                LogToFile($"ExtractTrianglesFromGeometry: Извлекаем треугольники из геометрии '{item.DisplayName}'");
-                if (item.Geometry == null)
-                {
-                    LogToFile("ExtractTrianglesFromGeometry: Геометрия отсутствует");
-                    return triangles;
-                }
-                var primitives = item.Geometry.GenerateSimplePrimitives();
-                if (primitives == null)
-                {
-                    LogToFile("ExtractTrianglesFromGeometry: GenerateSimplePrimitives вернул null");
-                    return triangles;
-                }
-                foreach (var primitive in primitives)
-                {
-                    if (primitive.PrimitiveType == PrimitiveType.Triangle && primitive.Points.Count == 3)
-                    {
-                        triangles.Add((primitive.Points[0], primitive.Points[1], primitive.Points[2]));
-                    }
-                }
-                LogToFile($"ExtractTrianglesFromGeometry: Извлечено {triangles.Count} треугольников");
-            }
-            catch (Exception ex)
-            {
-                LogToFile($"ExtractTrianglesFromGeometry: Ошибка извлечения треугольников: {ex.Message}");
-            }
-            return triangles;
-        }
+		/// <summary>
+		/// Извлекает треугольники из геометрии объекта зоны (рекурсивно по дереву ModelItem)
+		/// </summary>
+		private List<(Point3D, Point3D, Point3D)> ExtractTrianglesFromGeometry(ModelItem item)
+		{
+			var triangles = new List<(Point3D, Point3D, Point3D)>();
+			try
+			{
+				if (item == null)
+					return triangles;
+
+				LogToFile($"ExtractTrianglesFromGeometry: Извлекаем треугольники из '{item.DisplayName}' (рекурсивно)");
+
+				// 1) Треугольники текущего элемента
+				if (item.Geometry != null)
+				{
+					var primitives = item.Geometry.GenerateSimplePrimitives();
+					if (primitives != null)
+					{
+						foreach (var primitive in primitives)
+						{
+							if (primitive.PrimitiveType == PrimitiveType.Triangle && primitive.Points.Count == 3)
+							{
+								triangles.Add((primitive.Points[0], primitive.Points[1], primitive.Points[2]));
+							}
+						}
+					}
+				}
+
+				// 2) Рекурсивно обходим детей
+				if (item.Children is System.Collections.IEnumerable childrenEnumerable)
+				{
+					foreach (var child in childrenEnumerable)
+					{
+						if (child is ModelItem childItem)
+						{
+							var childTriangles = ExtractTrianglesFromGeometry(childItem);
+							if (childTriangles.Count > 0)
+								triangles.AddRange(childTriangles);
+						}
+					}
+				}
+
+				LogToFile($"ExtractTrianglesFromGeometry: Итого треугольников собрано: {triangles.Count}");
+			}
+			catch (Exception ex)
+			{
+				LogToFile($"ExtractTrianglesFromGeometry: Ошибка: {ex.Message}");
+			}
+			return triangles;
+		}
 
         /// <summary>
         /// Пытается извлечь вершины полигона из свойств объекта зоны (резервный метод)
@@ -988,8 +1004,8 @@ namespace ClashManager
             // Приоритет: треугольники > полигон > BoundingBox
             if (zone.UseTriangleGeometry && zone.Triangles.Count > 0)
             {
-                // Используем точную геометрию на основе треугольников
-                bool isInsideTriangles = IsPointInsideTriangles(point, zone.Triangles);
+				// Используем точную геометрию на основе треугольников (point-in-mesh через RayCast)
+				bool isInsideTriangles = IsPointInsideTriangles(point, zone.Triangles);
                 LogToFile($"IsPointInsideZone: Треугольная проверка - {(isInsideTriangles ? "внутри" : "снаружи")}");
                 return isInsideTriangles;
             }
@@ -1066,35 +1082,45 @@ namespace ClashManager
         /// <summary>
         /// Проверяет, находится ли точка внутри зоны, используя треугольники
         /// </summary>
-        private bool IsPointInsideTriangles(Point3D point, List<PrimitiveTriangle> triangles)
+		private bool IsPointInsideTriangles(Point3D point, List<(Point3D, Point3D, Point3D)> triangles)
         {
-            try
-            {
-                LogToFile($"IsPointInsideTriangles: Проверяем точку ({point.X:F2}, {point.Y:F2}, {point.Z:F2}) в {triangles.Count} треугольниках");
+			// Реализация point-in-mesh через рейкаст: считаем пересечения луча с мешем
+			try
+			{
+				LogToFile($"IsPointInsideTriangles: RayCast проверка точки ({point.X:F2}, {point.Y:F2}, {point.Z:F2}) по {triangles.Count} треугольникам");
 
-                foreach (var triangle in triangles)
-                {
-                    if (IsPointInsideTriangle(point, triangle))
-                    {
-                        LogToFile("IsPointInsideTriangles: Точка находится внутри треугольника");
-                        return true;
-                    }
-                }
+				// Луч вдоль +X (можно менять направление при необходимости)
+				var rayOrigin = point;
+				var rayDir = new Point3D(1, 0, 0);
+				int hits = 0;
+				const double epsilon = 1e-7;
 
-                LogToFile("IsPointInsideTriangles: Точка не находится ни в одном треугольнике");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                LogToFile($"IsPointInsideTriangles: Ошибка: {ex.Message}");
-                return false;
-            }
+				foreach (var tri in triangles)
+				{
+					double t;
+					if (RayIntersectsTriangle(rayOrigin, rayDir, tri, out t))
+					{
+						// Считаем только пересечения в положительном направлении
+						if (t > epsilon)
+							hits++;
+					}
+				}
+
+				bool inside = (hits % 2) == 1;
+				LogToFile($"IsPointInsideTriangles: Пересечений={hits}, внутри={inside}");
+				return inside;
+			}
+			catch (Exception ex)
+			{
+				LogToFile($"IsPointInsideTriangles: Ошибка RayCast: {ex.Message}");
+				return false;
+			}
         }
 
         /// <summary>
         /// Проверяет, находится ли точка внутри треугольника
         /// </summary>
-        private bool IsPointInsideTriangle(Point3D point, PrimitiveTriangle triangle)
+		private bool IsPointInsideTriangle(Point3D point, (Point3D, Point3D, Point3D) triangle)
         {
             try
             {
@@ -1113,6 +1139,64 @@ namespace ClashManager
 
                 return isInside;
             }
+
+		/// <summary>
+		/// Пересечение луча и треугольника (Möller–Trumbore). Возвращает true, если есть пересечение, и t по лучу.
+		/// </summary>
+		private bool RayIntersectsTriangle(Point3D rayOrigin, Point3D rayDir, (Point3D, Point3D, Point3D) triangle, out double t)
+		{
+			// Инициализируем выходное значение
+			t = 0;
+			const double epsilon = 1e-8;
+
+			var v0 = triangle.Item1;
+			var v1 = triangle.Item2;
+			var v2 = triangle.Item3;
+
+			// Векторы треугольника
+			var edge1 = new Point3D(v1.X - v0.X, v1.Y - v0.Y, v1.Z - v0.Z);
+			var edge2 = new Point3D(v2.X - v0.X, v2.Y - v0.Y, v2.Z - v0.Z);
+
+			// P = D x edge2
+			var pvec = CrossProduct(rayDir, edge2);
+			double det = DotProduct(edge1, pvec);
+
+			// Если детерминант близок к нулю — луч параллелен плоскости
+			if (det > -epsilon && det < epsilon)
+				return false;
+
+			double invDet = 1.0 / det;
+
+			// T = O - v0
+			var tvec = new Point3D(rayOrigin.X - v0.X, rayOrigin.Y - v0.Y, rayOrigin.Z - v0.Z);
+
+			// u = (T . P) * invDet
+			double u = DotProduct(tvec, pvec) * invDet;
+			if (u < 0 || u > 1) return false;
+
+			// Q = T x edge1
+			var qvec = CrossProduct(tvec, edge1);
+
+			// v = (D . Q) * invDet
+			double v = DotProduct(rayDir, qvec) * invDet;
+			if (v < 0 || u + v > 1) return false;
+
+			// t = (edge2 . Q) * invDet
+			t = DotProduct(edge2, qvec) * invDet;
+			return t >= -epsilon; // допускаем касание
+		}
+
+		/// <summary>
+		/// Векторное произведение
+		/// </summary>
+		private Point3D CrossProduct(Point3D a, Point3D b)
+		{
+			return new Point3D(
+				a.Y * b.Z - a.Z * b.Y,
+				a.Z * b.X - a.X * b.Z,
+				a.X * b.Y - a.Y * b.X
+			);
+		}
             catch (Exception ex)
             {
                 LogToFile($"IsPointInsideTriangle: Ошибка: {ex.Message}");
