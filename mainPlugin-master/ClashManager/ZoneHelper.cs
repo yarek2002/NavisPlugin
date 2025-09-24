@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
+using Autodesk.Navisworks.Api.Geometry;
 
 namespace ClashManager
 {
