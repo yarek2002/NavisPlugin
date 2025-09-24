@@ -420,15 +420,22 @@ namespace ClashManager
 				try
 				{
 					var comPath = Autodesk.Navisworks.Api.ComApi.ComApiBridge.ToInwOaPath(item);
-					dynamic state = Autodesk.Navisworks.Api.ComApi.ComApiBridge.State;
-					// Получаем коллекцию геометрии фрагментов (тип: InwLGeomColl)
-						dynamic geomColl = state.GetGeometry((object)comPath, true);
-					if (geomColl != null)
+					var state = Autodesk.Navisworks.Api.ComApi.ComApiBridge.State;
+					// Получаем коллекцию геометрии фрагментов (тип: InwLGeomColl) через рефлексию
+					var getGeometryMethod = state.GetType().GetMethod("GetGeometry");
+					var geomColl = getGeometryMethod?.Invoke(state, new object[] { comPath, true });
+					if (geomColl != null && geomColl is System.Collections.IEnumerable geomEnumerable)
 					{
-						foreach (var frag in geomColl)
+						foreach (var frag in geomEnumerable)
 						{
-							object geomObj;
-							((dynamic)frag).GetGeom(out geomObj);
+							object geomObj = null;
+							var getGeomMethod = frag.GetType().GetMethod("GetGeom");
+							if (getGeomMethod != null)
+							{
+								var args = new object[] { null };
+								getGeomMethod.Invoke(frag, args);
+								geomObj = args[0];
+							}
 							if (geomObj == null) continue;
 
 							// Ищем треугольную сетку (InwOaTriMeshGeom) без прямой ссылки на тип
@@ -436,9 +443,12 @@ namespace ClashManager
 								var typeName = geomObj.GetType().Name;
 								if (string.Equals(typeName, "InwOaTriMeshGeom", StringComparison.Ordinal))
 								{
-									dynamic triMesh = geomObj;
-									var coords = (Array)triMesh.get_Coords();
-									var indices = (Array)triMesh.get_CoordIndex();
+									var triType = geomObj.GetType();
+									var getCoords = triType.GetMethod("get_Coords");
+									var getCoordIndex = triType.GetMethod("get_CoordIndex");
+									if (getCoords == null || getCoordIndex == null) continue;
+									var coords = (Array)getCoords.Invoke(geomObj, null);
+									var indices = (Array)getCoordIndex.Invoke(geomObj, null);
 
 								// coords: x1,y1,z1, x2,y2,z2, ...
 								// indices: i1,i2,i3, -1, i4,i5,i6, -1, ... (полилинии/полигоны)
