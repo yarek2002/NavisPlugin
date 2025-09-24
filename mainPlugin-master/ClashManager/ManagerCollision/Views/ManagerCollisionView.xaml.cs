@@ -442,6 +442,7 @@ namespace ClashManager.ManagerCollision.Views
 				CollisionsList.ItemsSource = mergedRows;
 				SubscribeToCollisionItemsPropertyChanged(mergedRows);
 				ApplySorting();
+				UpdateCollisionCounters();
 				return;
 			}
 
@@ -490,6 +491,7 @@ namespace ClashManager.ManagerCollision.Views
 			CollisionsList.ItemsSource = rows;
 			SubscribeToCollisionItemsPropertyChanged(rows);
 			ApplySorting();
+			UpdateCollisionCounters();
 		}
 
 		private System.Collections.Generic.IEnumerable<(ClashResultGroup Group, int Level)> EnumerateAllGroupsWithLevel(ClashTest test)
@@ -634,10 +636,52 @@ namespace ClashManager.ManagerCollision.Views
 				CollisionsList.ItemsSource = sortedItems;
 				SubscribeToCollisionItemsPropertyChanged(sortedItems);
 				ApplySorting();
+				UpdateCollisionCounters();
 			}
 			catch (Exception ex)
 			{
 				MessageBox.Show($"Ошибка при фильтрации: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// Обновляет счетчики коллизий (всего и выделено)
+		/// </summary>
+		private void UpdateCollisionCounters()
+		{
+			try
+			{
+				var itemsSource = CollisionsList.ItemsSource;
+				if (itemsSource == null)
+				{
+					TotalCollisionsText.Text = "Всего: 0";
+					SelectedCollisionsText.Text = "Выделено: 0";
+					return;
+				}
+
+				int totalCount = 0;
+				int selectedCount = 0;
+
+				foreach (var item in itemsSource)
+				{
+					if (item is CollisionListItem collisionItem)
+					{
+						totalCount++;
+						if (collisionItem.IsSelected)
+						{
+							selectedCount++;
+						}
+					}
+				}
+
+				TotalCollisionsText.Text = $"Всего: {totalCount}";
+				SelectedCollisionsText.Text = $"Выделено: {selectedCount}";
+			}
+			catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine($"Ошибка при обновлении счетчиков коллизий: {ex.Message}");
+				TotalCollisionsText.Text = "Всего: 0";
+				SelectedCollisionsText.Text = "Выделено: 0";
 			}
 		}
 
@@ -830,6 +874,9 @@ namespace ClashManager.ManagerCollision.Views
 				{
 					_checkedRowIds.Remove(item.Guid);
 				}
+
+				// Обновляем счетчики коллизий
+				UpdateCollisionCounters();
 			}
 		}
 

@@ -171,6 +171,11 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
+                <!-- Счетчик коллизий -->
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Grid.Row="2">
+                    <TextBlock x:Name="TotalCollisionsText" Text="Всего: 0" FontWeight="Bold" Margin="0,0,16,0"/>
+                    <TextBlock x:Name="SelectedCollisionsText" Text="Выделено: 0" FontWeight="Bold"/>
+                </StackPanel>
             </Grid>
         </GroupBox>
     </Grid>
