@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
-using Autodesk.Navisworks.Api.Interop.ComApi;
 using ComApi = Autodesk.Navisworks.Interop.ComApi;
 
 namespace ClashManager
@@ -421,8 +420,8 @@ namespace ClashManager
 				// 1) Извлечь геометрию текущего элемента через COM API (InwOaTriMeshGeom)
 				try
 				{
-					ComApi.InwOaPath comPath = ComApiBridge.ToInwOaPath(item);
-					dynamic state = ComApiBridge.State;
+					ComApi.InwOaPath comPath = Autodesk.Navisworks.Api.ComApi.ComApiBridge.ToInwOaPath(item);
+					dynamic state = Autodesk.Navisworks.Api.ComApi.ComApiBridge.State;
 					// Получаем коллекцию геометрии фрагментов (тип: InwLGeomColl)
 					dynamic geomColl = state.GetGeometry(comPath, true);
 					if (geomColl != null)
