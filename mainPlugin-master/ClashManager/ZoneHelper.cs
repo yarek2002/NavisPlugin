@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
-using Autodesk.Navisworks.Api.Geometry;
 
 namespace ClashManager
 {
@@ -407,9 +406,9 @@ namespace ClashManager
         /// <summary>
         /// Извлекает треугольники из геометрии объекта зоны с помощью GenerateSimplePrimitives
         /// </summary>
-        private List<PrimitiveTriangle> ExtractTrianglesFromGeometry(ModelItem item)
+        private List<Triangle3D> ExtractTrianglesFromGeometry(ModelItem item)
         {
-            var triangles = new List<PrimitiveTriangle>();
+            var triangles = new List<Triangle3D>();
 
             try
             {
@@ -431,7 +430,7 @@ namespace ClashManager
 
                 foreach (var primitive in primitives)
                 {
-                    if (primitive is PrimitiveTriangle triangle)
+                    if (primitive is Triangle3D triangle)
                     {
                         triangles.Add(triangle);
                     }
@@ -1074,7 +1073,7 @@ namespace ClashManager
         /// <summary>
         /// Проверяет, находится ли точка внутри зоны, используя треугольники
         /// </summary>
-        private bool IsPointInsideTriangles(Point3D point, List<PrimitiveTriangle> triangles)
+        private bool IsPointInsideTriangles(Point3D point, List<Triangle3D> triangles)
         {
             try
             {
@@ -1102,7 +1101,7 @@ namespace ClashManager
         /// <summary>
         /// Проверяет, находится ли точка внутри треугольника
         /// </summary>
-        private bool IsPointInsideTriangle(Point3D point, PrimitiveTriangle triangle)
+        private bool IsPointInsideTriangle(Point3D point, Triangle3D triangle)
         {
             try
             {
@@ -1227,7 +1226,7 @@ namespace ClashManager
         public BoundingBox3D BoundingBox { get; set; }
 
         // Геометрия на основе треугольников (точная геометрия)
-        public List<PrimitiveTriangle> Triangles { get; set; } = new List<PrimitiveTriangle>();
+        public List<Triangle3D> Triangles { get; set; } = new List<Triangle3D>();
         public bool UseTriangleGeometry { get; set; } = false;
 
         // Полигональная геометрия (резервная)
