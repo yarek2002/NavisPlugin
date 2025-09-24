@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
+using Autodesk.Navisworks.Api.Interop.ComApi;
+using ComApi = Autodesk.Navisworks.Interop.ComApi;
 
 namespace ClashManager
 {
@@ -414,22 +416,70 @@ namespace ClashManager
 				if (item == null)
 					return triangles;
 
-				LogToFile($"ExtractTrianglesFromGeometry: Извлекаем треугольники из '{item.DisplayName}' (рекурсивно)");
+				LogToFile($"ExtractTrianglesFromGeometry: Извлекаем треугольники из '{item.DisplayName}' (COM API)");
 
-				// 1) Треугольники текущего элемента
-				if (item.Geometry != null)
+				// 1) Извлечь геометрию текущего элемента через COM API (InwOaTriMeshGeom)
+				try
 				{
-					var primitives = item.Geometry.GenerateSimplePrimitives();
-					if (primitives != null)
+					ComApi.InwOaPath comPath = ComApiBridge.ToInwOaPath(item);
+					dynamic state = ComApiBridge.State;
+					// Получаем коллекцию геометрии фрагментов (тип: InwLGeomColl)
+					dynamic geomColl = state.GetGeometry(comPath, true);
+					if (geomColl != null)
 					{
-						foreach (var primitive in primitives)
+						foreach (var frag in geomColl)
 						{
-							if (primitive.PrimitiveType == PrimitiveType.Triangle && primitive.Points.Count == 3)
+							object geomObj;
+							((dynamic)frag).GetGeom(out geomObj);
+							if (geomObj == null) continue;
+
+							// Ищем треугольную сетку (InwOaTriMeshGeom)
+							if (geomObj is ComApi.InwOaTriMeshGeom triMesh)
 							{
-								triangles.Add((primitive.Points[0], primitive.Points[1], primitive.Points[2]));
+								var coords = (Array)triMesh.get_Coords();
+								var indices = (Array)triMesh.get_CoordIndex();
+
+								// coords: x1,y1,z1, x2,y2,z2, ...
+								// indices: i1,i2,i3, -1, i4,i5,i6, -1, ... (полилинии/полигоны)
+								var points = new List<Point3D>();
+								for (int i = 0; i + 2 < coords.Length; i += 3)
+								{
+									double x = Convert.ToDouble(coords.GetValue(i));
+									double y = Convert.ToDouble(coords.GetValue(i + 1));
+									double z = Convert.ToDouble(coords.GetValue(i + 2));
+									points.Add(new Point3D(x, y, z));
+								}
+
+								var current = new List<int>();
+								for (int k = 0; k < indices.Length; k++)
+								{
+									int idx = Convert.ToInt32(indices.GetValue(k));
+									if (idx == -1)
+									{
+										// триангулируем текущий полигон fan-ом
+										for (int t = 1; t + 1 < current.Count; t++)
+										{
+											int a = current[0], b = current[t], c = current[t + 1];
+											if (a >= 0 && b >= 0 && c >= 0 &&
+												a < points.Count && b < points.Count && c < points.Count)
+											{
+												triangles.Add((points[a], points[b], points[c]));
+											}
+										}
+										current.Clear();
+									}
+									else
+									{
+										current.Add(idx);
+									}
+								}
 							}
 						}
 					}
+				}
+				catch (Exception ex)
+				{
+					LogToFile($"ExtractTrianglesFromGeometry COM: Ошибка: {ex.Message}");
 				}
 
 				// 2) Рекурсивно обходим детей
