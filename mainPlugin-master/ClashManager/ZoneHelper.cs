@@ -86,9 +86,13 @@ namespace ClashManager
             
             foreach (var zone in zones)
             {
-                if (zone.UsePolygonGeometry)
+                if (zone.UseTriangleGeometry)
                 {
-                    LogToFile($"ZoneHelper: Зона '{zone.ZoneName}' - ✅ ПОЛИГОН с {zone.Vertices.Count} вершинами" + 
+                    LogToFile($"ZoneHelper: Зона '{zone.ZoneName}' - ✅ ТОЧНАЯ ГЕОМЕТРИЯ с {zone.Triangles.Count} треугольниками");
+                }
+                else if (zone.UsePolygonGeometry)
+                {
+                    LogToFile($"ZoneHelper: Зона '{zone.ZoneName}' - ✅ ПОЛИГОН с {zone.Vertices.Count} вершинами" +
                         (zone.HasZoneHeight ? $", высота: {zone.ZoneHeight:F2}" : ""));
                 }
                 else
@@ -124,38 +128,52 @@ namespace ClashManager
                     {
                         var zoneName = GenerateZoneName(item);
                         LogToFile($"FindZonesInModel: Создаем зону с именем: '{zoneName}'");
-                        
-                        // Пытаемся извлечь полигональную геометрию
-                        var vertices = TryExtractPolygonVertices(item);
-                        bool usePolygon = vertices.Count >= 3;
-                        
+
+                        // Сначала пытаемся извлечь треугольники из геометрии (точная геометрия)
+                        var triangles = ExtractTrianglesFromGeometry(item);
+                        bool useTriangles = triangles.Count > 0;
+
                         var zoneItem = new ZoneItem
                         {
                             ZoneName = zoneName,
                             ZoneObject = item,
                             BoundingBox = boundingBox,
-                            Vertices = vertices,
-                            UsePolygonGeometry = usePolygon
+                            Triangles = triangles,
+                            UseTriangleGeometry = useTriangles
                         };
-                        
-                        // Попытка определить высоту зоны
-                        if (usePolygon)
+
+                        // Если треугольники не найдены, пытаемся извлечь полигональную геометрию из свойств
+                        if (!useTriangles)
                         {
-                            if (TryExtractZoneHeight(item, boundingBox, out double extractedHeight))
+                            var vertices = TryExtractPolygonVertices(item);
+                            bool usePolygon = vertices.Count >= 3;
+
+                            zoneItem.Vertices = vertices;
+                            zoneItem.UsePolygonGeometry = usePolygon;
+
+                            // Попытка определить высоту зоны
+                            if (usePolygon)
                             {
-                                zoneItem.ZoneHeight = extractedHeight;
-                                zoneItem.HasZoneHeight = true;
+                                if (TryExtractZoneHeight(item, boundingBox, out double extractedHeight))
+                                {
+                                    zoneItem.ZoneHeight = extractedHeight;
+                                    zoneItem.HasZoneHeight = true;
+                                }
+
+                                LogToFile($"FindZonesInModel: ✅ Зона '{zoneName}' использует полигональную геометрию с {vertices.Count} вершинами");
+                                if (zoneItem.HasZoneHeight)
+                                {
+                                    LogToFile($"FindZonesInModel: Высота зоны: {zoneItem.ZoneHeight:F2}");
+                                }
                             }
-                            
-                            LogToFile($"FindZonesInModel: ✅ Зона '{zoneName}' использует полигональную геометрию с {vertices.Count} вершинами");
-                            if (zoneItem.HasZoneHeight)
+                            else
                             {
-                                LogToFile($"FindZonesInModel: Высота зоны: {zoneItem.ZoneHeight:F2}");
+                                LogToFile($"FindZonesInModel: ⚠️ Зона '{zoneName}' использует стандартный BoundingBox");
                             }
                         }
                         else
                         {
-                            LogToFile($"FindZonesInModel: ⚠️ Зона '{zoneName}' использует стандартный BoundingBox");
+                            LogToFile($"FindZonesInModel: ✅ Зона '{zoneName}' использует точную геометрию на основе {triangles.Count} треугольников");
                         }
                         
                         zones.Add(zoneItem);
@@ -386,49 +404,92 @@ namespace ClashManager
         }
 
         /// <summary>
-        /// Пытается извлечь вершины полигона из свойств объекта зоны
+        /// Извлекает треугольники из геометрии объекта зоны с помощью GenerateSimplePrimitives
+        /// </summary>
+        private List<PrimitiveTriangle> ExtractTrianglesFromGeometry(ModelItem item)
+        {
+            var triangles = new List<PrimitiveTriangle>();
+
+            try
+            {
+                LogToFile($"ExtractTrianglesFromGeometry: Извлекаем треугольники из геометрии '{item.DisplayName}'");
+
+                if (item.Geometry == null)
+                {
+                    LogToFile("ExtractTrianglesFromGeometry: Геометрия отсутствует");
+                    return triangles;
+                }
+
+                // Используем GenerateSimplePrimitives для получения треугольников
+                var primitives = item.Geometry.GenerateSimplePrimitives();
+                if (primitives == null)
+                {
+                    LogToFile("ExtractTrianglesFromGeometry: GenerateSimplePrimitives вернул null");
+                    return triangles;
+                }
+
+                foreach (var primitive in primitives)
+                {
+                    if (primitive is PrimitiveTriangle triangle)
+                    {
+                        triangles.Add(triangle);
+                    }
+                }
+
+                LogToFile($"ExtractTrianglesFromGeometry: Извлечено {triangles.Count} треугольников");
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"ExtractTrianglesFromGeometry: Ошибка извлечения треугольников: {ex.Message}");
+            }
+
+            return triangles;
+        }
+
+        /// <summary>
+        /// Пытается извлечь вершины полигона из свойств объекта зоны (резервный метод)
         /// </summary>
         private List<Point3D> TryExtractPolygonVertices(ModelItem item)
         {
             var vertices = new List<Point3D>();
-            
+
             try
             {
                 LogToFile($"TryExtractPolygonVertices: Ищем вершины полигона в элементе '{item.DisplayName}'");
-                
+
                 foreach (var category in item.PropertyCategories)
                 {
                     LogToFile($"TryExtractPolygonVertices: Проверяем категорию '{category.DisplayName}'");
-                    
+
                     foreach (var property in category.Properties)
                     {
                         if (property?.DisplayName != null && property.Value != null)
                         {
                             var propName = property.DisplayName.ToLower();
                             var propValue = property.Value.ToString();
-                            
+
                             // Поиск координат вершин в различных форматах
-                            if (propName.Contains("vertex") || propName.Contains("point") || 
+                            if (propName.Contains("vertex") || propName.Contains("point") ||
                                 propName.Contains("coordinate") || propName.Contains("corner") ||
                                 propName.Contains("вершина") || propName.Contains("точка") ||
                                 propName.Contains("координата") || propName.Contains("угол"))
                             {
                                 LogToFile($"TryExtractPolygonVertices: Найдено свойство с координатами '{property.DisplayName}' = '{propValue}'");
-                                
+
                                 if (TryParsePointFromProperty(propValue, out Point3D point))
                                 {
                                     vertices.Add(point);
                                     LogToFile($"TryExtractPolygonVertices: Добавлена вершина ({point.X:F2}, {point.Y:F2}, {point.Z:F2})");
                                 }
                             }
-                            
+
                             // Поиск полного списка координат в одном свойстве
-                            if (propName.Contains("polygon") || propName.Contains("boundary") || 
+                            if (propName.Contains("polygon") || propName.Contains("boundary") ||
                                 propName.Contains("outline") || propName.Contains("полигон") ||
                                 propName.Contains("граница") || propName.Contains("контур"))
                             {
                                 LogToFile($"TryExtractPolygonVertices: Найдено свойство полигона '{property.DisplayName}' = '{propValue}'");
-                                
+
                                 var polygonPoints = ParsePolygonFromProperty(propValue);
                                 if (polygonPoints.Count > 0)
                                 {
@@ -439,7 +500,7 @@ namespace ClashManager
                         }
                     }
                 }
-                
+
                 // Убираем дубликаты и сортируем по часовой стрелке (если это 2D полигон)
                 if (vertices.Count >= 3)
                 {
@@ -456,7 +517,7 @@ namespace ClashManager
             {
                 LogToFile($"TryExtractPolygonVertices: Ошибка извлечения вершин: {ex.Message}");
             }
-            
+
             return vertices;
         }
 
@@ -927,28 +988,36 @@ namespace ClashManager
         }
 
         /// <summary>
-        /// Проверяет, находится ли точка внутри зоны (полигон или BoundingBox)
+        /// Проверяет, находится ли точка внутри зоны (треугольники, полигон или BoundingBox)
         /// </summary>
         private bool IsPointInsideZone(Point3D point, ZoneItem zone)
         {
-            if (zone.UsePolygonGeometry && zone.Vertices.Count >= 3)
+            // Приоритет: треугольники > полигон > BoundingBox
+            if (zone.UseTriangleGeometry && zone.Triangles.Count > 0)
+            {
+                // Используем точную геометрию на основе треугольников
+                bool isInsideTriangles = IsPointInsideTriangles(point, zone.Triangles);
+                LogToFile($"IsPointInsideZone: Треугольная проверка - {(isInsideTriangles ? "внутри" : "снаружи")}");
+                return isInsideTriangles;
+            }
+            else if (zone.UsePolygonGeometry && zone.Vertices.Count >= 3)
             {
                 // Используем полигональную геометрию
                 bool isInsidePolygon = IsPointInsidePolygon(point, zone.Vertices);
-                
+
                 // Дополнительная проверка по высоте, если задана
                 if (isInsidePolygon && zone.HasZoneHeight)
                 {
                     double zoneBaseZ = zone.Vertices.Min(v => v.Z);
                     double zoneTopZ = zoneBaseZ + zone.ZoneHeight;
-                    
+
                     if (point.Z < zoneBaseZ || point.Z > zoneTopZ)
                     {
                         LogToFile($"IsPointInsideZone: Точка вне зоны по высоте. Point.Z={point.Z:F2}, Zone Z={zoneBaseZ:F2}-{zoneTopZ:F2}");
                         return false;
                     }
                 }
-                
+
                 LogToFile($"IsPointInsideZone: Полигональная проверка - {(isInsidePolygon ? "внутри" : "снаружи")}");
                 return isInsidePolygon;
             }
@@ -1002,6 +1071,104 @@ namespace ClashManager
         }
 
         /// <summary>
+        /// Проверяет, находится ли точка внутри зоны, используя треугольники
+        /// </summary>
+        private bool IsPointInsideTriangles(Point3D point, List<PrimitiveTriangle> triangles)
+        {
+            try
+            {
+                LogToFile($"IsPointInsideTriangles: Проверяем точку ({point.X:F2}, {point.Y:F2}, {point.Z:F2}) в {triangles.Count} треугольниках");
+
+                foreach (var triangle in triangles)
+                {
+                    if (IsPointInsideTriangle(point, triangle))
+                    {
+                        LogToFile("IsPointInsideTriangles: Точка находится внутри треугольника");
+                        return true;
+                    }
+                }
+
+                LogToFile("IsPointInsideTriangles: Точка не находится ни в одном треугольнике");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"IsPointInsideTriangles: Ошибка: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Проверяет, находится ли точка внутри треугольника
+        /// </summary>
+        private bool IsPointInsideTriangle(Point3D point, PrimitiveTriangle triangle)
+        {
+            try
+            {
+                // Получаем вершины треугольника
+                var v1 = triangle.V1;
+                var v2 = triangle.V2;
+                var v3 = triangle.V3;
+
+                // Используем barycentric coordinates для проверки
+                var barycentric = CalculateBarycentricCoordinates(point, v1, v2, v3);
+
+                // Точка внутри треугольника, если все barycentric координаты >= 0 и <= 1
+                bool isInside = barycentric.U >= 0 && barycentric.U <= 1 &&
+                               barycentric.V >= 0 && barycentric.V <= 1 &&
+                               barycentric.W >= 0 && barycentric.W <= 1;
+
+                return isInside;
+            }
+            catch (Exception ex)
+            {
+                LogToFile($"IsPointInsideTriangle: Ошибка: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Вычисляет barycentric координаты точки относительно треугольника
+        /// </summary>
+        private (double U, double V, double W) CalculateBarycentricCoordinates(Point3D point, Point3D v1, Point3D v2, Point3D v3)
+        {
+            try
+            {
+                // Векторы треугольника
+                var v1v2 = new Point3D(v2.X - v1.X, v2.Y - v1.Y, v2.Z - v1.Z);
+                var v1v3 = new Point3D(v3.X - v1.X, v3.Y - v1.Y, v3.Z - v1.Z);
+                var v1p = new Point3D(point.X - v1.X, point.Y - v1.Y, point.Z - v1.Z);
+
+                // Вычисляем dot products
+                double dot11 = DotProduct(v1v2, v1v2);
+                double dot12 = DotProduct(v1v2, v1v3);
+                double dot1p = DotProduct(v1v2, v1p);
+                double dot22 = DotProduct(v1v3, v1v3);
+                double dot2p = DotProduct(v1v3, v1p);
+
+                // Вычисляем barycentric координаты
+                double invDenom = 1 / (dot11 * dot22 - dot12 * dot12);
+                double u = (dot22 * dot1p - dot12 * dot2p) * invDenom;
+                double v = (dot11 * dot2p - dot12 * dot1p) * invDenom;
+                double w = 1 - u - v;
+
+                return (u, v, w);
+            }
+            catch
+            {
+                return (0, 0, 0);
+            }
+        }
+
+        /// <summary>
+        /// Вычисляет скалярное произведение двух векторов
+        /// </summary>
+        private double DotProduct(Point3D a, Point3D b)
+        {
+            return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
+        }
+
+        /// <summary>
         /// Альтернативный алгоритм для 3D полигонов (проекция на плоскость XY)
         /// </summary>
         private bool IsPointInsidePolygon3D(Point3D point, List<Point3D> vertices, bool hasZoneHeight = false, double zoneHeight = 0)
@@ -1013,14 +1180,14 @@ namespace ClashManager
                 {
                     double minZ = vertices.Min(v => v.Z);
                     double maxZ = minZ + zoneHeight;
-                    
+
                     if (point.Z < minZ || point.Z > maxZ)
                     {
                         LogToFile($"IsPointInsidePolygon3D: Точка вне зоны по высоте Z={point.Z:F2}, диапазон={minZ:F2}-{maxZ:F2}");
                         return false;
                     }
                 }
-                
+
                 // Проецируем на плоскость XY и используем 2D алгоритм
                 return IsPointInsidePolygon(point, vertices);
             }
@@ -1057,8 +1224,12 @@ namespace ClashManager
         public string ZoneName { get; set; }
         public ModelItem ZoneObject { get; set; }
         public BoundingBox3D BoundingBox { get; set; }
-        
-        // Полигональная геометрия
+
+        // Геометрия на основе треугольников (точная геометрия)
+        public List<PrimitiveTriangle> Triangles { get; set; } = new List<PrimitiveTriangle>();
+        public bool UseTriangleGeometry { get; set; } = false;
+
+        // Полигональная геометрия (резервная)
         public List<Point3D> Vertices { get; set; } = new List<Point3D>();
         public bool UsePolygonGeometry { get; set; } = false;
         public double ZoneHeight { get; set; } = 0; // Высота зоны для 3D проверки
