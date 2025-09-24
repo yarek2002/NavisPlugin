@@ -431,11 +431,14 @@ namespace ClashManager
 							((dynamic)frag).GetGeom(out geomObj);
 							if (geomObj == null) continue;
 
-							// Ищем треугольную сетку (InwOaTriMeshGeom)
-							if (geomObj is Autodesk.Navisworks.Interop.ComApi.InwOaTriMeshGeom triMesh)
+							// Ищем треугольную сетку (InwOaTriMeshGeom) без прямой ссылки на тип
 							{
-								var coords = (Array)triMesh.get_Coords();
-								var indices = (Array)triMesh.get_CoordIndex();
+								var typeName = geomObj.GetType().Name;
+								if (string.Equals(typeName, "InwOaTriMeshGeom", StringComparison.Ordinal))
+								{
+									dynamic triMesh = geomObj;
+									var coords = (Array)triMesh.get_Coords();
+									var indices = (Array)triMesh.get_CoordIndex();
 
 								// coords: x1,y1,z1, x2,y2,z2, ...
 								// indices: i1,i2,i3, -1, i4,i5,i6, -1, ... (полилинии/полигоны)
@@ -470,6 +473,7 @@ namespace ClashManager
 									{
 										current.Add(idx);
 									}
+								}
 								}
 							}
 						}
