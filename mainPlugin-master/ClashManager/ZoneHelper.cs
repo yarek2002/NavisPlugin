@@ -425,10 +425,58 @@ namespace ClashManager
 					LogToFile($"ExtractTrianglesFromGeometry: State получен: {state != null}");
 					
 					// Получаем коллекцию геометрии фрагментов (тип: InwLGeomColl) через рефлексию
-					var getGeometryMethod = state.GetType().GetMethod("GetGeometry");
+					var stateType = state.GetType();
+					LogToFile($"ExtractTrianglesFromGeometry: State тип: {stateType.Name}");
+					
+					// Ищем все методы в State
+					var methods = stateType.GetMethods();
+					LogToFile($"ExtractTrianglesFromGeometry: Найдено методов в State: {methods.Length}");
+					
+					// Ищем методы, связанные с геометрией
+					var geometryMethods = methods.Where(m => m.Name.ToLower().Contains("geometry") || m.Name.ToLower().Contains("geom")).ToArray();
+					LogToFile($"ExtractTrianglesFromGeometry: Методы геометрии: {string.Join(", ", geometryMethods.Select(m => m.Name))}");
+					
+					var getGeometryMethod = stateType.GetMethod("GetGeometry");
+					if (getGeometryMethod == null)
+					{
+						// Пробуем другие варианты
+						getGeometryMethod = stateType.GetMethod("get_Geometry");
+						if (getGeometryMethod == null)
+						{
+							getGeometryMethod = stateType.GetMethod("Geometry");
+						}
+					}
+					
 					LogToFile($"ExtractTrianglesFromGeometry: GetGeometry метод найден: {getGeometryMethod != null}");
 					
-					var geomColl = getGeometryMethod?.Invoke(state, new object[] { comPath, true });
+					object geomColl = null;
+					if (getGeometryMethod != null)
+					{
+						try
+						{
+							// Пробуем разные сигнатуры метода
+							var parameters = getGeometryMethod.GetParameters();
+							LogToFile($"ExtractTrianglesFromGeometry: Параметры метода: {parameters.Length}");
+							
+							if (parameters.Length == 2)
+							{
+								geomColl = getGeometryMethod.Invoke(state, new object[] { comPath, true });
+							}
+							else if (parameters.Length == 1)
+							{
+								geomColl = getGeometryMethod.Invoke(state, new object[] { comPath });
+							}
+							else
+							{
+								geomColl = getGeometryMethod.Invoke(state, null);
+							}
+						}
+						catch (Exception ex)
+						{
+							LogToFile($"ExtractTrianglesFromGeometry: Ошибка вызова GetGeometry: {ex.Message}");
+						}
+					}
+					
 					LogToFile($"ExtractTrianglesFromGeometry: Геометрия получена: {geomColl != null}");
 					
 					if (geomColl != null && geomColl is System.Collections.IEnumerable geomEnumerable)
@@ -540,8 +588,22 @@ namespace ClashManager
 						{
 							LogToFile($"ExtractTrianglesFromGeometry: Тип геометрии: {geometry.GetType().Name}");
 							
-							// Пытаемся получить треугольники через рефлексию
+							// Исследуем все доступные свойства и методы ModelGeometry
 							var geometryType = geometry.GetType();
+							var properties = geometryType.GetProperties();
+							var methods = geometryType.GetMethods();
+							
+							LogToFile($"ExtractTrianglesFromGeometry: Свойства ModelGeometry: {string.Join(", ", properties.Select(p => p.Name))}");
+							LogToFile($"ExtractTrianglesFromGeometry: Методы ModelGeometry: {string.Join(", ", methods.Select(m => m.Name))}");
+							
+							// Пытаемся найти свойства, связанные с координатами или треугольниками
+							var coordProperties = properties.Where(p => p.Name.ToLower().Contains("coord") || 
+								p.Name.ToLower().Contains("vertex") || p.Name.ToLower().Contains("point") ||
+								p.Name.ToLower().Contains("triangle") || p.Name.ToLower().Contains("mesh")).ToArray();
+							
+							LogToFile($"ExtractTrianglesFromGeometry: Свойства координат: {string.Join(", ", coordProperties.Select(p => p.Name))}");
+							
+							// Пытаемся получить треугольники через рефлексию
 							var getCoordsMethod = geometryType.GetMethod("get_Coords");
 							var getCoordIndexMethod = geometryType.GetMethod("get_CoordIndex");
 							
@@ -599,6 +661,20 @@ namespace ClashManager
 							else
 							{
 								LogToFile($"ExtractTrianglesFromGeometry: Методы get_Coords/get_CoordIndex не найдены в геометрии");
+								
+								// Пробуем альтернативные подходы
+								foreach (var prop in coordProperties)
+								{
+									try
+									{
+										var value = prop.GetValue(geometry);
+										LogToFile($"ExtractTrianglesFromGeometry: Свойство {prop.Name} = {value?.GetType().Name ?? "null"}");
+									}
+									catch (Exception ex)
+									{
+										LogToFile($"ExtractTrianglesFromGeometry: Ошибка чтения свойства {prop.Name}: {ex.Message}");
+									}
+								}
 							}
 						}
 					}
