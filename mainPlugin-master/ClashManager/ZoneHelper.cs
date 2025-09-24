@@ -406,43 +406,36 @@ namespace ClashManager
         /// <summary>
         /// Извлекает треугольники из геометрии объекта зоны с помощью GenerateSimplePrimitives
         /// </summary>
-        private List<Triangle3D> ExtractTrianglesFromGeometry(ModelItem item)
+        private List<(Point3D, Point3D, Point3D)> ExtractTrianglesFromGeometry(ModelItem item)
         {
-            var triangles = new List<Triangle3D>();
-
+            var triangles = new List<(Point3D, Point3D, Point3D)>();
             try
             {
                 LogToFile($"ExtractTrianglesFromGeometry: Извлекаем треугольники из геометрии '{item.DisplayName}'");
-
                 if (item.Geometry == null)
                 {
                     LogToFile("ExtractTrianglesFromGeometry: Геометрия отсутствует");
                     return triangles;
                 }
-
-                // Используем GenerateSimplePrimitives для получения треугольников
                 var primitives = item.Geometry.GenerateSimplePrimitives();
                 if (primitives == null)
                 {
                     LogToFile("ExtractTrianglesFromGeometry: GenerateSimplePrimitives вернул null");
                     return triangles;
                 }
-
                 foreach (var primitive in primitives)
                 {
-                    if (primitive is Triangle3D triangle)
+                    if (primitive.PrimitiveType == PrimitiveType.Triangle && primitive.Points.Count == 3)
                     {
-                        triangles.Add(triangle);
+                        triangles.Add((primitive.Points[0], primitive.Points[1], primitive.Points[2]));
                     }
                 }
-
                 LogToFile($"ExtractTrianglesFromGeometry: Извлечено {triangles.Count} треугольников");
             }
             catch (Exception ex)
             {
                 LogToFile($"ExtractTrianglesFromGeometry: Ошибка извлечения треугольников: {ex.Message}");
             }
-
             return triangles;
         }
 
@@ -1226,7 +1219,7 @@ namespace ClashManager
         public BoundingBox3D BoundingBox { get; set; }
 
         // Геометрия на основе треугольников (точная геометрия)
-        public List<Triangle3D> Triangles { get; set; } = new List<Triangle3D>();
+    public List<(Point3D, Point3D, Point3D)> Triangles { get; set; } = new List<(Point3D, Point3D, Point3D)>();
         public bool UseTriangleGeometry { get; set; } = false;
 
         // Полигональная геометрия (резервная)
