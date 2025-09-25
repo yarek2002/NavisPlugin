@@ -404,6 +404,87 @@ namespace ClashManager
         }
 
 		/// <summary>
+		/// Извлекает треугольники из COM геометрии
+		/// </summary>
+		private List<(Point3D, Point3D, Point3D)> ExtractTrianglesFromCOMGeometry(object geometry)
+		{
+			var triangles = new List<(Point3D, Point3D, Point3D)>();
+			try
+			{
+				if (geometry == null) return triangles;
+				
+				var geometryType = geometry.GetType();
+				LogToFile($"ExtractTrianglesFromCOMGeometry: Тип геометрии: {geometryType.Name}");
+				
+				// Ищем методы get_Coords и get_CoordIndex
+				var getCoordsMethod = geometryType.GetMethod("get_Coords");
+				var getCoordIndexMethod = geometryType.GetMethod("get_CoordIndex");
+				
+				if (getCoordsMethod != null && getCoordIndexMethod != null)
+				{
+					LogToFile($"ExtractTrianglesFromCOMGeometry: Найдены методы get_Coords/get_CoordIndex");
+					
+					var coords = (Array)getCoordsMethod.Invoke(geometry, null);
+					var indices = (Array)getCoordIndexMethod.Invoke(geometry, null);
+					
+					LogToFile($"ExtractTrianglesFromCOMGeometry: Координаты: {coords?.Length ?? 0}, Индексы: {indices?.Length ?? 0}");
+					
+					if (coords != null && indices != null && coords.Length > 0 && indices.Length > 0)
+					{
+						// Создаем точки из координат
+						var points = new List<Point3D>();
+						for (int i = 0; i + 2 < coords.Length; i += 3)
+						{
+							double x = Convert.ToDouble(coords.GetValue(i));
+							double y = Convert.ToDouble(coords.GetValue(i + 1));
+							double z = Convert.ToDouble(coords.GetValue(i + 2));
+							points.Add(new Point3D(x, y, z));
+						}
+						
+						// Создаем треугольники из индексов
+						var current = new List<int>();
+						int triangleCount = 0;
+						for (int k = 0; k < indices.Length; k++)
+						{
+							int idx = Convert.ToInt32(indices.GetValue(k));
+							if (idx == -1)
+							{
+								// Триангулируем текущий полигон
+								for (int t = 1; t + 1 < current.Count; t++)
+								{
+									int a = current[0], b = current[t], c = current[t + 1];
+									if (a >= 0 && b >= 0 && c >= 0 &&
+										a < points.Count && b < points.Count && c < points.Count)
+									{
+										triangles.Add((points[a], points[b], points[c]));
+										triangleCount++;
+									}
+								}
+								current.Clear();
+							}
+							else
+							{
+								current.Add(idx);
+							}
+						}
+						
+						LogToFile($"ExtractTrianglesFromCOMGeometry: Создано треугольников: {triangleCount}");
+					}
+				}
+				else
+				{
+					LogToFile($"ExtractTrianglesFromCOMGeometry: Методы get_Coords/get_CoordIndex не найдены");
+				}
+			}
+			catch (Exception ex)
+			{
+				LogToFile($"ExtractTrianglesFromCOMGeometry: Ошибка: {ex.Message}");
+			}
+			
+			return triangles;
+		}
+
+		/// <summary>
 		/// Извлекает треугольники из геометрии объекта зоны (рекурсивно по дереву ModelItem)
 		/// </summary>
 		private List<(Point3D, Point3D, Point3D)> ExtractTrianglesFromGeometry(ModelItem item)
@@ -945,6 +1026,7 @@ namespace ClashManager
             {
                 LogToFile($"TryExtractPolygonVertices: Ищем вершины полигона в элементе '{item.DisplayName}'");
 
+                // Сначала ищем координаты в свойствах элемента
                 foreach (var category in item.PropertyCategories)
                 {
                     LogToFile($"TryExtractPolygonVertices: Проверяем категорию '{category.DisplayName}'");
@@ -985,16 +1067,50 @@ namespace ClashManager
                                     LogToFile($"TryExtractPolygonVertices: Добавлено {polygonPoints.Count} вершин из полигона");
                                 }
                             }
+
+                            // Поиск специальных свойств Revit для зон
+                            if (propName.Contains("area") || propName.Contains("площадь") ||
+                                propName.Contains("perimeter") || propName.Contains("периметр"))
+                            {
+                                LogToFile($"TryExtractPolygonVertices: Найдено свойство зоны '{property.DisplayName}' = '{propValue}'");
+                                
+                                // Попробуем извлечь координаты из строки
+                                var polygonPoints = ParsePolygonFromProperty(propValue);
+                                if (polygonPoints.Count > 0)
+                                {
+                                    vertices.AddRange(polygonPoints);
+                                    LogToFile($"TryExtractPolygonVertices: Добавлено {polygonPoints.Count} вершин из свойства зоны");
+                                }
+                            }
                         }
                     }
                 }
 
-                // Убираем дубликаты и сортируем по часовой стрелке (если это 2D полигон)
+                // Если нашли координаты в свойствах, используем их
                 if (vertices.Count >= 3)
                 {
                     vertices = RemoveDuplicateVertices(vertices);
                     vertices = SortVerticesClockwise(vertices);
-                    LogToFile($"TryExtractPolygonVertices: Итого найдено {vertices.Count} уникальных вершин");
+                    LogToFile($"TryExtractPolygonVertices: Найдено {vertices.Count} вершин в свойствах элемента");
+                    return vertices;
+                }
+
+                // Если координаты не найдены в свойствах, создаем полигон из BoundingBox как fallback
+                LogToFile($"TryExtractPolygonVertices: Координаты не найдены в свойствах, создаем полигон из BoundingBox");
+                var boundingBox = GetBoundingBox(item);
+                if (boundingBox.Min != boundingBox.Max)
+                {
+                    // Создаем прямоугольный полигон из BoundingBox
+                    var min = boundingBox.Min;
+                    var max = boundingBox.Max;
+                    
+                    // Создаем 4 вершины прямоугольника (вид сверху)
+                    vertices.Add(new Point3D(min.X, min.Y, min.Z));
+                    vertices.Add(new Point3D(max.X, min.Y, min.Z));
+                    vertices.Add(new Point3D(max.X, max.Y, min.Z));
+                    vertices.Add(new Point3D(min.X, max.Y, min.Z));
+                    
+                    LogToFile($"TryExtractPolygonVertices: Создан полигон из BoundingBox с {vertices.Count} вершинами");
                 }
                 else
                 {
