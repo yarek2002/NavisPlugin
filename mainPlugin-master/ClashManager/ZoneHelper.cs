@@ -1400,6 +1400,14 @@ namespace ClashManager
 				// Используем точную геометрию на основе треугольников (point-in-mesh через RayCast)
 				bool isInsideTriangles = IsPointInsideTriangles(point, zone.Triangles);
                 LogToFile($"IsPointInsideZone: Треугольная проверка - {(isInsideTriangles ? "внутри" : "снаружи")}");
+                
+                // Дополнительная отладочная информация для первых нескольких треугольников
+                if (zone.Triangles.Count > 0)
+                {
+                    var firstTri = zone.Triangles[0];
+                    LogToFile($"IsPointInsideZone: Первый треугольник: ({firstTri.Item1.X:F2},{firstTri.Item1.Y:F2},{firstTri.Item1.Z:F2}) - ({firstTri.Item2.X:F2},{firstTri.Item2.Y:F2},{firstTri.Item2.Z:F2}) - ({firstTri.Item3.X:F2},{firstTri.Item3.Y:F2},{firstTri.Item3.Z:F2})");
+                }
+                
                 return isInsideTriangles;
             }
             else if (zone.UsePolygonGeometry && zone.Vertices.Count >= 3)
@@ -1477,35 +1485,65 @@ namespace ClashManager
         /// </summary>
 		private bool IsPointInsideTriangles(Point3D point, List<(Point3D, Point3D, Point3D)> triangles)
         {
-			// Реализация point-in-mesh через рейкаст: считаем пересечения луча с мешем
 			try
 			{
-				LogToFile($"IsPointInsideTriangles: RayCast проверка точки ({point.X:F2}, {point.Y:F2}, {point.Z:F2}) по {triangles.Count} треугольникам");
+				LogToFile($"IsPointInsideTriangles: Проверяем точку ({point.X:F2}, {point.Y:F2}, {point.Z:F2}) по {triangles.Count} треугольникам");
 
-				// Луч вдоль +X (можно менять направление при необходимости)
-				var rayOrigin = point;
-				var rayDir = new Point3D(1, 0, 0);
-				int hits = 0;
-				const double epsilon = 1e-7;
-
+				// Сначала проверяем простой способ - находится ли точка внутри любого треугольника
 				foreach (var tri in triangles)
 				{
-					double t;
-					if (RayIntersectsTriangle(rayOrigin, rayDir, tri, out t))
+					if (IsPointInsideTriangle(point, tri))
 					{
-						// Считаем только пересечения в положительном направлении
-						if (t > epsilon)
-							hits++;
+						LogToFile($"IsPointInsideTriangles: Точка находится внутри треугольника");
+						return true;
 					}
 				}
 
-				bool inside = (hits % 2) == 1;
-				LogToFile($"IsPointInsideTriangles: Пересечений={hits}, внутри={inside}");
-				return inside;
+				// Если не найдено прямого попадания, используем Ray Casting
+				LogToFile($"IsPointInsideTriangles: Прямое попадание не найдено, используем Ray Casting");
+
+				// Пробуем несколько направлений луча для надежности
+				var rayDirections = new[]
+				{
+					new Point3D(1, 0, 0),   // +X
+					new Point3D(0, 1, 0),   // +Y
+					new Point3D(0, 0, 1),   // +Z
+					new Point3D(1, 1, 0),   // диагональ XY
+					new Point3D(1, 0, 1)    // диагональ XZ
+				};
+
+				foreach (var rayDir in rayDirections)
+				{
+					int hits = 0;
+					const double epsilon = 1e-7;
+
+					foreach (var tri in triangles)
+					{
+						double t;
+						if (RayIntersectsTriangle(point, rayDir, tri, out t))
+						{
+							// Считаем только пересечения в положительном направлении
+							if (t > epsilon)
+								hits++;
+						}
+					}
+
+					bool inside = (hits % 2) == 1;
+					LogToFile($"IsPointInsideTriangles: RayCast направление ({rayDir.X:F1},{rayDir.Y:F1},{rayDir.Z:F1}) - пересечений={hits}, внутри={inside}");
+					
+					if (inside)
+					{
+						LogToFile($"IsPointInsideTriangles: Точка внутри по RayCast");
+						return true;
+					}
+				}
+
+				LogToFile($"IsPointInsideTriangles: Точка снаружи по всем проверкам");
+				return false;
 			}
 			catch (Exception ex)
 			{
-				LogToFile($"IsPointInsideTriangles: Ошибка RayCast: {ex.Message}");
+				LogToFile($"IsPointInsideTriangles: Ошибка: {ex.Message}");
 				return false;
 			}
         }
@@ -1526,11 +1564,17 @@ namespace ClashManager
                 var barycentric = CalculateBarycentricCoordinates(point, v1, v2, v3);
 
                 // Точка внутри треугольника, если все barycentric координаты >= 0 и <= 1
-                bool isInside = barycentric.U >= 0 && barycentric.U <= 1 &&
-                               barycentric.V >= 0 && barycentric.V <= 1 &&
-                               barycentric.W >= 0 && barycentric.W <= 1;
+                // Добавляем небольшой допуск для численных ошибок
+                const double tolerance = 1e-6;
+                bool isInside = barycentric.U >= -tolerance && barycentric.U <= 1 + tolerance &&
+                               barycentric.V >= -tolerance && barycentric.V <= 1 + tolerance &&
+                               barycentric.W >= -tolerance && barycentric.W <= 1 + tolerance;
 
-                return isInside;
+                // Дополнительная проверка: сумма должна быть близка к 1
+                double sum = barycentric.U + barycentric.V + barycentric.W;
+                bool sumValid = Math.Abs(sum - 1.0) < tolerance;
+
+                return isInside && sumValid;
             }
             catch (Exception ex)
             {
@@ -1582,7 +1626,17 @@ namespace ClashManager
 
 			// t = (edge2 . Q) * invDet
 			t = DotProduct(edge2, qvec) * invDet;
-			return t >= -epsilon; // допускаем касание
+			
+			// Дополнительная проверка: t должен быть положительным для пересечения в направлении луча
+			bool intersects = t >= -epsilon;
+			
+			// Логируем детали для отладки (только для первых нескольких треугольников)
+			if (intersects && t > 0.1) // Только для значимых пересечений
+			{
+				LogToFile($"RayIntersectsTriangle: Пересечение найдено! t={t:F6}, u={u:F6}, v={v:F6}");
+			}
+			
+			return intersects;
 		}
 
 		/// <summary>
