@@ -1,0 +1,143 @@
+Geometry is accessed via the COM API: Fragment (InwOaFragment3) object, which you can get via a selection path as below, or through a node object, assuming you have a selection. GenerateSimplePrimitives() requires a class that implements InwSimplePrimitivesCB. You can create a separate class for this or simply implement the interface callback functions in the current class, as below. The geometry primitives are passed into the functions, from which you can access the coordinates.
+
+The coordinates returned from the GenerateSimplePrimitives method are in LCS (local coordinate space), and must be transformed to get them into WCS (world coordinate space). This transform can be accessed via the GetLocalToWorldMatrix() method on the fragment. This returns an InwLTransform3f interface, from which you can use the GetMatrix() method to return a 4x4 matrix as a flat 16-value array. This array is in row-major order. Therefore to get the coordinates into world space, you need to transform them using this matrix.
+
+using Autodesk.Navisworks.Api;
+
+using Autodesk.Navisworks.Api.Plugins;
+
+using ComBridge = Autodesk.Navisworks.Api.ComApi.ComApiBridge;
+
+using COMApi = Autodesk.Navisworks.Api.Interop.ComApi;
+
+ 
+
+#region InwSimplePrimitivesCB Class
+
+class CallbackGeomListener : COMApi.InwSimplePrimitivesCB
+
+{
+
+    public void Line(COMApi.InwSimpleVertex v1,
+
+            COMApi.InwSimpleVertex v2)
+
+    {
+
+        // do your work
+
+    }
+
+ 
+
+    public void Point(COMApi.InwSimpleVertex v1)
+
+    {
+
+        // do your work
+
+    }
+
+ 
+
+    public void SnapPoint(COMApi.InwSimpleVertex v1)
+
+    {
+
+        // do your work
+
+    }
+
+ 
+
+    public void Triangle(COMApi.InwSimpleVertex v1,
+
+            COMApi.InwSimpleVertex v2,
+
+            COMApi.InwSimpleVertex v3)
+
+    {
+
+        // do your work
+
+    }
+
+ 
+
+ 
+
+ }
+
+ #endregion
+
+ 
+
+ #region NW Plugin
+
+[PluginAttribute("Test","ADSK",DisplayName= "Test")]
+
+[AddInPluginAttribute(AddInLocation.AddIn)]
+
+public class Class1:AddInPlugin
+
+{
+
+    public override int Execute(params string[] parameters)
+
+    {
+
+        // get the current selection
+
+        ModelItemCollection oModelColl =
+
+            Autodesk.Navisworks.Api.Application.
+
+                ActiveDocument.CurrentSelection.SelectedItems;
+
+ 
+
+        //convert to COM selection
+
+        COMApi.InwOpState oState = ComBridge.State;
+
+        COMApi.InwOpSelection oSel =
+
+                ComBridge.ToInwOpSelection(oModelColl);
+
+ 
+
+        // create the callback object
+
+        CallbackGeomListener callbkListener =
+
+                new CallbackGeomListener();
+
+        foreach (COMApi.InwOaPath3 path in oSel.Paths())
+
+        {
+
+            foreach (COMApi.InwOaFragment3 frag in path.Fragments())
+
+            {
+
+                // generate the primitives
+
+                frag.GenerateSimplePrimitives(
+
+                    COMApi.nwEVertexProperty.eNORMAL, 
+
+                                   callbkListener);
+
+            }
+
+        }
+
+ 
+
+        return 0;
+
+    }
+
+}
+
+  #endregion

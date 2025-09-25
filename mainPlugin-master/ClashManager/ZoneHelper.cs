@@ -4,9 +4,114 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
+using Autodesk.Navisworks.Api.ComApi;
+using ComBridge = Autodesk.Navisworks.Api.ComApi.ComApiBridge;
+using COMApi = Autodesk.Navisworks.Api.Interop.ComApi;
 
 namespace ClashManager
 {
+    /// <summary>
+    /// Callback класс для обработки геометрии через COM API
+    /// </summary>
+    public class CallbackGeomListener : COMApi.InwSimplePrimitivesCB
+    {
+        public List<(Point3D, Point3D, Point3D)> Triangles { get; private set; } = new List<(Point3D, Point3D, Point3D)>();
+        public List<Point3D> Points { get; private set; } = new List<Point3D>();
+        public List<(Point3D, Point3D)> Lines { get; private set; } = new List<(Point3D, Point3D)>();
+
+        public void Line(COMApi.InwSimpleVertex v1, COMApi.InwSimpleVertex v2)
+        {
+            try
+            {
+                var p1 = GetPointFromVertex(v1);
+                var p2 = GetPointFromVertex(v2);
+                Lines.Add((p1, p2));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"CallbackGeomListener.Line error: {ex.Message}");
+            }
+        }
+
+        public void Point(COMApi.InwSimpleVertex v1)
+        {
+            try
+            {
+                var p = GetPointFromVertex(v1);
+                Points.Add(p);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"CallbackGeomListener.Point error: {ex.Message}");
+            }
+        }
+
+        public void SnapPoint(COMApi.InwSimpleVertex v1)
+        {
+            try
+            {
+                var p = GetPointFromVertex(v1);
+                Points.Add(p);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"CallbackGeomListener.SnapPoint error: {ex.Message}");
+            }
+        }
+
+        public void Triangle(COMApi.InwSimpleVertex v1, COMApi.InwSimpleVertex v2, COMApi.InwSimpleVertex v3)
+        {
+            try
+            {
+                var p1 = GetPointFromVertex(v1);
+                var p2 = GetPointFromVertex(v2);
+                var p3 = GetPointFromVertex(v3);
+                Triangles.Add((p1, p2, p3));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"CallbackGeomListener.Triangle error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Извлекает координаты из InwSimpleVertex (используя coord как массив)
+        /// </summary>
+        private Point3D GetPointFromVertex(COMApi.InwSimpleVertex vertex)
+        {
+            try
+            {
+                // Получаем координаты из свойства coord как массив (как в примере)
+                Array coordArray = (Array)(object)vertex.coord;
+                
+                if (coordArray != null && coordArray.Length >= 3)
+                {
+                    double x = Convert.ToDouble(coordArray.GetValue(0));
+                    double y = Convert.ToDouble(coordArray.GetValue(1));
+                    double z = Convert.ToDouble(coordArray.GetValue(2));
+                    return new Point3D(x, y, z);
+                }
+                else
+                {
+                    // Fallback: возвращаем нулевую точку
+                    return new Point3D(0, 0, 0);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GetPointFromVertex error: {ex.Message}");
+                return new Point3D(0, 0, 0);
+            }
+        }
+
+        public void Clear()
+        {
+            Triangles.Clear();
+            Points.Clear();
+            Lines.Clear();
+        }
+    }
+
     /// <summary>
     /// Класс для работы с зонами
     /// </summary>
@@ -485,7 +590,7 @@ namespace ClashManager
 		}
 
 		/// <summary>
-		/// Извлекает треугольники из геометрии объекта зоны (рекурсивно по дереву ModelItem)
+		/// Извлекает треугольники из геометрии объекта зоны через COM API (по образцу из example.txt)
 		/// </summary>
 		private List<(Point3D, Point3D, Point3D)> ExtractTrianglesFromGeometry(ModelItem item)
 		{
@@ -497,431 +602,74 @@ namespace ClashManager
 
 				LogToFile($"ExtractTrianglesFromGeometry: Извлекаем треугольники из '{item.DisplayName}' (COM API)");
 
-				// 1) Извлечь геометрию текущего элемента через COM API (InwOaTriMeshGeom)
-				try
+				// Создаем коллекцию ModelItem для передачи в COM API
+				var modelColl = new ModelItemCollection();
+				modelColl.Add(item);
+
+				// Конвертируем в COM selection через ComApiBridge (как в example.txt)
+				COMApi.InwOpState oState = ComBridge.State;
+				COMApi.InwOpSelection oSel = ComBridge.ToInwOpSelection(modelColl);
+
+				LogToFile($"ExtractTrianglesFromGeometry: COM State получен: {oState != null}");
+				LogToFile($"ExtractTrianglesFromGeometry: COM Selection получен: {oSel != null}");
+
+				if (oSel != null)
 				{
-					var comPath = Autodesk.Navisworks.Api.ComApi.ComApiBridge.ToInwOaPath(item);
-					var state = Autodesk.Navisworks.Api.ComApi.ComApiBridge.State;
-					LogToFile($"ExtractTrianglesFromGeometry: COM Path создан: {comPath != null}");
-					LogToFile($"ExtractTrianglesFromGeometry: State получен: {state != null}");
-					
-					// Получаем коллекцию геометрии фрагментов (тип: InwLGeomColl) через рефлексию
-					var stateType = state.GetType();
-					LogToFile($"ExtractTrianglesFromGeometry: State тип: {stateType.Name}");
-					
-					// Ищем все методы в State
-					var methods = stateType.GetMethods();
-					LogToFile($"ExtractTrianglesFromGeometry: Найдено методов в State: {methods.Length}");
-					
-					// Ищем методы, связанные с геометрией
-					var geometryMethods = methods.Where(m => m.Name.ToLower().Contains("geometry") || m.Name.ToLower().Contains("geom")).ToArray();
-					LogToFile($"ExtractTrianglesFromGeometry: Методы геометрии: {string.Join(", ", geometryMethods.Select(m => m.Name))}");
-					
-					var getGeometryMethod = stateType.GetMethod("GetGeometry");
-					if (getGeometryMethod == null)
+					// Создаем callback объект для получения геометрии
+					var callbackListener = new CallbackGeomListener();
+
+					LogToFile($"ExtractTrianglesFromGeometry: Обходим пути в selection");
+					foreach (COMApi.InwOaPath3 path in oSel.Paths())
 					{
-						// Пробуем другие варианты
-						getGeometryMethod = stateType.GetMethod("get_Geometry");
-						if (getGeometryMethod == null)
+						LogToFile($"ExtractTrianglesFromGeometry: Обрабатываем путь");
+						foreach (COMApi.InwOaFragment3 frag in path.Fragments())
 						{
-							getGeometryMethod = stateType.GetMethod("Geometry");
+							LogToFile($"ExtractTrianglesFromGeometry: Обрабатываем фрагмент");
+							try
+							{
+								// Генерируем простые примитивы (как в example.txt)
+								frag.GenerateSimplePrimitives(COMApi.nwEVertexProperty.eNORMAL, callbackListener);
+								LogToFile($"ExtractTrianglesFromGeometry: GenerateSimplePrimitives выполнен");
+							}
+							catch (Exception ex)
+							{
+								LogToFile($"ExtractTrianglesFromGeometry: Ошибка GenerateSimplePrimitives: {ex.Message}");
+							}
 						}
 					}
-					
-					LogToFile($"ExtractTrianglesFromGeometry: GetGeometry метод найден: {getGeometryMethod != null}");
-					
-					object geomColl = null;
-					if (getGeometryMethod != null)
-					{
-						try
-						{
-							// Пробуем разные сигнатуры метода
-							var parameters = getGeometryMethod.GetParameters();
-							LogToFile($"ExtractTrianglesFromGeometry: Параметры метода: {parameters.Length}");
-							
-							if (parameters.Length == 2)
-							{
-								geomColl = getGeometryMethod.Invoke(state, new object[] { comPath, true });
-							}
-							else if (parameters.Length == 1)
-							{
-								geomColl = getGeometryMethod.Invoke(state, new object[] { comPath });
-							}
-							else
-							{
-								geomColl = getGeometryMethod.Invoke(state, null);
-							}
-						}
-						catch (Exception ex)
-						{
-							LogToFile($"ExtractTrianglesFromGeometry: Ошибка вызова GetGeometry: {ex.Message}");
-						}
-					}
-					
-					LogToFile($"ExtractTrianglesFromGeometry: Геометрия получена: {geomColl != null}");
-					
-					if (geomColl != null && geomColl is System.Collections.IEnumerable geomEnumerable)
-					{
-						int fragmentCount = 0;
-						foreach (var frag in geomEnumerable)
-						{
-							fragmentCount++;
-							LogToFile($"ExtractTrianglesFromGeometry: Обрабатываем фрагмент #{fragmentCount}");
-							
-							object geomObj = null;
-							var getGeomMethod = frag.GetType().GetMethod("GetGeom");
-							if (getGeomMethod != null)
-							{
-								var args = new object[] { null };
-								getGeomMethod.Invoke(frag, args);
-								geomObj = args[0];
-								LogToFile($"ExtractTrianglesFromGeometry: Геометрия фрагмента #{fragmentCount}: {geomObj != null}");
-							}
-							if (geomObj == null) continue;
 
-							// Ищем треугольную сетку (InwOaTriMeshGeom) без прямой ссылки на тип
-							var typeName = geomObj.GetType().Name;
-							LogToFile($"ExtractTrianglesFromGeometry: Тип геометрии фрагмента #{fragmentCount}: {typeName}");
-							
-							if (string.Equals(typeName, "InwOaTriMeshGeom", StringComparison.Ordinal))
-							{
-								LogToFile($"ExtractTrianglesFromGeometry: Найден InwOaTriMeshGeom в фрагменте #{fragmentCount}");
-								
-								var triType = geomObj.GetType();
-								var getCoords = triType.GetMethod("get_Coords");
-								var getCoordIndex = triType.GetMethod("get_CoordIndex");
-								
-								LogToFile($"ExtractTrianglesFromGeometry: get_Coords метод: {getCoords != null}");
-								LogToFile($"ExtractTrianglesFromGeometry: get_CoordIndex метод: {getCoordIndex != null}");
-								
-								if (getCoords == null || getCoordIndex == null) continue;
-								
-								var coords = (Array)getCoords.Invoke(geomObj, null);
-								var indices = (Array)getCoordIndex.Invoke(geomObj, null);
-								
-								LogToFile($"ExtractTrianglesFromGeometry: Координаты получены: {coords?.Length ?? 0} точек");
-								LogToFile($"ExtractTrianglesFromGeometry: Индексы получены: {indices?.Length ?? 0} индексов");
+					// Получаем треугольники из callback объекта
+					triangles.AddRange(callbackListener.Triangles);
+					LogToFile($"ExtractTrianglesFromGeometry: Получено {callbackListener.Triangles.Count} треугольников");
+					LogToFile($"ExtractTrianglesFromGeometry: Получено {callbackListener.Lines.Count} линий");
+					LogToFile($"ExtractTrianglesFromGeometry: Получено {callbackListener.Points.Count} точек");
 
-								// coords: x1,y1,z1, x2,y2,z2, ...
-								// indices: i1,i2,i3, -1, i4,i5,i6, -1, ... (полилинии/полигоны)
-								var points = new List<Point3D>();
-								for (int i = 0; i + 2 < coords.Length; i += 3)
-								{
-									double x = Convert.ToDouble(coords.GetValue(i));
-									double y = Convert.ToDouble(coords.GetValue(i + 1));
-									double z = Convert.ToDouble(coords.GetValue(i + 2));
-									points.Add(new Point3D(x, y, z));
-								}
-								LogToFile($"ExtractTrianglesFromGeometry: Создано точек: {points.Count}");
-
-								var current = new List<int>();
-								int triangleCount = 0;
-								for (int k = 0; k < indices.Length; k++)
-								{
-									int idx = Convert.ToInt32(indices.GetValue(k));
-									if (idx == -1)
-									{
-										// триангулируем текущий полигон fan-ом
-										for (int t = 1; t + 1 < current.Count; t++)
-										{
-											int a = current[0], b = current[t], c = current[t + 1];
-											if (a >= 0 && b >= 0 && c >= 0 &&
-												a < points.Count && b < points.Count && c < points.Count)
-											{
-												triangles.Add((points[a], points[b], points[c]));
-												triangleCount++;
-											}
-										}
-										current.Clear();
-									}
-									else
-									{
-										current.Add(idx);
-									}
-								}
-								LogToFile($"ExtractTrianglesFromGeometry: Создано треугольников из фрагмента #{fragmentCount}: {triangleCount}");
-							}
-						}
-						LogToFile($"ExtractTrianglesFromGeometry: Всего обработано фрагментов: {fragmentCount}");
-					}
-					else
+					// Если треугольников нет, но есть линии, попробуем создать треугольники из линий
+					if (triangles.Count == 0 && callbackListener.Lines.Count > 0)
 					{
-						LogToFile($"ExtractTrianglesFromGeometry: Геометрия не получена или не является IEnumerable");
+						LogToFile($"ExtractTrianglesFromGeometry: Пытаемся создать треугольники из {callbackListener.Lines.Count} линий");
+						triangles.AddRange(CreateTrianglesFromLines(callbackListener.Lines));
 					}
 				}
-				catch (Exception ex)
+				else
 				{
-					LogToFile($"ExtractTrianglesFromGeometry COM: Ошибка: {ex.Message}");
+					LogToFile($"ExtractTrianglesFromGeometry: COM Selection не получен");
 				}
 
-				// 2) Альтернативный способ через стандартный Navisworks API
-				if (triangles.Count == 0)
+				// Рекурсивно обходим детей, если треугольников не найдено
+				if (triangles.Count == 0 && item.Children is System.Collections.IEnumerable childrenEnumerable)
 				{
-					try
-					{
-						LogToFile($"ExtractTrianglesFromGeometry: Пробуем альтернативный способ через Navisworks API");
-						
-						// Получаем геометрию через стандартный API
-						var geometry = item.Geometry;
-						LogToFile($"ExtractTrianglesFromGeometry: Стандартная геометрия получена: {geometry != null}");
-						
-						if (geometry != null)
-						{
-							LogToFile($"ExtractTrianglesFromGeometry: Тип геометрии: {geometry.GetType().Name}");
-							
-							// Исследуем все доступные свойства и методы ModelGeometry
-							var geometryType = geometry.GetType();
-							var properties = geometryType.GetProperties();
-							var methods = geometryType.GetMethods();
-							
-							LogToFile($"ExtractTrianglesFromGeometry: Свойства ModelGeometry: {string.Join(", ", properties.Select(p => p.Name))}");
-							LogToFile($"ExtractTrianglesFromGeometry: Методы ModelGeometry: {string.Join(", ", methods.Select(m => m.Name))}");
-							
-							// Пытаемся найти свойства, связанные с координатами или треугольниками
-							var coordProperties = properties.Where(p => p.Name.ToLower().Contains("coord") || 
-								p.Name.ToLower().Contains("vertex") || p.Name.ToLower().Contains("point") ||
-								p.Name.ToLower().Contains("triangle") || p.Name.ToLower().Contains("mesh")).ToArray();
-							
-							LogToFile($"ExtractTrianglesFromGeometry: Свойства координат: {string.Join(", ", coordProperties.Select(p => p.Name))}");
-							
-							// Пробуем использовать FragmentCount и Item для доступа к фрагментам
-							var fragmentCountProperty = geometryType.GetProperty("FragmentCount");
-							var itemProperty = geometryType.GetProperty("Item");
-							
-							LogToFile($"ExtractTrianglesFromGeometry: FragmentCount свойство: {fragmentCountProperty != null}");
-							LogToFile($"ExtractTrianglesFromGeometry: Item свойство: {itemProperty != null}");
-							
-							if (fragmentCountProperty != null && itemProperty != null)
-							{
-								try
-								{
-									var fragmentCount = (int)fragmentCountProperty.GetValue(geometry);
-									LogToFile($"ExtractTrianglesFromGeometry: Количество фрагментов: {fragmentCount}");
-									
-									if (fragmentCount > 0)
-									{
-										// Пытаемся получить фрагменты через Item как свойство
-										for (int i = 0; i < fragmentCount; i++)
-										{
-											try
-											{
-												// Пробуем разные способы получения фрагментов
-												object fragment = null;
-												
-												// Способ 1: Item как свойство (возвращает коллекцию)
-												try
-												{
-													var itemValue = itemProperty.GetValue(geometry);
-													LogToFile($"ExtractTrianglesFromGeometry: Item значение: {itemValue?.GetType().Name ?? "null"}");
-													
-													if (itemValue != null && itemValue is System.Collections.IEnumerable itemEnumerable)
-													{
-														var items = itemEnumerable.Cast<object>().ToArray();
-														LogToFile($"ExtractTrianglesFromGeometry: Item содержит {items.Length} элементов");
-														
-														if (i < items.Length)
-														{
-															fragment = items[i];
-														}
-													}
-												}
-												catch (Exception ex)
-												{
-													LogToFile($"ExtractTrianglesFromGeometry: Ошибка получения Item как свойства: {ex.Message}");
-												}
-												
-												// Способ 2: Прямой вызов метода get_Item с параметром
-												if (fragment == null)
-												{
-													try
-													{
-														var getItemMethod = geometryType.GetMethod("get_Item");
-														if (getItemMethod != null)
-														{
-															var parameters = getItemMethod.GetParameters();
-															LogToFile($"ExtractTrianglesFromGeometry: get_Item параметры: {parameters.Length}");
-															
-															if (parameters.Length == 1)
-															{
-																fragment = getItemMethod.Invoke(geometry, new object[] { i });
-															}
-														}
-													}
-													catch (Exception ex)
-													{
-														LogToFile($"ExtractTrianglesFromGeometry: Ошибка вызова get_Item: {ex.Message}");
-													}
-												}
-												
-												LogToFile($"ExtractTrianglesFromGeometry: Фрагмент {i}: {fragment?.GetType().Name ?? "null"}");
-												
-												if (fragment != null)
-												{
-													var fragmentType = fragment.GetType();
-													var fragmentMethods = fragmentType.GetMethods();
-													LogToFile($"ExtractTrianglesFromGeometry: Методы фрагмента {i}: {string.Join(", ", fragmentMethods.Select(m => m.Name))}");
-													
-													// Ищем методы для получения координат в фрагменте
-													var getCoordsMethod = fragmentType.GetMethod("get_Coords");
-													var getCoordIndexMethod = fragmentType.GetMethod("get_CoordIndex");
-													
-													if (getCoordsMethod != null && getCoordIndexMethod != null)
-													{
-														LogToFile($"ExtractTrianglesFromGeometry: Найдены методы get_Coords/get_CoordIndex в фрагменте {i}");
-														
-														var coords = (Array)getCoordsMethod.Invoke(fragment, null);
-														var indices = (Array)getCoordIndexMethod.Invoke(fragment, null);
-														
-														LogToFile($"ExtractTrianglesFromGeometry: Фрагмент {i} - координаты: {coords?.Length ?? 0}, индексы: {indices?.Length ?? 0}");
-														
-														if (coords != null && indices != null && coords.Length > 0 && indices.Length > 0)
-														{
-															// Создаем точки из координат
-															var points = new List<Point3D>();
-															for (int j = 0; j + 2 < coords.Length; j += 3)
-															{
-																double x = Convert.ToDouble(coords.GetValue(j));
-																double y = Convert.ToDouble(coords.GetValue(j + 1));
-																double z = Convert.ToDouble(coords.GetValue(j + 2));
-																points.Add(new Point3D(x, y, z));
-															}
-															
-															// Создаем треугольники из индексов
-															var current = new List<int>();
-															int triangleCount = 0;
-															for (int k = 0; k < indices.Length; k++)
-															{
-																int idx = Convert.ToInt32(indices.GetValue(k));
-																if (idx == -1)
-																{
-																	// Триангулируем текущий полигон
-																	for (int t = 1; t + 1 < current.Count; t++)
-																	{
-																		int a = current[0], b = current[t], c = current[t + 1];
-																		if (a >= 0 && b >= 0 && c >= 0 &&
-																			a < points.Count && b < points.Count && c < points.Count)
-																		{
-																			triangles.Add((points[a], points[b], points[c]));
-																			triangleCount++;
-																		}
-																	}
-																	current.Clear();
-																}
-																else
-																{
-																	current.Add(idx);
-																}
-															}
-															
-															LogToFile($"ExtractTrianglesFromGeometry: Создано треугольников из фрагмента {i}: {triangleCount}");
-														}
-													}
-												}
-											}
-											catch (Exception ex)
-											{
-												LogToFile($"ExtractTrianglesFromGeometry: Ошибка обработки фрагмента {i}: {ex.Message}");
-											}
-										}
-									}
-								}
-								catch (Exception ex)
-								{
-									LogToFile($"ExtractTrianglesFromGeometry: Ошибка работы с фрагментами: {ex.Message}");
-								}
-							}
-							
-							// Пытаемся получить треугольники через рефлексию (резервный способ)
-							var getCoordsMethod2 = geometryType.GetMethod("get_Coords");
-							var getCoordIndexMethod2 = geometryType.GetMethod("get_CoordIndex");
-							
-							if (getCoordsMethod2 != null && getCoordIndexMethod2 != null)
-							{
-								LogToFile($"ExtractTrianglesFromGeometry: Найдены методы get_Coords и get_CoordIndex в геометрии");
-								
-								var coords = (Array)getCoordsMethod2.Invoke(geometry, null);
-								var indices = (Array)getCoordIndexMethod2.Invoke(geometry, null);
-								
-								LogToFile($"ExtractTrianglesFromGeometry: Координаты из геометрии: {coords?.Length ?? 0}, Индексы: {indices?.Length ?? 0}");
-								
-								if (coords != null && indices != null && coords.Length > 0 && indices.Length > 0)
-								{
-									// Создаем точки из координат
-									var points = new List<Point3D>();
-									for (int i = 0; i + 2 < coords.Length; i += 3)
-									{
-										double x = Convert.ToDouble(coords.GetValue(i));
-										double y = Convert.ToDouble(coords.GetValue(i + 1));
-										double z = Convert.ToDouble(coords.GetValue(i + 2));
-										points.Add(new Point3D(x, y, z));
-									}
-									
-									// Создаем треугольники из индексов
-									var current = new List<int>();
-									int triangleCount = 0;
-									for (int k = 0; k < indices.Length; k++)
-									{
-										int idx = Convert.ToInt32(indices.GetValue(k));
-										if (idx == -1)
-										{
-											// Триангулируем текущий полигон
-											for (int t = 1; t + 1 < current.Count; t++)
-											{
-												int a = current[0], b = current[t], c = current[t + 1];
-												if (a >= 0 && b >= 0 && c >= 0 &&
-													a < points.Count && b < points.Count && c < points.Count)
-												{
-													triangles.Add((points[a], points[b], points[c]));
-													triangleCount++;
-												}
-											}
-											current.Clear();
-										}
-										else
-										{
-											current.Add(idx);
-										}
-									}
-									
-									LogToFile($"ExtractTrianglesFromGeometry: Создано треугольников из геометрии: {triangleCount}");
-								}
-							}
-							else
-							{
-								LogToFile($"ExtractTrianglesFromGeometry: Методы get_Coords/get_CoordIndex не найдены в геометрии");
-								
-								// Пробуем альтернативные подходы
-								foreach (var prop in coordProperties)
-								{
-									try
-									{
-										var value = prop.GetValue(geometry);
-										LogToFile($"ExtractTrianglesFromGeometry: Свойство {prop.Name} = {value?.GetType().Name ?? "null"}");
-									}
-									catch (Exception ex)
-									{
-										LogToFile($"ExtractTrianglesFromGeometry: Ошибка чтения свойства {prop.Name}: {ex.Message}");
-									}
-								}
-							}
-						}
-					}
-					catch (Exception ex)
-					{
-						LogToFile($"ExtractTrianglesFromGeometry API: Ошибка: {ex.Message}");
-					}
-				}
-
-				// 3) Рекурсивно обходим детей
-				if (item.Children is System.Collections.IEnumerable childrenEnumerable)
-				{
+					LogToFile($"ExtractTrianglesFromGeometry: Обходим дочерние элементы");
 					foreach (var child in childrenEnumerable)
 					{
 						if (child is ModelItem childItem)
 						{
 							var childTriangles = ExtractTrianglesFromGeometry(childItem);
 							if (childTriangles.Count > 0)
+							{
 								triangles.AddRange(childTriangles);
+								LogToFile($"ExtractTrianglesFromGeometry: Добавлено {childTriangles.Count} треугольников из дочернего элемента");
+							}
 						}
 					}
 				}
@@ -933,6 +681,56 @@ namespace ClashManager
 				LogToFile($"ExtractTrianglesFromGeometry: Ошибка: {ex.Message}");
 			}
 			return triangles;
+		}
+
+		/// <summary>
+		/// Создает треугольники из линий (упрощенная триангуляция)
+		/// </summary>
+		private List<(Point3D, Point3D, Point3D)> CreateTrianglesFromLines(List<(Point3D, Point3D)> lines)
+		{
+			var triangles = new List<(Point3D, Point3D, Point3D)>();
+			try
+			{
+				if (lines.Count < 3) return triangles;
+
+				// Собираем все уникальные точки
+				var points = new List<Point3D>();
+				foreach (var line in lines)
+				{
+					if (!points.Any(p => IsPointEqual(p, line.Item1)))
+						points.Add(line.Item1);
+					if (!points.Any(p => IsPointEqual(p, line.Item2)))
+						points.Add(line.Item2);
+				}
+
+				LogToFile($"CreateTrianglesFromLines: Найдено {points.Count} уникальных точек из {lines.Count} линий");
+
+				// Простая триангуляция: создаем треугольники веером от первой точки
+				if (points.Count >= 3)
+				{
+					for (int i = 1; i + 1 < points.Count; i++)
+					{
+						triangles.Add((points[0], points[i], points[i + 1]));
+					}
+				}
+
+				LogToFile($"CreateTrianglesFromLines: Создано {triangles.Count} треугольников");
+			}
+			catch (Exception ex)
+			{
+				LogToFile($"CreateTrianglesFromLines: Ошибка: {ex.Message}");
+			}
+			return triangles;
+		}
+
+		/// <summary>
+		/// Проверяет равенство точек с допуском
+		/// </summary>
+		private bool IsPointEqual(Point3D p1, Point3D p2, double tolerance = 0.001)
+		{
+			return Math.Abs(p1.X - p2.X) < tolerance &&
+				   Math.Abs(p1.Y - p2.Y) < tolerance &&
+				   Math.Abs(p1.Z - p2.Z) < tolerance;
 		}
 
 		/// <summary>
