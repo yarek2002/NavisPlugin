@@ -619,45 +619,56 @@ namespace ClashManager
 									
 									if (fragmentCount > 0)
 									{
-										// Пытаемся получить фрагменты через Item
+										// Пытаемся получить фрагменты через Item как свойство
 										for (int i = 0; i < fragmentCount; i++)
 										{
 											try
 											{
-												// Пробуем разные способы вызова индексатора Item
+												// Пробуем разные способы получения фрагментов
 												object fragment = null;
+												
+												// Способ 1: Item как свойство (возвращает коллекцию)
 												try
 												{
-													// Способ 1: через GetValue с массивом параметров
-													fragment = itemProperty.GetValue(geometry, new object[] { i });
+													var itemValue = itemProperty.GetValue(geometry);
+													LogToFile($"ExtractTrianglesFromGeometry: Item значение: {itemValue?.GetType().Name ?? "null"}");
+													
+													if (itemValue != null && itemValue is System.Collections.IEnumerable itemEnumerable)
+													{
+														var items = itemEnumerable.Cast<object>().ToArray();
+														LogToFile($"ExtractTrianglesFromGeometry: Item содержит {items.Length} элементов");
+														
+														if (i < items.Length)
+														{
+															fragment = items[i];
+														}
+													}
 												}
-												catch
+												catch (Exception ex)
+												{
+													LogToFile($"ExtractTrianglesFromGeometry: Ошибка получения Item как свойства: {ex.Message}");
+												}
+												
+												// Способ 2: Прямой вызов метода get_Item с параметром
+												if (fragment == null)
 												{
 													try
 													{
-														// Способ 2: через прямой вызов метода get_Item
 														var getItemMethod = geometryType.GetMethod("get_Item");
 														if (getItemMethod != null)
 														{
-															fragment = getItemMethod.Invoke(geometry, new object[] { i });
-														}
-													}
-													catch
-													{
-														try
-														{
-															// Способ 3: через рефлексию с правильными параметрами
-															var parameters = itemProperty.GetIndexParameters();
-															LogToFile($"ExtractTrianglesFromGeometry: Параметры индексатора Item: {parameters.Length}");
+															var parameters = getItemMethod.GetParameters();
+															LogToFile($"ExtractTrianglesFromGeometry: get_Item параметры: {parameters.Length}");
+															
 															if (parameters.Length == 1)
 															{
-																fragment = itemProperty.GetValue(geometry, new object[] { i });
+																fragment = getItemMethod.Invoke(geometry, new object[] { i });
 															}
 														}
-														catch
-														{
-															LogToFile($"ExtractTrianglesFromGeometry: Не удалось получить фрагмент {i} ни одним способом");
-														}
+													}
+													catch (Exception ex)
+													{
+														LogToFile($"ExtractTrianglesFromGeometry: Ошибка вызова get_Item: {ex.Message}");
 													}
 												}
 												

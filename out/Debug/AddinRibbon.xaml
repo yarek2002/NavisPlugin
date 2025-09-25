@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!-- BEGIN STANDARD SECTION DO NOT EDIT 
+    except for ensuring x:Uid="CustomRibbonTab" has a unique ID
+    -->
+<RibbonControl
+    x:Uid="AddinRibbon" xmlns="clr-namespace:Autodesk.Windows;assembly=AdWindows"
+    xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:adwi="clr-namespace:Autodesk.Internal.Windows;assembly=AdWindows"
+    xmlns:system="clr-namespace:System;assembly=mscorlib"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:Autodesk.Navisworks.Gui.Roamer.AIRLook;assembly=navisworks.gui.roamer">
+    <!-- END STANDARD SECTION DO NOT EDIT -->
+
+
+    <RibbonTab Id="CUSTOM_TAB1" KeyTip="T1">
+        <RibbonPanel x:Uid="RibbonPane1_1" >
+            <RibbonPanelSource x:Uid="RibbonPanelSource_RibbonPanel_1" KeyTip="C1" Title="Группировки">
+                <local:NWRibbonButton x:Uid="Button_1" Id="CollisionFragmentGrouping"
+                                      Size="Large"
+                                      KeyTip="B1"
+                                      ShowText="True"
+                                      Text="Группировка&#x0A; по фрагментам"
+                                      Orientation="Vertical"
+                                      />
+                <local:NWRibbonButton x:Uid="Button_2" Id="ClashMaker"
+                                      Size="Large"
+                                      KeyTip="B2"
+                                      ShowText="True"
+                                      Text="Группировка &#x0A; по кластерам"
+                                      Orientation="Vertical"
+                                      />
+                <local:NWRibbonButton x:Uid="Button_3" Id="MoveToFake"
+                                       Size="Large"
+                                       KeyTip="B3"
+                                       ShowText="True"
+                                       Text="Перенести&#x0A; в подтверждено"
+                                       Orientation="Vertical"
+                                       />
+				<local:NWRibbonButton x:Uid="Button_4" Id="FindSearchSets"
+									  Size="Large"
+									  KeyTip="B4"
+									  ShowText="True"
+									  Text="Найти наборы"
+									  Orientation="Vertical"
+                                       />
+				<local:NWRibbonButton
+                                       x:Uid="Button_5"
+                                       Id="MagicWand"
+                                       Size="Large"
+                                       KeyTip="B5"
+                                       ShowText="True"
+                                       Text="Авто-группировка&#x0A;и кластеризация"
+                                       Orientation="Vertical"
+                                    />
+				<local:NWRibbonButton x:Uid="Button_6" Id="ManagerCollision"
+								  Size="Large"
+								  KeyTip="B6"
+								  ShowText="True"
+								  Text="Менеджер коллизий"
+								  Orientation="Vertical"
+								  />
+				<local:NWRibbonButton x:Uid="Button_7" Id="AutoNaming"
+								  Size="Large"
+								  KeyTip="B7"
+								  ShowText="True"
+								  Text="Авто-наименование"
+								  Orientation="Vertical"
+								  />
+				<local:NWRibbonButton x:Uid="Button_8" Id="ZoneAssignment"
+								  Size="Large"
+								  KeyTip="B8"
+								  ShowText="True"
+								  Text="Назначение зон"
+								  Orientation="Vertical"
+								  />
+				<local:NWRibbonButton x:Uid="Button_9" Id="ZoneGrouping"
+								  Size="Large"
+								  KeyTip="B9"
+								  ShowText="True"
+								  Text="Авто-группировка&#x0A;по зонам"
+								  Orientation="Vertical"
+								  />
+
+
+
+
+            </RibbonPanelSource>
+        </RibbonPanel>
+    </RibbonTab>
+
+
+</RibbonControl>
