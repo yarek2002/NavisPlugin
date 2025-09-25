@@ -11,6 +11,72 @@ using COMApi = Autodesk.Navisworks.Api.Interop.ComApi;
 namespace ClashManager
 {
     /// <summary>
+    /// Расширения для работы с InwOaFragment3 и получением матрицы трансформации
+    /// </summary>
+    public static class InwOaFragment3Extensions
+    {
+        public static double[] GetLocalToWorldTransformMatrix(this COMApi.InwOaFragment3 fragment)
+        {
+            try
+            {
+                var localToWorld = (COMApi.InwLTransform3f3)fragment.GetLocalToWorldMatrix();
+                var matrix = (Array)(object)localToWorld.Matrix;
+                return matrix.Cast<double>().ToArray();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GetLocalToWorldTransformMatrix error: {ex.Message}");
+                // Возвращаем единичную матрицу как fallback
+                return new double[16]
+                {
+                    1, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1
+                };
+            }
+        }
+    }
+
+    /// <summary>
+    /// Расширения для работы с InwSimpleVertex и преобразованием координат
+    /// </summary>
+    public static class InwSimpleVertexExtensions
+    {
+        public static Point3D GetGeometryPoint(this COMApi.InwSimpleVertex vector)
+        {
+            return GetCoordinates(vector, x => (object)x.coord);
+        }
+
+        public static Point3D GetGeometryPoint(this COMApi.InwSimpleVertex vector, double[] matrix)
+        {
+            if (matrix.Length != 16)
+                throw new ArgumentOutOfRangeException();
+
+            var arrayVector = (Array)(object)vector.coord;
+            var vertexes = arrayVector.Cast<float>().ToArray();
+
+            var x = vertexes[0] * matrix[0] + vertexes[1] * matrix[4] + vertexes[2] * matrix[8] + matrix[12];
+            var y = vertexes[0] * matrix[1] + vertexes[1] * matrix[5] + vertexes[2] * matrix[9] + matrix[13];
+            var z = vertexes[0] * matrix[2] + vertexes[1] * matrix[6] + vertexes[2] * matrix[10] + matrix[14];
+
+            return new Point3D(x, y, z);
+        }
+
+        public static Point3D GetNormal(this COMApi.InwSimpleVertex vertex)
+        {
+            return GetCoordinates(vertex, x => (object)x.normal);
+        }
+
+        private static Point3D GetCoordinates(COMApi.InwSimpleVertex vector, Func<COMApi.InwSimpleVertex, object> getVertexParameter)
+        {
+            var arrayVector = (Array)getVertexParameter(vector);
+            var vertexes = arrayVector.Cast<float>().ToArray();
+            return new Point3D(vertexes[0], vertexes[1], vertexes[2]);
+        }
+    }
+
+    /// <summary>
     /// Callback класс для обработки геометрии через COM API
     /// </summary>
     public class CallbackGeomListener : COMApi.InwSimplePrimitivesCB
@@ -18,6 +84,16 @@ namespace ClashManager
         public List<(Point3D, Point3D, Point3D)> Triangles { get; private set; } = new List<(Point3D, Point3D, Point3D)>();
         public List<Point3D> Points { get; private set; } = new List<Point3D>();
         public List<(Point3D, Point3D)> Lines { get; private set; } = new List<(Point3D, Point3D)>();
+        
+        private double[] _transformMatrix = null;
+
+        /// <summary>
+        /// Устанавливает матрицу трансформации для преобразования LCS в WCS
+        /// </summary>
+        public void SetTransformMatrix(double[] matrix)
+        {
+            _transformMatrix = matrix;
+        }
 
         public void Line(COMApi.InwSimpleVertex v1, COMApi.InwSimpleVertex v2)
         {
@@ -75,26 +151,21 @@ namespace ClashManager
         }
 
         /// <summary>
-        /// Извлекает координаты из InwSimpleVertex (используя coord как массив)
+        /// Извлекает координаты из InwSimpleVertex с преобразованием в WCS
         /// </summary>
         private Point3D GetPointFromVertex(COMApi.InwSimpleVertex vertex)
         {
             try
             {
-                // Получаем координаты из свойства coord как массив (как в примере)
-                Array coordArray = (Array)(object)vertex.coord;
-                
-                if (coordArray != null && coordArray.Length >= 3)
+                if (_transformMatrix != null)
                 {
-                    double x = Convert.ToDouble(coordArray.GetValue(0));
-                    double y = Convert.ToDouble(coordArray.GetValue(1));
-                    double z = Convert.ToDouble(coordArray.GetValue(2));
-                    return new Point3D(x, y, z);
+                    // Используем матрицу трансформации для преобразования LCS в WCS
+                    return vertex.GetGeometryPoint(_transformMatrix);
                 }
                 else
                 {
-                    // Fallback: возвращаем нулевую точку
-                    return new Point3D(0, 0, 0);
+                    // Fallback: используем локальные координаты
+                    return vertex.GetGeometryPoint();
                 }
             }
             catch (Exception ex)
@@ -109,6 +180,7 @@ namespace ClashManager
             Triangles.Clear();
             Points.Clear();
             Lines.Clear();
+            _transformMatrix = null;
         }
     }
 
@@ -622,6 +694,61 @@ namespace ClashManager
 					foreach (COMApi.InwOaPath3 path in oSel.Paths())
 					{
 						LogToFile($"ExtractTrianglesFromGeometry: Обрабатываем путь");
+						
+						// Получаем матрицу трансформации для преобразования LCS в WCS
+						try
+						{
+							// Пробуем разные способы получения матрицы трансформации
+							double[] matrix = null;
+							
+							// Способ 1: Через фрагмент используя метод расширения
+							foreach (COMApi.InwOaFragment3 frag in path.Fragments())
+							{
+								try
+								{
+									matrix = frag.GetLocalToWorldTransformMatrix();
+									if (matrix != null && matrix.Length == 16)
+									{
+										LogToFile($"ExtractTrianglesFromGeometry: Матрица трансформации получена из фрагмента");
+										callbackListener.SetTransformMatrix(matrix);
+										break;
+									}
+								}
+								catch (Exception ex)
+								{
+									LogToFile($"ExtractTrianglesFromGeometry: Ошибка получения матрицы из фрагмента: {ex.Message}");
+								}
+							}
+							
+							// Способ 2: Создаем единичную матрицу как fallback
+							if (matrix == null)
+							{
+								LogToFile($"ExtractTrianglesFromGeometry: Создаем единичную матрицу как fallback");
+								matrix = new double[16]
+								{
+									1, 0, 0, 0,
+									0, 1, 0, 0,
+									0, 0, 1, 0,
+									0, 0, 0, 1
+								};
+								callbackListener.SetTransformMatrix(matrix);
+							}
+						}
+						catch (Exception ex)
+						{
+							LogToFile($"ExtractTrianglesFromGeometry: Ошибка получения матрицы трансформации: {ex.Message}");
+							
+							// Fallback: единичная матрица
+							var identityMatrix = new double[16]
+							{
+								1, 0, 0, 0,
+								0, 1, 0, 0,
+								0, 0, 1, 0,
+								0, 0, 0, 1
+							};
+							callbackListener.SetTransformMatrix(identityMatrix);
+						}
+						
 						foreach (COMApi.InwOaFragment3 frag in path.Fragments())
 						{
 							LogToFile($"ExtractTrianglesFromGeometry: Обрабатываем фрагмент");
@@ -1152,7 +1279,7 @@ namespace ClashManager
                     LogToFile($"GenerateZoneName: Свойство '{prop.DisplayName}' = '{propValue}'");
                     
                     // Ищем комментарии
-                    if (propName.Contains("комментар") || propName.Contains("comment"))
+                    if (propName.Contains("Комментарии") || propName.Contains("comment"))
                     {
                         comment = propValue;
                     }

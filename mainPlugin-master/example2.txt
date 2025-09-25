@@ -1,0 +1,129 @@
+    internal class GeometryObjectBuilder : InwSimplePrimitivesCB
+        {
+            ...
+            private double[] currentTransformMatrix;
+     
+            public IEnumerable<GeometryObject> Build(ModelItem modelItem)
+            {
+                var oSel = ComApiBridge.ToInwOpSelection(new ModelItemCollection {modelItem});
+     
+                foreach (InwOaPath3 path in oSel.Paths())
+                {
+                    InwOaPath3 path1 = path;
+                    var fragments = path.Fragments()
+                        .Cast<InwOaFragment3>()
+                        .Where(x => IsFragmentOnPath(path1, x))
+                        .ToList();
+     
+                    foreach (var fragment in fragments)
+                    {
+                        ...
+     
+                        currentTransformMatrix = fragment.GetLocalToWorldTransformMatrix();
+     
+                        fragment.GenerateSimplePrimitives(nwEVertexProperty.eNORMAL, this);
+     
+                       ...
+                    }
+                }
+            }
+            
+            public void Triangle(InwSimpleVertex v1, InwSimpleVertex v2, InwSimpleVertex v3)
+            {
+                // здесь можно получать координаты, например для первой точки
+                var p1 = v1.GetGeometryPoint(currentTransformMatrix);
+                // нормали
+                var n1 = v1.GetNormal();
+                // делать ещё что-либо полезное
+            }
+     
+            public void Line(InwSimpleVertex v1, InwSimpleVertex v2)
+            {
+                
+            }
+     
+            public void Point(InwSimpleVertex v1)
+            {
+                
+            }
+     
+            public void SnapPoint(InwSimpleVertex v1)
+            {
+                
+            }
+     
+     
+            /// <summary>
+            /// From http://adndevblog.typepad.com/aec/2012/08/geometry-fragment-returns-all-instances-when-a-multiply-instanced-node-is-selected.html
+            /// </summary>
+            /// <param name="path"></param>
+            /// <param name="fragment"></param>
+            /// <returns></returns>
+            private static bool IsFragmentOnPath(InwOaPath3 path, InwOaFragment3 fragment)
+            {
+                var a1 = (Array)(object)fragment.path.ArrayData;
+                var a2 = (Array)(object)path.ArrayData;
+     
+                if (a1.GetLength(0) == a2.GetLength(0) &&
+                    a1.GetLowerBound(0) == a2.GetLowerBound(0) &&
+                    a1.GetUpperBound(0) == a2.GetUpperBound(0))
+                {
+                    var i = a1.GetLowerBound(0);
+                    for (; i <= a1.GetLength(0); i++)
+                        if ((int)a1.GetValue(i) != (int)a2.GetValue(i))
+                            return false;
+                }
+                else
+                    return false;
+     
+                return true;
+            }
+        }
+    public static class InwSimpleVertexExtensions
+    {
+            public static GeometryPoint GetGeometryPoint(this InwSimpleVertex vector)
+            {
+                    return GetCoordinates(vector, x => (object)x.coord);
+            }
+     
+            public static GeometryPoint GetGeometryPoint(this InwSimpleVertex vector, double[] matrix)
+            {
+                    if (matrix.Length != 16)
+                            throw new ArgumentOutOfRangeException();
+     
+                    var arrayVector = (Array)(object)vector.coord;
+     
+                    var vertexes = arrayVector.Cast<float>().ToArray();
+     
+                    var x = vertexes[0] * matrix[0] + vertexes[1] * matrix[4] + vertexes[2] * matrix[8] + matrix[12];
+                    var y = vertexes[0] * matrix[1] + vertexes[1] * matrix[5] + vertexes[2] * matrix[9] + matrix[13];
+                    var z = vertexes[0] * matrix[2] + vertexes[1] * matrix[6] + vertexes[2] * matrix[10] + matrix[14];
+     
+                    return new GeometryPoint(x, y, z);
+            }
+     
+            public static GeometryPoint GetNormal(this InwSimpleVertex vertex)
+            {
+                    return GetCoordinates(vertex, x => (object) x.normal);
+            }
+     
+            private static GeometryPoint GetCoordinates(InwSimpleVertex vector, Func<InwSimpleVertex, object> getVertexParameter)
+            {
+                    var arrayVector = (Array)getVertexParameter(vector);
+     
+                    var vertexes = arrayVector.Cast<float>().ToArray();
+     
+                    return new GeometryPoint(vertexes[0], vertexes[1], vertexes[2]);
+            }
+    }
+    public static class InwOaFragment3Extensions
+    {
+            public static double[] GetLocalToWorldTransformMatrix(this InwOaFragment3 fragment)
+            {
+                    var localToWorld = (InwLTransform3f3)fragment.GetLocalToWorldMatrix();
+     
+                    var matrix = (Array)(object)localToWorld.Matrix;
+     
+                    return matrix.Cast<double>().ToArray();
+            }
+    }
