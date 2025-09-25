@@ -2050,9 +2050,10 @@ namespace ClashManager.ManagerCollision.Views
 					// Переименование выбранных тестов
 					int testsRenamed = 0;
 					var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
+					var checkedTestIdsCopy = _checkedTestIds.ToList();
 					foreach (var test in allTests)
 					{
-						if (!_checkedTestIds.Contains(test.Guid)) continue;
+						if (!checkedTestIdsCopy.Contains(test.Guid)) continue;
 						int idx = _documentClash.TestsData.Tests.IndexOf(test);
 						if (idx < 0) continue;
 						var copy = (ClashTest)test.CreateCopy();
