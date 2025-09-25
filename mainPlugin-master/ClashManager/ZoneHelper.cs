@@ -251,6 +251,8 @@ namespace ClashManager
             }
             catch { }
 
+            LogToFile($"=== ПОЛУЧЕНИЕ СПИСКА ЗОН ===");
+            
             if (_selectedZoneModel == null) 
             {
                 LogToFile("ZoneHelper: _selectedZoneModel == null");
@@ -278,6 +280,7 @@ namespace ClashManager
                 }
             }
             
+            LogToFile($"=== КОНЕЦ ПОЛУЧЕНИЯ СПИСКА ЗОН ===");
             return zones;
         }
 
@@ -378,22 +381,38 @@ namespace ClashManager
         /// </summary>
         public string GetZoneForGroup(ClashResultGroup group)
         {
-            if (_selectedZoneModel == null) return null;
+            if (_selectedZoneModel == null) 
+            {
+                LogToFile($"GetZoneForGroup: _selectedZoneModel == null");
+                return null;
+            }
 
+            LogToFile($"=== ОБРАБОТКА ГРУППЫ КОЛЛИЗИЙ '{group.DisplayName}' ===");
+            
             var zones = GetZones();
             var allResults = GetAllResultsFromGroup(group);
+            
+            LogToFile($"GetZoneForGroup: Найдено {allResults.Count} коллизий в группе '{group.DisplayName}'");
+            LogToFile($"GetZoneForGroup: Доступно {zones.Count} зон для проверки");
 
             foreach (var result in allResults)
             {
+                LogToFile($"GetZoneForGroup: Проверяем коллизию #{allResults.IndexOf(result) + 1} из {allResults.Count}");
+                
                 foreach (var zone in zones)
                 {
                     if (IsClashInsideZone(result, zone))
                     {
+                        LogToFile($"GetZoneForGroup: ✅ Коллизия #{allResults.IndexOf(result) + 1} найдена в зоне '{zone.ZoneName}'");
+                        LogToFile($"=== ГРУППА '{group.DisplayName}' ОТНЕСЕНА К ЗОНЕ '{zone.ZoneName}' ===");
                         return zone.ZoneName;
                     }
                 }
+                LogToFile($"GetZoneForGroup: ❌ Коллизия #{allResults.IndexOf(result) + 1} не найдена ни в одной зоне");
             }
 
+            LogToFile($"GetZoneForGroup: ❌ Группа '{group.DisplayName}' не найдена ни в одной зоне");
+            LogToFile($"=== ГРУППА '{group.DisplayName}' НЕ ОТНЕСЕНА К ЗОНЕ ===");
             return null;
         }
 
@@ -402,17 +421,32 @@ namespace ClashManager
         /// </summary>
         public void ApplyZoneToGroup(ClashResultGroup group)
         {
+            LogToFile($"=== ПРИМЕНЕНИЕ ЗОНИРОВАНИЯ К ГРУППЕ '{group.DisplayName}' ===");
+            
             var zoneName = GetZoneForGroup(group);
             if (!string.IsNullOrEmpty(zoneName))
             {
                 string currentName = group.DisplayName ?? "";
                 if (!currentName.Contains(zoneName))
                 {
-                    group.DisplayName = string.IsNullOrEmpty(currentName)
+                    string newName = string.IsNullOrEmpty(currentName)
                         ? zoneName
                         : $"{zoneName} | {currentName}";
+                    
+                    group.DisplayName = newName;
+                    LogToFile($"ApplyZoneToGroup: ✅ Группа переименована: '{currentName}' -> '{newName}'");
+                }
+                else
+                {
+                    LogToFile($"ApplyZoneToGroup: ⚠️ Группа уже содержит название зоны: '{currentName}'");
                 }
             }
+            else
+            {
+                LogToFile($"ApplyZoneToGroup: ❌ Зона не найдена для группы '{group.DisplayName}'");
+            }
+            
+            LogToFile($"=== КОНЕЦ ПРИМЕНЕНИЯ ЗОНИРОВАНИЯ К ГРУППЕ '{group.DisplayName}' ===");
         }
 
         // Остальные вспомогательные методы из ZoneAssignmentView...
@@ -1443,6 +1477,8 @@ namespace ClashManager
         {
             try
             {
+                LogToFile($"=== ПРОВЕРКА КОЛЛИЗИИ В ЗОНЕ '{zone.ZoneName}' ===");
+                
                 // Сначала попробуем использовать центр коллизии напрямую
                 Point3D centerPoint;
                 
@@ -1483,7 +1519,16 @@ namespace ClashManager
                     return false;
                 }
                 
-                if (zone.UsePolygonGeometry)
+                if (zone.UseTriangleGeometry)
+                {
+                    LogToFile($"Зона '{zone.ZoneName}': треугольники из {zone.Triangles.Count} треугольников");
+                    if (zone.Triangles.Count > 0)
+                    {
+                        var firstTri = zone.Triangles[0];
+                        LogToFile($"  Первый треугольник: ({firstTri.Item1.X:F2},{firstTri.Item1.Y:F2},{firstTri.Item1.Z:F2}) - ({firstTri.Item2.X:F2},{firstTri.Item2.Y:F2},{firstTri.Item2.Z:F2}) - ({firstTri.Item3.X:F2},{firstTri.Item3.Y:F2},{firstTri.Item3.Z:F2})");
+                    }
+                }
+                else if (zone.UsePolygonGeometry)
                 {
                     LogToFile($"Зона '{zone.ZoneName}': полигон из {zone.Vertices.Count} вершин");
                     for (int i = 0; i < zone.Vertices.Count; i++)
@@ -1499,6 +1544,7 @@ namespace ClashManager
                 
                 bool isInside = IsPointInsideZone(centerPoint, zone);
                 LogToFile($"Коллизия внутри зоны: {isInside}");
+                LogToFile($"=== КОНЕЦ ПРОВЕРКИ КОЛЛИЗИИ В ЗОНЕ '{zone.ZoneName}' ===");
                 
                 return isInside;
             }
@@ -1853,16 +1899,25 @@ namespace ClashManager
         {
             var allResults = new List<ClashResult>();
 
-            foreach (var result in group.Children.OfType<ClashResult>())
+            LogToFile($"GetAllResultsFromGroup: Обрабатываем группу '{group.DisplayName}'");
+            
+            // Собираем прямые коллизии в группе
+            var directResults = group.Children.OfType<ClashResult>().ToList();
+            LogToFile($"GetAllResultsFromGroup: Найдено {directResults.Count} прямых коллизий в группе '{group.DisplayName}'");
+            allResults.AddRange(directResults);
+
+            // Рекурсивно обрабатываем подгруппы
+            var childGroups = group.Children.OfType<ClashResultGroup>().ToList();
+            LogToFile($"GetAllResultsFromGroup: Найдено {childGroups.Count} подгрупп в группе '{group.DisplayName}'");
+            
+            foreach (var childGroup in childGroups)
             {
-                allResults.Add(result);
+                var childResults = GetAllResultsFromGroup(childGroup);
+                allResults.AddRange(childResults);
+                LogToFile($"GetAllResultsFromGroup: Добавлено {childResults.Count} коллизий из подгруппы '{childGroup.DisplayName}'");
             }
 
-            foreach (var childGroup in group.Children.OfType<ClashResultGroup>())
-            {
-                allResults.AddRange(GetAllResultsFromGroup(childGroup));
-            }
-
+            LogToFile($"GetAllResultsFromGroup: Итого {allResults.Count} коллизий в группе '{group.DisplayName}'");
             return allResults;
         }
     }
