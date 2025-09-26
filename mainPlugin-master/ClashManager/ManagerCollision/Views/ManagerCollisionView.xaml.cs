@@ -3481,15 +3481,19 @@ namespace ClashManager.ManagerCollision.Views
                 // Используем сохраненную ссылку на исходный объект
                 if (item.Item is ClashResultGroup group)
                 {
-                    // Прямое изменение статуса группы
-                    group.Status = statusEnum;
-                    Log($"Статус группы {group.DisplayName} изменен на {newStatus}");
+                    // Для группы нужно изменить статус всех дочерних коллизий
+                    var childResults = group.Children.OfType<ClashResult>().ToList();
+                    foreach (var childResult in childResults)
+                    {
+                        childResult.Status = statusEnum;
+                    }
+                    Log($"Статус {childResults.Count} дочерних коллизий группы {group.DisplayName} изменен на {newStatus}");
                 }
                 else if (item.Item is ClashResult result)
                 {
-                    // Прямое изменение статуса результата
+                    // Прямое изменение статуса отдельной коллизии
                     result.Status = statusEnum;
-                    Log($"Статус результата {result.DisplayName} изменен на {newStatus}");
+                    Log($"Статус коллизии {result.DisplayName} изменен на {newStatus}");
                 }
                 else
                 {
