@@ -131,7 +131,18 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
                             }
                             else
                             {
-                                theCluster.DisplayName = theCluster.DisplayName.Replace("Frag_", "");
+                                string nameWithoutPrefix = theCluster.DisplayName.Replace("Frag_", "");
+                                
+                                // Если имя состоит только из одной цифры, отправляем в Null
+                                if (System.Text.RegularExpressions.Regex.IsMatch(nameWithoutPrefix, @"^\d$"))
+                                {
+                                    theCluster.Status = ClashResultStatus.Reviewed;
+                                    theCluster.DisplayName = "Null";
+                                }
+                                else
+                                {
+                                    theCluster.DisplayName = nameWithoutPrefix;
+                                }
                             }
                         }
 
@@ -146,7 +157,21 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
                                 {
                                     copy.Status = ClashResultStatus.Reviewed; // Установка статуса в Reviewed
                                     copy.DisplayName = "Null"; // Очистка префикса для Null
+                                }
+                                else if (copy.DisplayName.StartsWith("Frag_"))
+                                {
+                                    string nameWithoutPrefix = copy.DisplayName.Replace("Frag_", "");
                                     
+                                    // Если имя состоит только из одной цифры, отправляем в Null
+                                    if (System.Text.RegularExpressions.Regex.IsMatch(nameWithoutPrefix, @"^\d$"))
+                                    {
+                                        copy.Status = ClashResultStatus.Reviewed;
+                                        copy.DisplayName = "Null";
+                                    }
+                                    else
+                                    {
+                                        copy.DisplayName = nameWithoutPrefix;
+                                    }
                                 }
                                 return copy;
                             })
