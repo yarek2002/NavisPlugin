@@ -96,6 +96,11 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
 
                     // Лог количества новых групп
                     LogToFile($"Количество новых групп: {newGroups.Count}");
+                    LogToFile($"Все группы в тесте:");
+                    foreach (var g in updatedTest.Children.OfType<ClashResultGroup>())
+                    {
+                        LogToFile($"  Группа: '{g.DisplayName}', Статус: {g.Status}");
+                    }
 
                     List<ClashResultGroup> allNewClusters = new List<ClashResultGroup>();
                     int clustersCount = 0;
@@ -150,6 +155,11 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
                         List<ClashResult> oldResults = updatedTest.Children.OfType<ClashResult>()
                             .Select(r =>
                             {
+                                LogToFile($"Группы для сохранения (oldGroupsToKeep): {oldGroupsToKeep.Count}");
+                                    foreach (var g in oldGroupsToKeep)
+                                    {
+                                        LogToFile($"  Сохраняемая группа: '{g.DisplayName}', Статус: {g.Status}");
+                                    }
                                 var copy = (ClashResult)r.CreateCopy();
                                 copy.Guid = Guid.Empty;
                                 return copy;
