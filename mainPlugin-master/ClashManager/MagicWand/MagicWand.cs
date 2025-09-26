@@ -209,11 +209,41 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
                         
                         if (nullGroups.Any())
                         {
-                            foreach (var nullGroup in nullGroups)
+                            // Создаём копию теста без детей
+                            ClashTest newTest = updatedTest.CreateCopyWithoutChildren() as ClashTest;
+                            
+                            // Находим индекс и заменяем
+                            int i = documentClash.TestsData.Tests.IndexOf(updatedTest);
+                            if (i >= 0)
                             {
-                                nullGroup.Status = ClashResultStatus.Reviewed;
-                                nullGroup.DisplayName = "Null";
-                                LogToFile($"Установлен статус Reviewed для группы Null (без кластеризации)");
+                                documentClash.TestsData.TestsReplaceWithCopy(i, newTest);
+                                var currentTest = (GroupItem)documentClash.TestsData.Tests[i];
+                                
+                                // Обрабатываем все группы
+                                foreach (var group in updatedTest.Children.OfType<ClashResultGroup>())
+                                {
+                                    var copy = (ClashResultGroup)group.CreateCopy();
+                                    copy.Guid = Guid.Empty;
+                                    
+                                    if (copy.DisplayName == "Frag_Null")
+                                    {
+                                        copy.Status = ClashResultStatus.Reviewed;
+                                        copy.DisplayName = "Null";
+                                        LogToFile($"Установлен статус Reviewed для группы Null (без кластеризации)");
+                                    }
+                                    
+                                    documentClash.TestsData.TestsAddCopy(currentTest, copy);
+                                }
+                                
+                                // Обрабатываем все results
+                                foreach (var result in updatedTest.Children.OfType<ClashResult>())
+                                {
+                                    var copy = (ClashResult)result.CreateCopy();
+                                    copy.Guid = Guid.Empty;
+                                    documentClash.TestsData.TestsAddCopy(currentTest, copy);
+                                }
+                                
+                                LogToFile($"Тест {originalTestName} успешно обновлён (только Null группы).");
                             }
                         }
                     }
