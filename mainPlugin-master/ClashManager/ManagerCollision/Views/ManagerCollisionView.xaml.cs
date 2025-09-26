@@ -2613,6 +2613,23 @@ namespace ClashManager.ManagerCollision.Views
 		}
 
 		/// <summary>
+		/// Обновляет список коллизий для отображения изменений
+		/// </summary>
+		private void RefreshCollisionsList()
+		{
+			try
+			{
+				// Обновляем список коллизий на основе текущего выбора тестов
+				TestsList_SelectionChanged(null, null);
+				Log("Список коллизий обновлен после изменения статуса");
+			}
+			catch (Exception ex)
+			{
+				Log($"Ошибка при обновлении списка коллизий: {ex.Message}");
+			}
+		}
+
+		/// <summary>
 		/// Подписывается на события изменения модели Navisworks
 		/// </summary>
 		private void SubscribeToModelEvents()
@@ -3438,6 +3455,9 @@ namespace ClashManager.ManagerCollision.Views
                         item.Status = newStatus;
                         
                         Log($"Статус изменен для {item.Name}: {newStatus}");
+                        
+                        // Обновляем UI для отображения изменений
+                        RefreshCollisionsList();
                     }
                 }
                 catch (Exception ex)
