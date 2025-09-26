@@ -119,7 +119,14 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
                         // Очистка префикса из имён кластеров
                         foreach (var theCluster in allNewClusters)
                         {
-                            theCluster.DisplayName = theCluster.DisplayName.Replace("Frag_", "");
+                            if (theCluster.DisplayName == "Frag_Null")
+                            {
+                                theCluster.DisplayName = "Null";
+                            }
+                            else
+                            {
+                                theCluster.DisplayName = theCluster.DisplayName.Replace("Frag_", "");
+                            }
                         }
 
                         // Собираем данные для сохранения: все группы кроме кластеризуемых, все results
@@ -132,6 +139,7 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
                                 if (copy.DisplayName == "Frag_Null")
                                 {
                                     copy.DisplayName = "Null"; // Очистка префикса для Null
+                                    copy.Status = ClashResultStatus.Reviewed; // Установка статуса в Reviewed
                                 }
                                 return copy;
                             })
