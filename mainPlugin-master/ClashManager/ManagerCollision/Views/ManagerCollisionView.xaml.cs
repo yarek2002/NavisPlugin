@@ -3478,36 +3478,22 @@ namespace ClashManager.ManagerCollision.Views
                         throw new ArgumentException($"Неизвестный статус: {newStatus}");
                 }
 
-                // Находим тест по TestGuid
-                var test = _documentClash.TestsData.Tests.OfType<ClashTest>()
-                    .FirstOrDefault(t => t.Guid == item.TestGuid);
-                
-                if (test == null)
+                // Используем сохраненную ссылку на исходный объект
+                if (item.Item is ClashResultGroup group)
                 {
-                    throw new InvalidOperationException($"Тест с GUID {item.TestGuid} не найден");
+                    // Прямое изменение статуса группы
+                    group.Status = statusEnum;
+                    Log($"Статус группы {group.DisplayName} изменен на {newStatus}");
                 }
-
-                if (item.IsGroup)
+                else if (item.Item is ClashResult result)
                 {
-                    // Ищем группу
-                    var group = test.Children.OfType<ClashResultGroup>()
-                        .FirstOrDefault(g => g.Guid == item.Guid);
-                    
-                    if (group != null)
-                    {
-                        _documentClash.TestsData.TestsEditResultStatus(group, statusEnum);
-                    }
+                    // Прямое изменение статуса результата
+                    result.Status = statusEnum;
+                    Log($"Статус результата {result.DisplayName} изменен на {newStatus}");
                 }
                 else
                 {
-                    // Ищем результат коллизии
-                    var result = test.Children.OfType<ClashResult>()
-                        .FirstOrDefault(r => r.Guid == item.Guid);
-                    
-                    if (result != null)
-                    {
-                        _documentClash.TestsData.TestsEditResultStatus(result, statusEnum);
-                    }
+                    throw new InvalidOperationException($"Неизвестный тип объекта: {item.Item?.GetType()?.Name}");
                 }
             }
             catch (Exception ex)
