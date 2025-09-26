@@ -47,13 +47,35 @@ namespace ClashManager.ManagerCollision.Views
 		public class CollisionListItem : INotifyPropertyChanged
 		{
 			private bool _isSelected;
+			private string _status;
 
 			public string Name { get; set; }
-			public string Status { get; set; }
+			public string Status 
+			{ 
+				get => _status;
+				set
+				{
+					if (_status != value)
+					{
+						_status = value;
+						OnPropertyChanged();
+					}
+				}
+			}
 			public string AssignedTo { get; set; }
 			public Guid Guid { get; set; }
 			public Guid TestGuid { get; set; }
 			public bool IsGroup { get; set; }
+			
+			// Список доступных статусов
+			public static List<string> StatusOptions { get; } = new List<string>
+			{
+				"New",
+				"Active", 
+				"Reviewed",
+				"Approved",
+				"Resolved"
+			};
 			
 			public bool IsSelected 
 			{ 
@@ -3394,6 +3416,105 @@ namespace ClashManager.ManagerCollision.Views
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Обработчик изменения статуса в ComboBox
+        /// </summary>
+        private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var comboBox = sender as ComboBox;
+            if (comboBox?.Tag is CollisionListItem item)
+            {
+                try
+                {
+                    var newStatus = comboBox.SelectedItem?.ToString();
+                    if (newStatus != null && newStatus != item.Status)
+                    {
+                        // Обновляем статус в Navisworks
+                        UpdateCollisionStatus(item, newStatus);
+                        
+                        // Обновляем статус в модели
+                        item.Status = newStatus;
+                        
+                        Log($"Статус изменен для {item.Name}: {newStatus}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при изменении статуса: {ex.Message}");
+                    Log($"Ошибка при изменении статуса: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Обновляет статус коллизии в Navisworks
+        /// </summary>
+        private void UpdateCollisionStatus(CollisionListItem item, string newStatus)
+        {
+            try
+            {
+                // Преобразуем строку статуса в ClashResultStatus
+                ClashResultStatus statusEnum;
+                switch (newStatus)
+                {
+                    case "New":
+                        statusEnum = ClashResultStatus.New;
+                        break;
+                    case "Active":
+                        statusEnum = ClashResultStatus.Active;
+                        break;
+                    case "Reviewed":
+                        statusEnum = ClashResultStatus.Reviewed;
+                        break;
+                    case "Approved":
+                        statusEnum = ClashResultStatus.Approved;
+                        break;
+                    case "Resolved":
+                        statusEnum = ClashResultStatus.Resolved;
+                        break;
+                    default:
+                        throw new ArgumentException($"Неизвестный статус: {newStatus}");
+                }
+
+                // Находим тест по TestGuid
+                var test = _documentClash.TestsData.Tests.OfType<ClashTest>()
+                    .FirstOrDefault(t => t.Guid == item.TestGuid);
+                
+                if (test == null)
+                {
+                    throw new InvalidOperationException($"Тест с GUID {item.TestGuid} не найден");
+                }
+
+                if (item.IsGroup)
+                {
+                    // Ищем группу
+                    var group = test.Children.OfType<ClashResultGroup>()
+                        .FirstOrDefault(g => g.Guid == item.Guid);
+                    
+                    if (group != null)
+                    {
+                        _documentClash.TestsData.TestsEditResultStatus(group, statusEnum);
+                    }
+                }
+                else
+                {
+                    // Ищем результат коллизии
+                    var result = test.Children.OfType<ClashResult>()
+                        .FirstOrDefault(r => r.Guid == item.Guid);
+                    
+                    if (result != null)
+                    {
+                        _documentClash.TestsData.TestsEditResultStatus(result, statusEnum);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Ошибка при обновлении статуса в Navisworks: {ex.Message}");
+                throw;
+            }
         }
 
         /// <summary>
