@@ -209,47 +209,12 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
                         
                         if (nullGroups.Any())
                         {
-                            // Создаём копию теста без детей
-                            ClashTest newTest = updatedTest.CreateCopyWithoutChildren() as ClashTest;
-                            
-                            // Находим индекс и заменяем
-                            int i = documentClash.TestsData.Tests.IndexOf(updatedTest);
-                            if (i >= 0)
+                            // Просто обновляем статус для Frag_Null групп
+                            foreach (var nullGroup in nullGroups)
                             {
-                                documentClash.TestsData.TestsReplaceWithCopy(i, newTest);
-                                var currentTest = (GroupItem)documentClash.TestsData.Tests[i];
-                                
-                                // Обрабатываем все группы из оригинального теста, кроме Frag_Null
-                                foreach (var group in updatedTest.Children.OfType<ClashResultGroup>())
-                                {
-                                    if (group.DisplayName != "Frag_Null")
-                                    {
-                                        var copy = (ClashResultGroup)group.CreateCopy();
-                                        copy.Guid = Guid.Empty;
-                                        documentClash.TestsData.TestsAddCopy(currentTest, copy);
-                                    }
-                                }
-                                
-                                // Добавляем обработанную группу Null
-                                foreach (var nullGroup in nullGroups)
-                                {
-                                    var copy = (ClashResultGroup)nullGroup.CreateCopy();
-                                    copy.Guid = Guid.Empty;
-                                    copy.Status = ClashResultStatus.Reviewed;
-                                    copy.DisplayName = "Null";
-                                    documentClash.TestsData.TestsAddCopy(currentTest, copy);
-                                    LogToFile($"Установлен статус Reviewed для группы Null (без кластеризации)");
-                                }
-                                
-                                // Обрабатываем все results из оригинального теста
-                                foreach (var result in updatedTest.Children.OfType<ClashResult>())
-                                {
-                                    var copy = (ClashResult)result.CreateCopy();
-                                    copy.Guid = Guid.Empty;
-                                    documentClash.TestsData.TestsAddCopy(currentTest, copy);
-                                }
-                                
-                                LogToFile($"Тест {originalTestName} успешно обновлён (только Null группы).");
+                                // Используем API для изменения статуса
+                                documentClash.TestsData.TestsEditResultStatus(nullGroup, ClashResultStatus.Reviewed);
+                                LogToFile($"Установлен статус Reviewed для группы {nullGroup.DisplayName} (без кластеризации)");
                             }
                         }
                     }
