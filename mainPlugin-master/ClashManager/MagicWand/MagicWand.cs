@@ -112,8 +112,17 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
                         // Вызываем overload MakeClusters с группой (обновлённый, возвращает список)
                         var newClusters = clusterer.MakeClusters(group);
                         allNewClusters.AddRange(newClusters);
+                        
                         clustersCount += newClusters.Count;
-
+                        foreach (var nullGroup in newGroups)
+                        {
+                            if (group.DisplayName == "Frag_Null")
+                            {
+                                group.Status = ClashResultStatus.Reviewed;
+                                group.DisplayName = "Null";
+                                LogToFile($"Установлен статус Reviewed для группы Null (не кластеризована)");
+                            }
+                        }
                         // Лог кластеризации группы
                         LogToFile($"Кластеризация группы: {group.DisplayName}. Создано кластеров: {newClusters.Count}");
                     }
