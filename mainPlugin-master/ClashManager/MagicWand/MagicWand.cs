@@ -91,7 +91,7 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
                     LogToFile($"Найден updatedTest: Имя = {updatedTest.DisplayName}, GUID = {updatedTest.Guid}");
 
                     var newGroups = updatedTest.Children.OfType<ClashResultGroup>()
-                        .Where(g => g.DisplayName.StartsWith("Frag_") && g.DisplayName != "Frag_Null") // Фильтр по префиксу, исключая Frag_Null
+                        .Where(g => g.DisplayName.StartsWith("Frag_") && g.DisplayName != ("Frag_Null",StringComparison.OrdinalIgnoreCase)) // Фильтр по префиксу, исключая Frag_Null
                         .ToList();
 
                     // Лог количества новых групп
@@ -138,8 +138,9 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
                                 copy.Guid = Guid.Empty;
                                 if (copy.DisplayName == "Frag_Null")
                                 {
-                                    copy.DisplayName = "Null"; // Очистка префикса для Null
                                     copy.Status = ClashResultStatus.Reviewed; // Установка статуса в Reviewed
+                                    copy.DisplayName = "Null"; // Очистка префикса для Null
+                                    
                                 }
                                 return copy;
                             })
