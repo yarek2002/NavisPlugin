@@ -219,7 +219,7 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
                                 documentClash.TestsData.TestsReplaceWithCopy(i, newTest);
                                 var currentTest = (GroupItem)documentClash.TestsData.Tests[i];
                                 
-                                // Обрабатываем все группы
+                                // Обрабатываем все группы из оригинального теста
                                 foreach (var group in updatedTest.Children.OfType<ClashResultGroup>())
                                 {
                                     var copy = (ClashResultGroup)group.CreateCopy();
@@ -235,7 +235,7 @@ namespace CollisionGrouperPlugin // Или ваше основное прост�
                                     documentClash.TestsData.TestsAddCopy(currentTest, copy);
                                 }
                                 
-                                // Обрабатываем все results
+                                // Обрабатываем все results из оригинального теста
                                 foreach (var result in updatedTest.Children.OfType<ClashResult>())
                                 {
                                     var copy = (ClashResult)result.CreateCopy();
