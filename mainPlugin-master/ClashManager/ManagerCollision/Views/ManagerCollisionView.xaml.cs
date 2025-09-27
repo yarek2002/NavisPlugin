@@ -3498,18 +3498,51 @@ namespace ClashManager.ManagerCollision.Views
                         throw new ArgumentException($"Неизвестный статус: {newStatus}");
                 }
 
+                // Находим тест по TestGuid
+                var test = _documentClash.TestsData.Tests.OfType<ClashTest>()
+                    .FirstOrDefault(t => t.Guid == item.TestGuid);
+                
+                if (test == null)
+                {
+                    throw new InvalidOperationException($"Тест с GUID {item.TestGuid} не найден");
+                }
+
                 // Используем сохраненную ссылку на исходный объект
                 if (item.Item is ClashResultGroup group)
                 {
-                    // Для группы используем API для изменения статуса (как в MoveToConfirmedPlugin)
-                    _documentClash.TestsData.TestsEditResultStatus(group, statusEnum);
-                    Log($"Статус группы {group.DisplayName} изменен на {newStatus} через API");
+                    // Проверяем, что группа действительно существует в тесте
+                    var foundGroup = test.Children.OfType<ClashResultGroup>()
+                        .FirstOrDefault(g => g.Guid == item.Guid);
+                    
+                    if (foundGroup != null)
+                    {
+                        // Приводим к IClashResult как в MoveToConfirmedPlugin
+                        IClashResult iGroup = foundGroup as IClashResult;
+                        _documentClash.TestsData.TestsEditResultStatus(foundGroup, statusEnum);
+                        Log($"Статус группы {foundGroup.DisplayName} изменен на {newStatus} через API");
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Группа с GUID {item.Guid} не найдена в тесте");
+                    }
                 }
                 else if (item.Item is ClashResult result)
                 {
-                    // Для отдельных коллизий также используем API
-                    _documentClash.TestsData.TestsEditResultStatus(result, statusEnum);
-                    Log($"Статус коллизии {result.DisplayName} изменен на {newStatus} через API");
+                    // Проверяем, что результат действительно существует в тесте
+                    var foundResult = test.Children.OfType<ClashResult>()
+                        .FirstOrDefault(r => r.Guid == item.Guid);
+                    
+                    if (foundResult != null)
+                    {
+                        // Приводим к IClashResult как в MoveToConfirmedPlugin
+                        IClashResult iResult = foundResult as IClashResult;
+                        _documentClash.TestsData.TestsEditResultStatus(foundResult, statusEnum);
+                        Log($"Статус коллизии {foundResult.DisplayName} изменен на {newStatus} через API");
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Коллизия с GUID {item.Guid} не найдена в тесте");
+                    }
                 }
                 else
                 {
