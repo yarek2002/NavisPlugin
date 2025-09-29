@@ -67,14 +67,14 @@ namespace ClashManager.ManagerCollision.Views
 			public Guid TestGuid { get; set; }
 			public bool IsGroup { get; set; }
 			
-			// Список доступных статусов
+			// Список доступных статусов для русскоязычной версии Navisworks
 			public static List<string> StatusOptions { get; } = new List<string>
 			{
-				"New",
-				"Active", 
-				"Reviewed",
-				"Approved",
-				"Resolved"
+				"Создан", // New
+				"Активн.", // Active  
+				"Проанализировано", // Reviewed
+				"Подтверждено", // Approved
+				"Исправлено" // Resolved
 			};
 			
 			public bool IsSelected 
@@ -3475,10 +3475,26 @@ namespace ClashManager.ManagerCollision.Views
         {
             try
             {
-                // Преобразуем строку статуса в ClashResultStatus
+                // Преобразуем русскую строку статуса в ClashResultStatus
                 ClashResultStatus statusEnum;
                 switch (newStatus)
                 {
+                    case "Создан":
+                        statusEnum = ClashResultStatus.New;
+                        break;
+                    case "Активн.":
+                        statusEnum = ClashResultStatus.Active;
+                        break;
+                    case "Проанализировано":
+                        statusEnum = ClashResultStatus.Reviewed;
+                        break;
+                    case "Подтверждено":
+                        statusEnum = ClashResultStatus.Approved;
+                        break;
+                    case "Исправлено":
+                        statusEnum = ClashResultStatus.Resolved;
+                        break;
+                    // Также поддерживаем английские названия для совместимости
                     case "New":
                         statusEnum = ClashResultStatus.New;
                         break;
