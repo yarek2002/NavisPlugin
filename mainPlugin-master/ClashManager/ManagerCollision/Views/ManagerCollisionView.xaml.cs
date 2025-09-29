@@ -70,11 +70,11 @@ namespace ClashManager.ManagerCollision.Views
 			// Список доступных статусов
 			public static List<string> StatusOptions { get; } = new List<string>
 			{
-				"New",
-				"Active", 
-				"Reviewed",
-				"Approved",
-				"Resolved"
+				"Новый",
+				"Активный", 
+				"Проверен",
+				"Утвержден",
+				"Решен"
 			};
 			
 			// Экземплярная ссылка на статическое свойство для привязки в XAML
@@ -3449,19 +3449,19 @@ namespace ClashManager.ManagerCollision.Views
 						ClashResultStatus statusEnum;
 						switch (newStatus)
 						{
-							case "New":
+							case "Новый":
 								statusEnum = ClashResultStatus.New;
 								break;
-							case "Active":
+							case "Активный":
 								statusEnum = ClashResultStatus.Active;
 								break;
-							case "Reviewed":
+							case "Проверен":
 								statusEnum = ClashResultStatus.Reviewed;
 								break;
-							case "Approved":
+							case "Утвержден":
 								statusEnum = ClashResultStatus.Approved;
 								break;
-							case "Resolved":
+							case "Решен":
 								statusEnum = ClashResultStatus.Resolved;
 								break;
 							default:
