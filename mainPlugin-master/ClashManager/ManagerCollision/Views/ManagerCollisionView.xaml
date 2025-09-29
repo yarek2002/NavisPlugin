@@ -160,7 +160,6 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <ComboBox ItemsSource="{Binding StatusOptionsInstance}" 
-                                                    SelectedItem="{Binding Status, Mode=TwoWay}"
                                                     SelectionChanged="StatusComboBox_SelectionChanged"
                                                     Loaded="StatusComboBox_Loaded"
                                                     Tag="{Binding}"
