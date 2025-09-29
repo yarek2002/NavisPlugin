@@ -3531,22 +3531,22 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
                 
                 try
                 {
-                    foreach (var selectedItem in CollisionsList.SelectedItems)
+                    // Создаем копию выбранных элементов, чтобы избежать ошибки "Коллекция была изменена"
+                    var selectedItemsCopy = CollisionsList.SelectedItems.Cast<CollisionListItem>().ToList();
+                    
+                    foreach (var selectedCollisionItem in selectedItemsCopy)
                     {
-                        if (selectedItem is CollisionListItem selectedCollisionItem)
+                        Log($"Обновляем статус для: {selectedCollisionItem.Name} (текущий: {selectedCollisionItem.Status})");
+                        
+                        if (newStatus != selectedCollisionItem.Status)
                         {
-                            Log($"Обновляем статус для: {selectedCollisionItem.Name} (текущий: {selectedCollisionItem.Status})");
-                            
-                            if (newStatus != selectedCollisionItem.Status)
-                            {
-                                UpdateCollisionStatus(selectedCollisionItem, newStatus);
-                                selectedCollisionItem.Status = newStatus;
-                                Log($"Статус обновлен на: {newStatus}");
-                            }
-                            else
-                            {
-                                Log($"Статус уже '{newStatus}', пропускаем");
-                            }
+                            UpdateCollisionStatus(selectedCollisionItem, newStatus);
+                            selectedCollisionItem.Status = newStatus;
+                            Log($"Статус обновлен на: {newStatus}");
+                        }
+                        else
+                        {
+                            Log($"Статус уже '{newStatus}', пропускаем");
                         }
                     }
                     
