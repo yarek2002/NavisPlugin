@@ -3520,36 +3520,85 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
         var newStatus = e.AddedItems.Count > 0 ? e.AddedItems[0]?.ToString() : null;
         Log($"Новый статус из AddedItems: '{newStatus}'");
         
-        if (newStatus != null && newStatus != item.Status)
+        if (newStatus != null)
         {
-            Log($"Статус отличается, обновляем...");
+            Log($"Выбрано {CollisionsList.SelectedItems.Count} элементов в списке");
             
-            try
+            // Если выделено несколько элементов, применяем статус ко всем выделенным
+            if (CollisionsList.SelectedItems.Count > 1 && CollisionsList.SelectedItems.Contains(item))
             {
-                // Проверяем до изменения
-                Log($"Статус до изменения: {GetStatusFromItem(item.Item)}");
+                Log($"Применяем статус '{newStatus}' ко всем {CollisionsList.SelectedItems.Count} выбранным элементам");
                 
-                UpdateCollisionStatus(item, newStatus);
-                
-                // Проверяем после изменения  
-                Log($"Статус после изменения: {GetStatusFromItem(item.Item)}");
-                
-                item.Status = newStatus;
-                
-                Log($"Статус в модели обновлен: {item.Status}");
-                
-                // Обновляем UI для синхронизации с Clash Detective
-                RefreshCollisionsList();
+                try
+                {
+                    foreach (var selectedItem in CollisionsList.SelectedItems)
+                    {
+                        if (selectedItem is CollisionListItem selectedCollisionItem)
+                        {
+                            Log($"Обновляем статус для: {selectedCollisionItem.Name} (текущий: {selectedCollisionItem.Status})");
+                            
+                            if (newStatus != selectedCollisionItem.Status)
+                            {
+                                UpdateCollisionStatus(selectedCollisionItem, newStatus);
+                                selectedCollisionItem.Status = newStatus;
+                                Log($"Статус обновлен на: {newStatus}");
+                            }
+                            else
+                            {
+                                Log($"Статус уже '{newStatus}', пропускаем");
+                            }
+                        }
+                    }
+                    
+                    // Обновляем UI для синхронизации с Clash Detective
+                    RefreshCollisionsList();
+                    Log("UI обновлен для всех выбранных элементов");
+                }
+                catch (Exception ex)
+                {
+                    Log($"ОШИБКА при обновлении статуса множественных элементов: {ex.Message}");
+                    MessageBox.Show($"Ошибка при изменении статуса: {ex.Message}");
+                }
             }
-            catch (Exception ex)
+            else
             {
-                Log($"ОШИБКА при обновлении статуса: {ex.Message}");
-                MessageBox.Show($"Ошибка при изменении статуса: {ex.Message}");
+                // Обычное обновление одного элемента
+                if (newStatus != item.Status)
+                {
+                    Log($"Статус отличается, обновляем один элемент...");
+                    
+                    try
+                    {
+                        // Проверяем до изменения
+                        Log($"Статус до изменения: {GetStatusFromItem(item.Item)}");
+                        
+                        UpdateCollisionStatus(item, newStatus);
+                        
+                        // Проверяем после изменения  
+                        Log($"Статус после изменения: {GetStatusFromItem(item.Item)}");
+                        
+                        item.Status = newStatus;
+                        
+                        Log($"Статус в модели обновлен: {item.Status}");
+                        
+                        // Обновляем UI для синхронизации с Clash Detective
+                        RefreshCollisionsList();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"ОШИБКА при обновлении статуса: {ex.Message}");
+                        MessageBox.Show($"Ошибка при изменении статуса: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Log($"Статус НЕ изменился: новое значение '{newStatus}' равна текущему '{item.Status}'");
+                }
             }
         }
         else
         {
-            Log($"Статус НЕ изменился: новое значение '{newStatus}' равна текущему '{item.Status}' или null");
+            Log("Новый статус равен null, ничего не делаем");
         }
     }
     else
