@@ -39,7 +39,8 @@ namespace MoveToConfirmedPlugin
                 }
                 foreach (ClashResultGroup group in test.Children.OfType<ClashResultGroup>())
                 {
-                    if ((group.Status.ToString() == "Active" || group.Status.ToString() == "New") && group.AssignedTo.ToString() != "")
+                    // Убираем проверку AssignedTo - переносим все коллизии со статусом Active/New
+                    if (group.Status.ToString() == "Active" || group.Status.ToString() == "New")
                     {
                         AllGroups.Add(group);
                     }
