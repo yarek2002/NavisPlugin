@@ -77,6 +77,9 @@ namespace ClashManager.ManagerCollision.Views
 				"Resolved"
 			};
 			
+			// Экземплярная ссылка на статическое свойство для привязки в XAML
+			public List<string> StatusOptionsInstance => StatusOptions;
+			
 			public bool IsSelected 
 			{ 
 				get => _isSelected;

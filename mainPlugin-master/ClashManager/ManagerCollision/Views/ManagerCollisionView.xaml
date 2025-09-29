@@ -121,7 +121,7 @@
                                 </GridViewColumn.Header>
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <ComboBox ItemsSource="{x:Static local:ManagerCollisionView+CollisionListItem.StatusOptions}" 
+                                        <ComboBox ItemsSource="{Binding StatusOptionsInstance}" 
                                                     SelectionChanged="StatusComboBox_SelectionChanged"
                                                     Loaded="StatusComboBox_Loaded"
                                                     Tag="{Binding}"/>
