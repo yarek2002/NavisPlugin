@@ -3498,7 +3498,9 @@ namespace ClashManager.ManagerCollision.Views
 			Log("=== StatusComboBox_SelectionChanged вызван ===");
 			
 			var comboBox = sender as ComboBox;
-			Log($"ComboBox: {comboBox?.Text}");
+			Log($"ComboBox Text: '{comboBox?.Text}', SelectedItem: '{comboBox?.SelectedItem}'");
+			Log($"Added items: [{string.Join(", ", e.AddedItems.Cast<object>().Select(x => x?.ToString() ?? "null"))}]");
+			Log($"Removed items: [{string.Join(", ", e.RemovedItems.Cast<object>().Select(x => x?.ToString() ?? "null"))}]");
 			Log($"Tag type: {comboBox?.Tag?.GetType().Name}");
 			
 			if (comboBox?.Tag is CollisionListItem item)
@@ -3506,7 +3508,17 @@ namespace ClashManager.ManagerCollision.Views
 				Log($"CollisionListItem: {item.Name}, текущий статус: {item.Status}");
 				
 				var newStatus = comboBox.SelectedItem?.ToString();
-				Log($"Новый статус из ComboBox: '{newStatus}'");
+				Log($"Новый статус из ComboBox SelectedItem: '{newStatus}'");
+				
+				if (e.AddedItems.Count > 0)
+				{
+					var addedStatus = e.AddedItems[0]?.ToString();
+					Log($"Новый статус из AddedItems: '{addedStatus}'");
+					newStatus = addedStatus ?? newStatus;
+				}
+				
+				Log($"Финальный новый статус: '{newStatus}'");
+				Log($"Сравнение: '{newStatus}' != '{item.Status}' = {newStatus != item.Status}");
 				
 				if (newStatus != null && newStatus != item.Status)
 				{
@@ -3526,8 +3538,8 @@ namespace ClashManager.ManagerCollision.Views
 						
 						Log($"Статус в модели обновлен: {item.Status}");
 						
-						// Временно НЕ обновляем UI для отладки
-						// RefreshCollisionsList();
+						// Обновляем UI для синхронизации с Clash Detective
+						RefreshCollisionsList();
 					}
 					catch (Exception ex)
 					{
@@ -3537,7 +3549,16 @@ namespace ClashManager.ManagerCollision.Views
 				}
 				else
 				{
-					Log("Статус не изменился или комбо пустой");
+					Log($"Статус НЕ изменился: новое значение '{newStatus}' равна текущему '{item.Status}' или null");
+					
+					// Для отладки - попробуем принудительно изменить статус для тестирования
+					if (newStatus == "Review" && item.Status == "Reviewed")
+					{
+						Log("Специальный случай: New -> Reviewed для тестирования");
+						UpdateCollisionStatus(item, "Reviewed");
+						item.Status = "Reviewed";
+						RefreshCollisionsList();
+					}
 				}
 			}
 			else
