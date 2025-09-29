@@ -67,14 +67,14 @@ namespace ClashManager.ManagerCollision.Views
 			public Guid TestGuid { get; set; }
 			public bool IsGroup { get; set; }
 			
-			// Список доступных статусов для русскоязычной версии Navisworks
+			// Список доступных статусов
 			public static List<string> StatusOptions { get; } = new List<string>
 			{
-				"Создан", // New
-				"Активн.", // Active  
-				"Проанализировано", // Reviewed
-				"Подтверждено", // Approved
-				"Исправлено" // Resolved
+				"New",
+				"Active", 
+				"Reviewed",
+				"Approved",
+				"Resolved"
 			};
 			
 			public bool IsSelected 
@@ -3475,26 +3475,10 @@ namespace ClashManager.ManagerCollision.Views
         {
             try
             {
-                // Преобразуем русскую строку статуса в ClashResultStatus
+                // Преобразуем строку статуса в ClashResultStatus
                 ClashResultStatus statusEnum;
                 switch (newStatus)
                 {
-                    case "Создан":
-                        statusEnum = ClashResultStatus.New;
-                        break;
-                    case "Активн.":
-                        statusEnum = ClashResultStatus.Active;
-                        break;
-                    case "Проанализировано":
-                        statusEnum = ClashResultStatus.Reviewed;
-                        break;
-                    case "Подтверждено":
-                        statusEnum = ClashResultStatus.Approved;
-                        break;
-                    case "Исправлено":
-                        statusEnum = ClashResultStatus.Resolved;
-                        break;
-                    // Также поддерживаем английские названия для совместимости
                     case "New":
                         statusEnum = ClashResultStatus.New;
                         break;
@@ -3514,51 +3498,21 @@ namespace ClashManager.ManagerCollision.Views
                         throw new ArgumentException($"Неизвестный статус: {newStatus}");
                 }
 
-                // Находим тест по TestGuid
-                var test = _documentClash.TestsData.Tests.OfType<ClashTest>()
-                    .FirstOrDefault(t => t.Guid == item.TestGuid);
-                
-                if (test == null)
-                {
-                    throw new InvalidOperationException($"Тест с GUID {item.TestGuid} не найден");
-                }
-
                 // Используем сохраненную ссылку на исходный объект
                 if (item.Item is ClashResultGroup group)
                 {
-                    // Проверяем, что группа действительно существует в тесте
-                    var foundGroup = test.Children.OfType<ClashResultGroup>()
-                        .FirstOrDefault(g => g.Guid == item.Guid);
-                    
-                    if (foundGroup != null)
-                    {
-                        // Приводим к IClashResult как в MoveToConfirmedPlugin
-                        IClashResult iGroup = foundGroup as IClashResult;
-                        _documentClash.TestsData.TestsEditResultStatus(foundGroup, statusEnum);
-                        Log($"Статус группы {foundGroup.DisplayName} изменен на {newStatus} через API");
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Группа с GUID {item.Guid} не найдена в тесте");
-                    }
+                    // Для группы используем API для изменения статуса (как в MoveToConfirmedPlugin)
+                    // Приводим к IClashResult как в оригинальном коде
+                    IClashResult iGroup = group as IClashResult;
+                    _documentClash.TestsData.TestsEditResultStatus(group, statusEnum);
+                    Log($"Статус группы {group.DisplayName} изменен на {newStatus} через API");
                 }
                 else if (item.Item is ClashResult result)
                 {
-                    // Проверяем, что результат действительно существует в тесте
-                    var foundResult = test.Children.OfType<ClashResult>()
-                        .FirstOrDefault(r => r.Guid == item.Guid);
-                    
-                    if (foundResult != null)
-                    {
-                        // Приводим к IClashResult как в MoveToConfirmedPlugin
-                        IClashResult iResult = foundResult as IClashResult;
-                        _documentClash.TestsData.TestsEditResultStatus(foundResult, statusEnum);
-                        Log($"Статус коллизии {foundResult.DisplayName} изменен на {newStatus} через API");
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Коллизия с GUID {item.Guid} не найдена в тесте");
-                    }
+                    // Для отдельных коллизий также приводим к IClashResult и используем API
+                    IClashResult iResult = result as IClashResult;
+                    _documentClash.TestsData.TestsEditResultStatus(result, statusEnum);
+                    Log($"Статус коллизии {result.DisplayName} изменен на {newStatus} через API");
                 }
                 else
                 {
