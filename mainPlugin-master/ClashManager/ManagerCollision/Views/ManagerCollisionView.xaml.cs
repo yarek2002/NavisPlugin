@@ -66,7 +66,7 @@ namespace ClashManager.ManagerCollision.Views
 			public Guid Guid { get; set; }
 			public Guid TestGuid { get; set; }
 			public bool IsGroup { get; set; }
-			
+
 			// Список доступных статусов
 			public static List<string> StatusOptions { get; } = new List<string>
 			{
