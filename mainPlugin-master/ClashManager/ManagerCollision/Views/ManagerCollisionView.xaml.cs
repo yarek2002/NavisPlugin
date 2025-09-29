@@ -3441,7 +3441,7 @@ namespace ClashManager.ManagerCollision.Views
         private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var comboBox = sender as ComboBox;
-            if (comboBox?.Tag is CollisionListItem item)
+            if (comboBox?.DataContext is CollisionListItem item)
             {
                 try
                 {
