@@ -3492,80 +3492,71 @@ namespace ClashManager.ManagerCollision.Views
 						throw;
 					}
 				}
+				private void StatusComboBox_Loaded(object sender, RoutedEventArgs e)
+				{
+					var comboBox = sender as ComboBox;
+					if (comboBox?.Tag is CollisionListItem item)
+					{
+						// Устанавливаем текущий статус как выбранный
+						comboBox.SelectedItem = item.Status;
+						Log($"StatusComboBox_Loaded: установлен статус '{item.Status}' для {item.Name}");
+					}
+				}
 
-				private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-		{
-			Log("=== StatusComboBox_SelectionChanged вызван ===");
-			
-			var comboBox = sender as ComboBox;
-			Log($"ComboBox Text: '{comboBox?.Text}', SelectedItem: '{comboBox?.SelectedItem}'");
-			Log($"Added items: [{string.Join(", ", e.AddedItems.Cast<object>().Select(x => x?.ToString() ?? "null"))}]");
-			Log($"Removed items: [{string.Join(", ", e.RemovedItems.Cast<object>().Select(x => x?.ToString() ?? "null"))}]");
-			Log($"Tag type: {comboBox?.Tag?.GetType().Name}");
-			
-			if (comboBox?.Tag is CollisionListItem item)
-			{
-				Log($"CollisionListItem: {item.Name}, текущий статус: {item.Status}");
-				
-				var newStatus = comboBox.SelectedItem?.ToString();
-				Log($"Новый статус из ComboBox SelectedItem: '{newStatus}'");
-				
-				if (e.AddedItems.Count > 0)
-				{
-					var addedStatus = e.AddedItems[0]?.ToString();
-					Log($"Новый статус из AddedItems: '{addedStatus}'");
-					newStatus = addedStatus ?? newStatus;
-				}
-				
-				Log($"Финальный новый статус: '{newStatus}'");
-				Log($"Сравнение: '{newStatus}' != '{item.Status}' = {newStatus != item.Status}");
-				
-				if (newStatus != null && newStatus != item.Status)
-				{
-					Log($"Статус отличается, обновляем...");
-					
-					try
-					{
-						// Проверяем до изменения
-						Log($"Статус до изменения: {GetStatusFromItem(item.Item)}");
-						
-						UpdateCollisionStatus(item, newStatus);
-						
-						// Проверяем после изменения  
-						Log($"Статус после изменения: {GetStatusFromItem(item.Item)}");
-						
-						item.Status = newStatus;
-						
-						Log($"Статус в модели обновлен: {item.Status}");
-						
-						// Обновляем UI для синхронизации с Clash Detective
-						RefreshCollisionsList();
-					}
-					catch (Exception ex)
-					{
-						Log($"ОШИБКА при обновлении статуса: {ex.Message}");
-						MessageBox.Show($"Ошибка при изменении статуса: {ex.Message}");
-					}
-				}
-				else
-				{
-					Log($"Статус НЕ изменился: новое значение '{newStatus}' равна текущему '{item.Status}' или null");
-					
-					// Для отладки - попробуем принудительно изменить статус для тестирования
-					if (newStatus == "Review" && item.Status == "Reviewed")
-					{
-						Log("Специальный случай: New -> Reviewed для тестирования");
-						UpdateCollisionStatus(item, "Reviewed");
-						item.Status = "Reviewed";
-						RefreshCollisionsList();
-					}
-				}
-			}
-			else
-			{
-				Log($"ОШИБКА: Tag не является CollisionListItem: {comboBox?.Tag}");
-			}
-		}
+private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+{
+    Log("=== StatusComboBox_SelectionChanged вызван ===");
+    
+    var comboBox = sender as ComboBox;
+    Log($"ComboBox Text: '{comboBox?.Text}', SelectedItem: '{comboBox?.SelectedItem}'");
+    Log($"Added items: [{string.Join(", ", e.AddedItems.Cast<object>().Select(x => x?.ToString() ?? "null"))}]");
+    Log($"Removed items: [{string.Join(", ", e.RemovedItems.Cast<object>().Select(x => x?.ToString() ?? "null"))}]");
+    Log($"Tag type: {comboBox?.Tag?.GetType().Name}");
+    
+    if (comboBox?.Tag is CollisionListItem item)
+    {
+        Log($"CollisionListItem: {item.Name}, текущий статус: {item.Status}");
+        
+        var newStatus = e.AddedItems.Count > 0 ? e.AddedItems[0]?.ToString() : null;
+        Log($"Новый статус из AddedItems: '{newStatus}'");
+        
+        if (newStatus != null && newStatus != item.Status)
+        {
+            Log($"Статус отличается, обновляем...");
+            
+            try
+            {
+                // Проверяем до изменения
+                Log($"Статус до изменения: {GetStatusFromItem(item.Item)}");
+                
+                UpdateCollisionStatus(item, newStatus);
+                
+                // Проверяем после изменения  
+                Log($"Статус после изменения: {GetStatusFromItem(item.Item)}");
+                
+                item.Status = newStatus;
+                
+                Log($"Статус в модели обновлен: {item.Status}");
+                
+                // Обновляем UI для синхронизации с Clash Detective
+                RefreshCollisionsList();
+            }
+            catch (Exception ex)
+            {
+                Log($"ОШИБКА при обновлении статуса: {ex.Message}");
+                MessageBox.Show($"Ошибка при изменении статуса: {ex.Message}");
+            }
+        }
+        else
+        {
+            Log($"Статус НЕ изменился: новое значение '{newStatus}' равна текущему '{item.Status}' или null");
+        }
+    }
+    else
+    {
+        Log($"ОШИБКА: Tag не является CollisionListItem: {comboBox?.Tag}");
+    }
+}
 		private string GetStatusFromItem(object item)
 		{
 			if (item is ClashResultGroup group)

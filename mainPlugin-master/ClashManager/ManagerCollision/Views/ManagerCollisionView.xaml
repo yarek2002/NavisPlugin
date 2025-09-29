@@ -121,10 +121,10 @@
                                 </GridViewColumn.Header>
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <ComboBox SelectedItem="{Binding Status}" 
-                                                  ItemsSource="{x:Static local:ManagerCollisionView+CollisionListItem.StatusOptions}" 
-                                                  SelectionChanged="StatusComboBox_SelectionChanged"
-                                                  Tag="{Binding}"/>
+                                        <ComboBox ItemsSource="{x:Static local:ManagerCollisionView+CollisionListItem.StatusOptions}" 
+                                                    SelectionChanged="StatusComboBox_SelectionChanged"
+                                                    Loaded="StatusComboBox_Loaded"
+                                                    Tag="{Binding}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
