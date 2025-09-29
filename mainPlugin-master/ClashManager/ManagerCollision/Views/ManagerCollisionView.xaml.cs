@@ -3434,97 +3434,125 @@ namespace ClashManager.ManagerCollision.Views
 
             return false;
         }
+       
+				/// <summary>
+				/// Обновляет статус коллизии в Navisworks
+				/// </summary>
+				private void UpdateCollisionStatus(CollisionListItem item, string newStatus)
+				{
+					try
+					{
+						// Преобразуем строку статуса в ClashResultStatus
+						ClashResultStatus statusEnum;
+						switch (newStatus)
+						{
+							case "New":
+								statusEnum = ClashResultStatus.New;
+								break;
+							case "Active":
+								statusEnum = ClashResultStatus.Active;
+								break;
+							case "Reviewed":
+								statusEnum = ClashResultStatus.Reviewed;
+								break;
+							case "Approved":
+								statusEnum = ClashResultStatus.Approved;
+								break;
+							case "Resolved":
+								statusEnum = ClashResultStatus.Resolved;
+								break;
+							default:
+								throw new ArgumentException($"Неизвестный статус: {newStatus}");
+						}
 
-        /// <summary>
-        /// Обработчик изменения статуса в ComboBox
-        /// </summary>
-        private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            var comboBox = sender as ComboBox;
-            if (comboBox?.DataContext is CollisionListItem item)
-            {
-                try
-                {
-                    var newStatus = comboBox.SelectedItem?.ToString();
-                    if (newStatus != null && newStatus != item.Status)
-                    {
-                        // Обновляем статус в Navisworks
-                        UpdateCollisionStatus(item, newStatus);
-                        
-                        // Обновляем статус в модели
-                        item.Status = newStatus;
-                        
-                        Log($"Статус изменен для {item.Name}: {newStatus}");
-                        
-                        // Обновляем UI для отображения изменений
-                        RefreshCollisionsList();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Ошибка при изменении статуса: {ex.Message}");
-                    Log($"Ошибка при изменении статуса: {ex.Message}");
-                }
-            }
-        }
+						// Используем сохраненную ссылку на исходный объект
+						if (item.Item is ClashResultGroup group)
+						{
+							// Для группы используем API для изменения статуса (как в MoveToConfirmedPlugin)
+							// Приводим к IClashResult как в оригинальном коде
+							IClashResult iGroup = group as IClashResult;
+							_documentClash.TestsData.TestsEditResultStatus(group, statusEnum);
+							Log($"Статус группы {group.DisplayName} изменен на {newStatus} через API");
+						}
+						else if (item.Item is ClashResult result)
+						{
+							// Для отдельных коллизий также приводим к IClashResult и используем API
+							IClashResult iResult = result as IClashResult;
+							_documentClash.TestsData.TestsEditResultStatus(result, statusEnum);
+							Log($"Статус коллизии {result.DisplayName} изменен на {newStatus} через API");
+						}
+						else
+						{
+							throw new InvalidOperationException($"Неизвестный тип объекта: {item.Item?.GetType()?.Name}");
+						}
+					}
+					catch (Exception ex)
+					{
+						Log($"Ошибка при обновлении статуса в Navisworks: {ex.Message}");
+						throw;
+					}
+				}
 
-        /// <summary>
-        /// Обновляет статус коллизии в Navisworks
-        /// </summary>
-        private void UpdateCollisionStatus(CollisionListItem item, string newStatus)
-        {
-            try
-            {
-                // Преобразуем строку статуса в ClashResultStatus
-                ClashResultStatus statusEnum;
-                switch (newStatus)
-                {
-                    case "New":
-                        statusEnum = ClashResultStatus.New;
-                        break;
-                    case "Active":
-                        statusEnum = ClashResultStatus.Active;
-                        break;
-                    case "Reviewed":
-                        statusEnum = ClashResultStatus.Reviewed;
-                        break;
-                    case "Approved":
-                        statusEnum = ClashResultStatus.Approved;
-                        break;
-                    case "Resolved":
-                        statusEnum = ClashResultStatus.Resolved;
-                        break;
-                    default:
-                        throw new ArgumentException($"Неизвестный статус: {newStatus}");
-                }
-
-                // Используем сохраненную ссылку на исходный объект
-                if (item.Item is ClashResultGroup group)
-                {
-                    // Для группы используем API для изменения статуса (как в MoveToConfirmedPlugin)
-                    // Приводим к IClashResult как в оригинальном коде
-                    IClashResult iGroup = group as IClashResult;
-                    _documentClash.TestsData.TestsEditResultStatus(group, statusEnum);
-                    Log($"Статус группы {group.DisplayName} изменен на {newStatus} через API");
-                }
-                else if (item.Item is ClashResult result)
-                {
-                    // Для отдельных коллизий также приводим к IClashResult и используем API
-                    IClashResult iResult = result as IClashResult;
-                    _documentClash.TestsData.TestsEditResultStatus(result, statusEnum);
-                    Log($"Статус коллизии {result.DisplayName} изменен на {newStatus} через API");
-                }
-                else
-                {
-                    throw new InvalidOperationException($"Неизвестный тип объекта: {item.Item?.GetType()?.Name}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"Ошибка при обновлении статуса в Navisworks: {ex.Message}");
-                throw;
-            }
-        }
+				private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			Log("=== StatusComboBox_SelectionChanged вызван ===");
+			
+			var comboBox = sender as ComboBox;
+			Log($"ComboBox: {comboBox?.Text}");
+			Log($"Tag type: {comboBox?.Tag?.GetType().Name}");
+			
+			if (comboBox?.Tag is CollisionListItem item)
+			{
+				Log($"CollisionListItem: {item.Name}, текущий статус: {item.Status}");
+				
+				var newStatus = comboBox.SelectedItem?.ToString();
+				Log($"Новый статус из ComboBox: '{newStatus}'");
+				
+				if (newStatus != null && newStatus != item.Status)
+				{
+					Log($"Статус отличается, обновляем...");
+					
+					try
+					{
+						// Проверяем до изменения
+						Log($"Статус до изменения: {GetStatusFromItem(item.Item)}");
+						
+						UpdateCollisionStatus(item, newStatus);
+						
+						// Проверяем после изменения  
+						Log($"Статус после изменения: {GetStatusFromItem(item.Item)}");
+						
+						item.Status = newStatus;
+						
+						Log($"Статус в модели обновлен: {item.Status}");
+						
+						// Временно НЕ обновляем UI для отладки
+						// RefreshCollisionsList();
+					}
+					catch (Exception ex)
+					{
+						Log($"ОШИБКА при обновлении статуса: {ex.Message}");
+						MessageBox.Show($"Ошибка при изменении статуса: {ex.Message}");
+					}
+				}
+				else
+				{
+					Log("Статус не изменился или комбо пустой");
+				}
+			}
+			else
+			{
+				Log($"ОШИБКА: Tag не является CollisionListItem: {comboBox?.Tag}");
+			}
+		}
+		private string GetStatusFromItem(object item)
+		{
+			if (item is ClashResultGroup group)
+				return group.Status.ToString();
+			if (item is ClashResult result)
+				return result.Status.ToString();
+			return "Unknown";
+		}
 
         /// <summary>
         /// Обновляет флаг синхронизации при выборе в плагине
