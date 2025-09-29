@@ -72,9 +72,9 @@ namespace ClashManager.ManagerCollision.Views
 			{
 				"Новый",
 				"Активный", 
-				"Проверен",
+				"Проанализирован",
 				"Утвержден",
-				"Решен"
+				"Исправлен"
 			};
 			
 			// Экземплярная ссылка на статическое свойство для привязки в XAML
@@ -3455,13 +3455,13 @@ namespace ClashManager.ManagerCollision.Views
 							case "Активный":
 								statusEnum = ClashResultStatus.Active;
 								break;
-							case "Проверен":
+							case "Проанализирован":
 								statusEnum = ClashResultStatus.Reviewed;
 								break;
 							case "Утвержден":
 								statusEnum = ClashResultStatus.Approved;
 								break;
-							case "Решен":
+							case "Исправлен":
 								statusEnum = ClashResultStatus.Resolved;
 								break;
 							default:
