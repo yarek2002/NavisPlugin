@@ -45,7 +45,11 @@ namespace ClashManager.ManagerCollision.Views
 		private readonly TimeSpan _minClashDetectiveSyncInterval = TimeSpan.FromMilliseconds(350);
 		private bool _isSyncingFromClashDetective = false;
 		private DateTime _lastUserScrollUtc = DateTime.MinValue;
-		private readonly TimeSpan _suppressScrollIntoViewAfterUserScroll = TimeSpan.FromMilliseconds(1200);
+		private readonly TimeSpan _suppressScrollIntoViewAfterUserScroll = TimeSpan.FromMilliseconds(1800);
+		private bool _isUserScrolling = false;
+		private DateTime _lastScrollEventUtc = DateTime.MinValue;
+		private DispatcherTimer _scrollIdleTimer;
+		private readonly TimeSpan _scrollIdleTimeout = TimeSpan.FromMilliseconds(700);
 		private bool _isSyncingFromPlugin = false;
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _levelCache = new System.Collections.Generic.Dictionary<Guid, string>();
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _gridCache = new System.Collections.Generic.Dictionary<Guid, string>();
@@ -163,10 +167,29 @@ namespace ClashManager.ManagerCollision.Views
 					{
 						scrollViewer.ScrollChanged += OnCollisionsListScrollChanged;
 					}
+
+                    // Инициализация таймера простоя скролла
+                    _scrollIdleTimer = new DispatcherTimer();
+                    _scrollIdleTimer.Interval = TimeSpan.FromMilliseconds(150);
+                    _scrollIdleTimer.Tick += (o, args2) =>
+                    {
+                        if ((DateTime.UtcNow - _lastScrollEventUtc) > _scrollIdleTimeout)
+                        {
+                            _isUserScrolling = false;
+                            _scrollIdleTimer.Stop();
+                            Log("Scroll idle detected: resume sync");
+                        }
+                    };
 				}
 				catch { }
 			};
-			CollisionsList.PreviewMouseWheel += (s, e) => { _lastUserScrollUtc = DateTime.UtcNow; };
+            CollisionsList.PreviewMouseWheel += (s, e) =>
+            {
+                _lastUserScrollUtc = DateTime.UtcNow;
+                _isUserScrolling = true;
+                _lastScrollEventUtc = DateTime.UtcNow;
+                if (!(_scrollIdleTimer?.IsEnabled ?? false)) _scrollIdleTimer?.Start();
+            };
 			_doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
 			_documentClash = _doc.GetClash();
 			
@@ -2651,7 +2674,7 @@ namespace ClashManager.ManagerCollision.Views
 			try
 			{
 				// Если сейчас идет синхронизация из Clash Detective — не делаем лишних refresh'ей
-				if (_isSyncingFromClashDetective)
+                if (_isSyncingFromClashDetective || _isUserScrolling)
 				{
 					return;
 				}
@@ -3224,7 +3247,7 @@ namespace ClashManager.ManagerCollision.Views
             try
             {
                 // Проверяем, не синхронизируем ли мы уже выбор из плагина
-                if (_isSyncingFromPlugin) return;
+                if (_isSyncingFromPlugin || _isUserScrolling) return;
 
                 Guid currentClashGuid = GetCurrentClashDetectiveSelection();
 
@@ -3371,8 +3394,8 @@ namespace ClashManager.ManagerCollision.Views
                     {
                         // Выбираем элемент в списке
                         CollisionsList.SelectedItem = itemToSelect;
-                        // Прокрутка только если пользователь недавно не скроллил вручную
-                        if ((DateTime.UtcNow - _lastUserScrollUtc) > _suppressScrollIntoViewAfterUserScroll)
+                        // Во время пользовательского скролла не вмешиваемся
+                        if (!_isUserScrolling && (DateTime.UtcNow - _lastUserScrollUtc) > _suppressScrollIntoViewAfterUserScroll)
                         {
                             CollisionsList.ScrollIntoView(itemToSelect);
                         }
@@ -3404,7 +3427,7 @@ namespace ClashManager.ManagerCollision.Views
                             if (itemToSelect != null)
                             {
                                 CollisionsList.SelectedItem = itemToSelect;
-                                if ((DateTime.UtcNow - _lastUserScrollUtc) > _suppressScrollIntoViewAfterUserScroll)
+                                if (!_isUserScrolling && (DateTime.UtcNow - _lastUserScrollUtc) > _suppressScrollIntoViewAfterUserScroll)
                                 {
                                     CollisionsList.ScrollIntoView(itemToSelect);
                                 }
@@ -3754,6 +3777,9 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
         private void OnCollisionsListScrollChanged(object sender, ScrollChangedEventArgs e)
         {
             _lastUserScrollUtc = DateTime.UtcNow;
+            _isUserScrolling = true;
+            _lastScrollEventUtc = DateTime.UtcNow;
+            if (!(_scrollIdleTimer?.IsEnabled ?? false)) _scrollIdleTimer?.Start();
         }
 
         private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
