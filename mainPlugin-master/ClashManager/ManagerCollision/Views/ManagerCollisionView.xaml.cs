@@ -3500,9 +3500,9 @@ namespace ClashManager.ManagerCollision.Views
 					var comboBox = sender as ComboBox;
 					if (comboBox?.Tag is CollisionListItem item)
 					{
-						// Устанавливаем текущий статус как выбранный
-						comboBox.SelectedItem = item.Status;
-						Log($"StatusComboBox_Loaded: установлен статус '{item.Status}' для {item.Name}");
+						// Привязка SelectedItem теперь работает автоматически через XAML
+						// Этот метод оставлен для логирования и возможной дополнительной логики
+						Log($"StatusComboBox_Loaded: ComboBox загружен для {item.Name} со статусом '{item.Status}'");
 					}
 				}
 
