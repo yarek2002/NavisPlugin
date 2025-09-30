@@ -3750,6 +3750,24 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
         Log($"ОШИБКА: Tag не является CollisionListItem: {comboBox?.Tag}");
     }
 }
+
+        private void OnCollisionsListScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            _lastUserScrollUtc = DateTime.UtcNow;
+        }
+
+        private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null) return null;
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T typed) return typed;
+                var result = FindVisualChild<T>(child);
+                if (result != null) return result;
+            }
+            return null;
+        }
 		private string GetStatusFromItem(object item)
 		{
 			if (item is ClashResultGroup group)
