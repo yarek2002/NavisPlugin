@@ -2645,7 +2645,7 @@ namespace ClashManager.ManagerCollision.Views
 				else
 				{
 					// Легкий рефреш текущего представления, без смены ItemsSource
-					var view = CollectionViewSource.GetDefaultView(CollisionsList.ItemsSource);
+					var view = System.Windows.Data.CollectionViewSource.GetDefaultView(CollisionsList.ItemsSource);
 					view?.Refresh();
 					Log("RefreshCollisionsList: выполнен легкий refresh текущего представления");
 				}
