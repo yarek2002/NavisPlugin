@@ -106,6 +106,20 @@ namespace ClashManager.ManagerCollision.Views
 			}
 		}
 
+		// Преобразует enum Navisworks в русскую метку для отображения/привязки
+		private static string ToRuStatus(ClashResultStatus status)
+		{
+			switch (status)
+			{
+				case ClashResultStatus.New: return "Новый";
+				case ClashResultStatus.Active: return "Активный";
+				case ClashResultStatus.Reviewed: return "Проанализирован";
+				case ClashResultStatus.Approved: return "Утвержден";
+				case ClashResultStatus.Resolved: return "Исправлен";
+				default: return "Новый";
+			}
+		}
+
 		public ManagerCollisionView()
 		{
 			InitializeComponent();
@@ -434,7 +448,7 @@ namespace ClashManager.ManagerCollision.Views
 						.Select(x => new CollisionListItem
 						{
 							Name = x.Group.DisplayName ?? string.Empty,
-							Status = x.Group.Status.ToString(),
+							Status = ToRuStatus(x.Group.Status),
 							AssignedTo = (x.Group.AssignedTo ?? string.Empty).ToString(),
 							Guid = x.Group.Guid,
 							TestGuid = t.Guid,
@@ -450,7 +464,7 @@ namespace ClashManager.ManagerCollision.Views
 						.Select(r => new CollisionListItem
 						{
 							Name = r.DisplayName ?? string.Empty,
-							Status = r.Status.ToString(),
+							Status = ToRuStatus(r.Status),
 							AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
 							Guid = r.Guid,
 							TestGuid = t.Guid,
@@ -483,7 +497,7 @@ namespace ClashManager.ManagerCollision.Views
 				.Select(x => new CollisionListItem
 				{
 					Name = x.Group.DisplayName ?? string.Empty,
-					Status = x.Group.Status.ToString(),
+					Status = ToRuStatus(x.Group.Status),
 					AssignedTo = (x.Group.AssignedTo ?? string.Empty).ToString(),
 					Guid = x.Group.Guid,
 					TestGuid = selectedTest.Guid,
@@ -500,7 +514,7 @@ namespace ClashManager.ManagerCollision.Views
 				.Select(r => new CollisionListItem
 				{
 					Name = r.DisplayName ?? string.Empty,
-					Status = r.Status.ToString(),
+					Status = ToRuStatus(r.Status),
 					AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
 					Guid = r.Guid,
 					TestGuid = selectedTest.Guid,
@@ -594,7 +608,7 @@ namespace ClashManager.ManagerCollision.Views
 						.Select(x => new CollisionListItem
 						{
 							Name = x.Group.DisplayName ?? string.Empty,
-							Status = x.Group.Status.ToString(),
+								Status = ToRuStatus(x.Group.Status),
 							AssignedTo = (x.Group.AssignedTo ?? string.Empty).ToString(),
 							Guid = x.Group.Guid,
 							TestGuid = test.Guid,
@@ -612,7 +626,7 @@ namespace ClashManager.ManagerCollision.Views
 						.Select(r => new CollisionListItem
 						{
 							Name = r.DisplayName ?? string.Empty,
-							Status = r.Status.ToString(),
+								Status = ToRuStatus(r.Status),
 							AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
 							Guid = r.Guid,
 							TestGuid = test.Guid,
