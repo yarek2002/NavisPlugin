@@ -43,6 +43,9 @@ namespace ClashManager.ManagerCollision.Views
 		private int _pendingDetectedStableTicks = 0;
 		private DateTime _lastClashDetectiveSyncUtc = DateTime.MinValue;
 		private readonly TimeSpan _minClashDetectiveSyncInterval = TimeSpan.FromMilliseconds(350);
+		private bool _isSyncingFromClashDetective = false;
+		private DateTime _lastUserScrollUtc = DateTime.MinValue;
+		private readonly TimeSpan _suppressScrollIntoViewAfterUserScroll = TimeSpan.FromMilliseconds(1200);
 		private bool _isSyncingFromPlugin = false;
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _levelCache = new System.Collections.Generic.Dictionary<Guid, string>();
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _gridCache = new System.Collections.Generic.Dictionary<Guid, string>();
@@ -154,9 +157,16 @@ namespace ClashManager.ManagerCollision.Views
 					// Установим фокус в первое поле ввода, чтобы сразу работала клавиатура
 					if (FindBox != null)
 						System.Windows.Input.Keyboard.Focus(FindBox);
+					// Отслеживание пользовательского скролла для подавления авто-прокрутки
+					var scrollViewer = FindVisualChild<ScrollViewer>(CollisionsList);
+					if (scrollViewer != null)
+					{
+						scrollViewer.ScrollChanged += OnCollisionsListScrollChanged;
+					}
 				}
 				catch { }
 			};
+			CollisionsList.PreviewMouseWheel += (s, e) => { _lastUserScrollUtc = DateTime.UtcNow; };
 			_doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
 			_documentClash = _doc.GetClash();
 			
@@ -2640,6 +2650,12 @@ namespace ClashManager.ManagerCollision.Views
 		{
 			try
 			{
+				// Если сейчас идет синхронизация из Clash Detective — не делаем лишних refresh'ей
+				if (_isSyncingFromClashDetective)
+				{
+					return;
+				}
+
 				// Если активен поиск — пере-применяем фильтр, иначе не пересобираем весь список
 				if (!string.IsNullOrEmpty(_lastSearchQuery))
 				{
@@ -3238,7 +3254,15 @@ namespace ClashManager.ManagerCollision.Views
                 {
                     _lastDetectedClashGuid = _pendingDetectedClashGuid;
                     _lastClashDetectiveSyncUtc = DateTime.UtcNow;
-                    SyncSelectionFromClashDetective(_lastDetectedClashGuid);
+                    _isSyncingFromClashDetective = true;
+                    try
+                    {
+                        SyncSelectionFromClashDetective(_lastDetectedClashGuid);
+                    }
+                    finally
+                    {
+                        _isSyncingFromClashDetective = false;
+                    }
                 }
             }
             catch (Exception ex)
@@ -3347,7 +3371,11 @@ namespace ClashManager.ManagerCollision.Views
                     {
                         // Выбираем элемент в списке
                         CollisionsList.SelectedItem = itemToSelect;
-                        CollisionsList.ScrollIntoView(itemToSelect);
+                        // Прокрутка только если пользователь недавно не скроллил вручную
+                        if ((DateTime.UtcNow - _lastUserScrollUtc) > _suppressScrollIntoViewAfterUserScroll)
+                        {
+                            CollisionsList.ScrollIntoView(itemToSelect);
+                        }
 
                         Log($"Successfully synced selection: {selectedGuid}");
                     }
@@ -3376,7 +3404,10 @@ namespace ClashManager.ManagerCollision.Views
                             if (itemToSelect != null)
                             {
                                 CollisionsList.SelectedItem = itemToSelect;
-                                CollisionsList.ScrollIntoView(itemToSelect);
+                                if ((DateTime.UtcNow - _lastUserScrollUtc) > _suppressScrollIntoViewAfterUserScroll)
+                                {
+                                    CollisionsList.ScrollIntoView(itemToSelect);
+                                }
                                 Log($"Successfully synced selection after rebuild: {selectedGuid}");
                             }
                             else
@@ -3446,6 +3477,8 @@ namespace ClashManager.ManagerCollision.Views
                         if (test != null && test.Guid == testGuid)
                         {
                             TestsList.SelectedItem = item;
+                            // Не скроллим список коллизий автоматически при пользовательском скролле
+                            _lastUserScrollUtc = DateTime.UtcNow;
                             break;
                         }
                     }
@@ -3742,6 +3775,9 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
                 timer.Stop();
             };
             timer.Start();
+
+            // Также временно подавляем авто-прокрутку, чтобы не мешать пользователю
+            _lastUserScrollUtc = DateTime.UtcNow;
         }
 
 
