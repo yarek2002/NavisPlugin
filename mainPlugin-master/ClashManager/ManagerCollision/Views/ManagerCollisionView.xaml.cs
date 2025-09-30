@@ -39,6 +39,10 @@ namespace ClashManager.ManagerCollision.Views
 		private string _lastSearchQuery = string.Empty;
 		private DispatcherTimer _clashDetectiveMonitorTimer;
 		private Guid _lastDetectedClashGuid = Guid.Empty;
+		private Guid _pendingDetectedClashGuid = Guid.Empty;
+		private int _pendingDetectedStableTicks = 0;
+		private DateTime _lastClashDetectiveSyncUtc = DateTime.MinValue;
+		private readonly TimeSpan _minClashDetectiveSyncInterval = TimeSpan.FromMilliseconds(350);
 		private bool _isSyncingFromPlugin = false;
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _levelCache = new System.Collections.Generic.Dictionary<Guid, string>();
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _gridCache = new System.Collections.Generic.Dictionary<Guid, string>();
@@ -3207,10 +3211,34 @@ namespace ClashManager.ManagerCollision.Views
                 if (_isSyncingFromPlugin) return;
 
                 Guid currentClashGuid = GetCurrentClashDetectiveSelection();
-                if (currentClashGuid != Guid.Empty && currentClashGuid != _lastDetectedClashGuid)
+
+                // Ничего не выбрано — сбрасываем pending/стабилизацию
+                if (currentClashGuid == Guid.Empty)
                 {
-                    _lastDetectedClashGuid = currentClashGuid;
-                    SyncSelectionFromClashDetective(currentClashGuid);
+                    _pendingDetectedClashGuid = Guid.Empty;
+                    _pendingDetectedStableTicks = 0;
+                    return;
+                }
+
+                // Если GUID меняется — начинаем стабилизацию заново
+                if (currentClashGuid != _pendingDetectedClashGuid)
+                {
+                    _pendingDetectedClashGuid = currentClashGuid;
+                    _pendingDetectedStableTicks = 1;
+                    return;
+                }
+
+                // Увеличиваем счетчик стабильных тиков
+                _pendingDetectedStableTicks++;
+
+                // Дебаунс: синхронизируем только если GUID стабилен минимум 2 тика и прошло достаточно времени с последней синхронизации
+                if (_pendingDetectedStableTicks >= 2 &&
+                    (DateTime.UtcNow - _lastClashDetectiveSyncUtc) >= _minClashDetectiveSyncInterval &&
+                    _pendingDetectedClashGuid != _lastDetectedClashGuid)
+                {
+                    _lastDetectedClashGuid = _pendingDetectedClashGuid;
+                    _lastClashDetectiveSyncUtc = DateTime.UtcNow;
+                    SyncSelectionFromClashDetective(_lastDetectedClashGuid);
                 }
             }
             catch (Exception ex)
@@ -3296,11 +3324,8 @@ namespace ClashManager.ManagerCollision.Views
 
                 if (testGuid.HasValue)
                 {
-                    // Выбираем тест в плагине
-                    SelectTestInPlugin(testGuid.Value);
-
-                    // Обновляем список коллизий для выбранного теста
-                    TestsList_SelectionChanged(null, null);
+                    // Выбираем тест в плагине, если он еще не выбран
+                    bool testChanged = EnsureTestSelected(testGuid.Value);
 
                     // Теперь ищем элемент в обновленном списке коллизий
                     object itemToSelect = null;
@@ -3328,7 +3353,41 @@ namespace ClashManager.ManagerCollision.Views
                     }
                     else
                     {
-                        Log($"Item not found in plugin list after test selection: {selectedGuid}");
+                        // Если тест сменился, мягко пересобираем список только для одного теста
+                        if (testChanged)
+                        {
+                            Log("Item not found; rebuilding list for selected test once");
+                            TestsList_SelectionChanged(null, null);
+
+                            foreach (var item in CollisionsList.Items)
+                            {
+                                var guidProp = item.GetType().GetProperty("Guid");
+                                if (guidProp != null)
+                                {
+                                    var itemGuid = (Guid)guidProp.GetValue(item);
+                                    if (itemGuid == selectedGuid)
+                                    {
+                                        itemToSelect = item;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (itemToSelect != null)
+                            {
+                                CollisionsList.SelectedItem = itemToSelect;
+                                CollisionsList.ScrollIntoView(itemToSelect);
+                                Log($"Successfully synced selection after rebuild: {selectedGuid}");
+                            }
+                            else
+                            {
+                                Log($"Item not found in plugin list even after rebuild: {selectedGuid}");
+                            }
+                        }
+                        else
+                        {
+                            Log($"Item not found in plugin list after test selection: {selectedGuid}");
+                        }
                     }
                 }
                 else
@@ -3339,6 +3398,35 @@ namespace ClashManager.ManagerCollision.Views
             catch (Exception ex)
             {
                 Log($"Error syncing selection from Clash Detective: {ex.Message}");
+            }
+        }
+
+        // Возвращает true, если выбранный тест изменился
+        private bool EnsureTestSelected(Guid testGuid)
+        {
+            try
+            {
+                // Проверяем, уже выбран ли нужный тест
+                var current = TestsList.SelectedItem;
+                if (current != null)
+                {
+                    var testProp = current.GetType().GetProperty("Test");
+                    var curTest = testProp?.GetValue(current) as ClashTest;
+                    if (curTest != null && curTest.Guid == testGuid)
+                    {
+                        return false; // тест уже выбран
+                    }
+                }
+
+                SelectTestInPlugin(testGuid);
+                // Перестроим список для выбранного теста
+                TestsList_SelectionChanged(null, null);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log($"Error ensuring test selected: {ex.Message}");
+                return true;
             }
         }
 
