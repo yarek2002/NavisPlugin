@@ -2636,9 +2636,22 @@ namespace ClashManager.ManagerCollision.Views
 		{
 			try
 			{
-				// Обновляем список коллизий на основе текущего выбора тестов
-				TestsList_SelectionChanged(null, null);
-				Log("Список коллизий обновлен после изменения статуса");
+				// Если активен поиск — пере-применяем фильтр, иначе не пересобираем весь список
+				if (!string.IsNullOrEmpty(_lastSearchQuery))
+				{
+					Log("RefreshCollisionsList: активен поиск, пере-применяем ApplySearch без полной пересборки");
+					ApplySearch();
+				}
+				else
+				{
+					// Легкий рефреш текущего представления, без смены ItemsSource
+					var view = CollectionViewSource.GetDefaultView(CollisionsList.ItemsSource);
+					view?.Refresh();
+					Log("RefreshCollisionsList: выполнен легкий refresh текущего представления");
+				}
+
+				// Обновляем счетчики
+				UpdateCollisionCounters();
 			}
 			catch (Exception ex)
 			{
