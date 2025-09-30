@@ -178,6 +178,8 @@ namespace ClashManager.ManagerCollision.Views
                             _isUserScrolling = false;
                             _scrollIdleTimer.Stop();
                             Log("Scroll idle detected: resume sync");
+                            // Возобновим мониторинг Clash Detective
+                            _clashDetectiveMonitorTimer?.Start();
                         }
                     };
 				}
@@ -188,6 +190,14 @@ namespace ClashManager.ManagerCollision.Views
                 _lastUserScrollUtc = DateTime.UtcNow;
                 _isUserScrolling = true;
                 _lastScrollEventUtc = DateTime.UtcNow;
+                if (!(_scrollIdleTimer?.IsEnabled ?? false)) _scrollIdleTimer?.Start();
+                // Во время скролла приостанавливаем мониторинг Clash Detective
+                _clashDetectiveMonitorTimer?.Stop();
+            };
+
+            CollisionsList.PreviewMouseUp += (s, e) =>
+            {
+                // Дадим таймеру простоя определить окончание скролла и потом возобновим мониторинг
                 if (!(_scrollIdleTimer?.IsEnabled ?? false)) _scrollIdleTimer?.Start();
             };
 			_doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
@@ -3247,7 +3257,7 @@ namespace ClashManager.ManagerCollision.Views
             try
             {
                 // Проверяем, не синхронизируем ли мы уже выбор из плагина
-                if (_isSyncingFromPlugin || _isUserScrolling) return;
+                if (_isSyncingFromPlugin || _isUserScrolling || AreMultipleTestsChecked()) return;
 
                 Guid currentClashGuid = GetCurrentClashDetectiveSelection();
 
@@ -3371,8 +3381,13 @@ namespace ClashManager.ManagerCollision.Views
 
                 if (testGuid.HasValue)
                 {
-                    // Выбираем тест в плагине, если он еще не выбран
-                    bool testChanged = EnsureTestSelected(testGuid.Value);
+                    // Если пользователь работает с несколькими тестами — не переключаем тесты
+                    bool testChanged = false;
+                    if (!AreMultipleTestsChecked())
+                    {
+                        // Выбираем тест в плагине, если он еще не выбран
+                        testChanged = EnsureTestSelected(testGuid.Value);
+                    }
 
                     // Теперь ищем элемент в обновленном списке коллизий
                     object itemToSelect = null;
@@ -3405,7 +3420,7 @@ namespace ClashManager.ManagerCollision.Views
                     else
                     {
                         // Если тест сменился, мягко пересобираем список только для одного теста
-                        if (testChanged)
+                            if (testChanged)
                         {
                             Log("Item not found; rebuilding list for selected test once");
                             TestsList_SelectionChanged(null, null);
@@ -3460,6 +3475,11 @@ namespace ClashManager.ManagerCollision.Views
         {
             try
             {
+                if (AreMultipleTestsChecked())
+                {
+                    // Не меняем выбранный тест, если пользователь работает с несколькими тестами
+                    return false;
+                }
                 // Проверяем, уже выбран ли нужный тест
                 var current = TestsList.SelectedItem;
                 if (current != null)
@@ -3482,6 +3502,15 @@ namespace ClashManager.ManagerCollision.Views
                 Log($"Error ensuring test selected: {ex.Message}");
                 return true;
             }
+        }
+
+        private bool AreMultipleTestsChecked()
+        {
+            try
+            {
+                return _checkedTestIds != null && _checkedTestIds.Count > 1;
+            }
+            catch { return false; }
         }
 
         /// <summary>
