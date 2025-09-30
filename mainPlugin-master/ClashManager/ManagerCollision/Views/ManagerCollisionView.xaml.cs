@@ -3535,7 +3535,9 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
         Log($"CollisionListItem: {item.Name}, текущий статус: {item.Status}");
         
         var newStatus = e.AddedItems.Count > 0 ? e.AddedItems[0]?.ToString() : null;
+        var oldStatus = e.RemovedItems.Count > 0 ? e.RemovedItems[0]?.ToString() : null;
         Log($"Новый статус из AddedItems: '{newStatus}'");
+        Log($"Старый статус из RemovedItems: '{oldStatus}'");
         
         if (newStatus != null)
         {
@@ -3554,17 +3556,10 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
                     foreach (var selectedCollisionItem in selectedItemsCopy)
                     {
                         Log($"Обновляем статус для: {selectedCollisionItem.Name} (текущий: {selectedCollisionItem.Status})");
-                        
-                        if (newStatus != selectedCollisionItem.Status)
-                        {
-                            UpdateCollisionStatus(selectedCollisionItem, newStatus);
-                            selectedCollisionItem.Status = newStatus;
-                            Log($"Статус обновлен на: {newStatus}");
-                        }
-                        else
-                        {
-                            Log($"Статус уже '{newStatus}', пропускаем");
-                        }
+                        // Обновляем независимо от текущего значения, чтобы гарантировать применение к Navisworks
+                        UpdateCollisionStatus(selectedCollisionItem, newStatus);
+                        selectedCollisionItem.Status = newStatus;
+                        Log($"Статус обновлен на: {newStatus}");
                     }
                     
                     // Обновляем UI для синхронизации с Clash Detective
@@ -3580,25 +3575,23 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
             else
             {
                 // Обычное обновление одного элемента
-                if (newStatus != item.Status)
+                // Сравниваем с RemovedItems, так как привязка уже могла установить item.Status в newStatus
+                var statusChanged = oldStatus == null || !string.Equals(oldStatus, newStatus, StringComparison.Ordinal);
+                Log($"Определено изменение статуса (по RemovedItems): {statusChanged}");
+
+                if (statusChanged)
                 {
-                    Log($"Статус отличается, обновляем один элемент...");
-                    
+                    Log($"Обновляем один элемент...");
                     try
                     {
-                        // Проверяем до изменения
-                        Log($"Статус до изменения: {GetStatusFromItem(item.Item)}");
-                        
+                        Log($"Статус до изменения (из Navisworks): {GetStatusFromItem(item.Item)}");
                         UpdateCollisionStatus(item, newStatus);
-                        
-                        // Проверяем после изменения  
-                        Log($"Статус после изменения: {GetStatusFromItem(item.Item)}");
-                        
+                        Log($"Статус после изменения (из Navisworks): {GetStatusFromItem(item.Item)}");
+
+                        // Синхронизируем модель (на случай если binding еще не выполнил запись)
                         item.Status = newStatus;
-                        
-                        Log($"Статус в модели обновлен: {item.Status}");
-                        
-                        // Обновляем UI для синхронизации с Clash Detective
+                        Log($"Статус в модели установлен: {item.Status}");
+
                         RefreshCollisionsList();
                     }
                     catch (Exception ex)
@@ -3609,7 +3602,7 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
                 }
                 else
                 {
-                    Log($"Статус НЕ изменился: новое значение '{newStatus}' равна текущему '{item.Status}'");
+                    Log("Статус не изменился по сути, обновление Navisworks не требуется");
                 }
             }
         }
