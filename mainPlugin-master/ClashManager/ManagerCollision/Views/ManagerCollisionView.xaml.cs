@@ -2813,10 +2813,64 @@ namespace ClashManager.ManagerCollision.Views
 			}
 		}
 
-		/// <summary>
-		/// Восстанавливает визуальное состояние чекбоксов тестов
-		/// </summary>
-		private void RestoreTestCheckboxStates()
+        /// <summary>
+        /// Добавляет коллизию в объединенный список при множественном выборе тестов
+        /// </summary>
+        private void AddClashToMergedList(Guid clashGuid, Guid testGuid)
+        {
+            try
+            {
+                // Находим тест по GUID
+                var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
+                var test = allTests.FirstOrDefault(t => t.Guid == testGuid);
+                if (test == null) return;
+
+                // Ищем коллизию в тесте
+                var clash = FindResultByGuid(test, clashGuid);
+                var group = FindGroupByGuid(test, clashGuid);
+                
+                if (clash != null || group != null)
+                {
+                    // Создаем элемент для добавления в список
+                    var item = clash != null ? (object)clash : group;
+                    var itemName = clash != null ? clash.DisplayName : group.DisplayName;
+                    var status = GetStatusFromItem(item);
+                    var assignedTo = clash != null ? (clash.AssignedTo ?? string.Empty).ToString() : (group.AssignedTo ?? string.Empty).ToString();
+                    var level = clash != null ? GetCachedLevelFromItems(clash.CompositeItem1, clash.CompositeItem2, clash) : GetCachedLevelFromGroup(group);
+                    var grid = clash != null ? GetCachedGridFromResult(clash) : GetCachedGridFromGroup(group);
+
+                    var collisionItem = new CollisionListItem
+                    {
+                        Name = itemName,
+                        Status = status,
+                        AssignedTo = assignedTo,
+                        Guid = clashGuid,
+                        TestGuid = testGuid,
+                        IsGroup = group != null,
+                        Item = item
+                    };
+
+                    // Добавляем в текущий список коллизий
+                    var currentItems = CollisionsList.ItemsSource as System.Collections.Generic.List<CollisionListItem>;
+                    if (currentItems != null)
+                    {
+                        currentItems.Add(collisionItem);
+                        CollisionsList.ItemsSource = null;
+                        CollisionsList.ItemsSource = currentItems;
+                        Log($"Added clash {itemName} to merged list from test {test.DisplayName}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Error adding clash to merged list: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Восстанавливает визуальное состояние чекбоксов тестов
+        /// </summary>
+        private void RestoreTestCheckboxStates()
 		{
 			try
 			{
@@ -3463,9 +3517,41 @@ namespace ClashManager.ManagerCollision.Views
                     }
                     else
                     {
-                        // Если тест сменился, мягко пересобираем список только для одного теста
-                            if (testChanged)
+                        // Если элемент не найден в текущем списке
+                        if (AreMultipleTestsChecked())
                         {
+                            // При множественном выборе тестов добавляем коллизию в объединенный список
+                            Log("Item not found in merged list; adding to merged list");
+                            AddClashToMergedList(selectedGuid, testGuid.Value);
+                            
+                            // Ищем элемент в обновленном списке
+                            foreach (var item in CollisionsList.Items)
+                            {
+                                var guidProp = item.GetType().GetProperty("Guid");
+                                if (guidProp != null)
+                                {
+                                    var itemGuid = (Guid)guidProp.GetValue(item);
+                                    if (itemGuid == selectedGuid)
+                                    {
+                                        itemToSelect = item;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (itemToSelect != null)
+                            {
+                                CollisionsList.SelectedItem = itemToSelect;
+                                if (!_isUserScrolling && (DateTime.UtcNow - _lastUserScrollUtc) > _suppressScrollIntoViewAfterUserScroll)
+                                {
+                                    CollisionsList.ScrollIntoView(itemToSelect);
+                                }
+                                Log($"Successfully added and selected item in merged list: {selectedGuid}");
+                            }
+                        }
+                        else if (testChanged)
+                        {
+                            // Если тест сменился, мягко пересобираем список только для одного теста
                             Log("Item not found; rebuilding list for selected test once");
                             TestsList_SelectionChanged(null, null);
 
