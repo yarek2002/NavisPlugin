@@ -2788,15 +2788,53 @@ namespace ClashManager.ManagerCollision.Views
 		{
 			try
 			{
+				// Сохраняем состояние галочек тестов перед очисткой
+				var savedCheckedTestIds = new System.Collections.Generic.HashSet<Guid>(_checkedTestIds);
+				
 				// Очищаем кэши и состояние при изменении тестов
 				ClearAllCachesAndState();
 				
 				// Перезагружаем данные
 				LoadTests();
+				
+				// Восстанавливаем состояние галочек тестов
+				_checkedTestIds.Clear();
+				foreach (var testId in savedCheckedTestIds)
+				{
+					_checkedTestIds.Add(testId);
+				}
+				
+				// Обновляем визуальное состояние чекбоксов
+				RestoreTestCheckboxStates();
 			}
 			catch (Exception ex)
 			{
 				System.Diagnostics.Debug.WriteLine($"Ошибка при обработке изменения тестов: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// Восстанавливает визуальное состояние чекбоксов тестов
+		/// </summary>
+		private void RestoreTestCheckboxStates()
+		{
+			try
+			{
+				foreach (var item in TestsList.Items)
+				{
+					var itemType = item.GetType();
+					var guidProperty = itemType.GetProperty("Guid");
+					if (guidProperty != null)
+					{
+						var testGuid = (Guid)guidProperty.GetValue(item);
+						bool shouldBeChecked = _checkedTestIds.Contains(testGuid);
+						SetCheckboxStateForListItem(TestsList, item, shouldBeChecked);
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Log($"Ошибка при восстановлении состояния чекбоксов тестов: {ex.Message}");
 			}
 		}
 
