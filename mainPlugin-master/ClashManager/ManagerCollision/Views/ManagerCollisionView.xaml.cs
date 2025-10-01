@@ -50,6 +50,7 @@ namespace ClashManager.ManagerCollision.Views
 		private DateTime _lastScrollEventUtc = DateTime.MinValue;
 		private DispatcherTimer _scrollIdleTimer;
 		private readonly TimeSpan _scrollIdleTimeout = TimeSpan.FromMilliseconds(700);
+		private bool _suppressUIUpdates = false;
 		private bool _isSyncingFromPlugin = false;
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _levelCache = new System.Collections.Generic.Dictionary<Guid, string>();
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _gridCache = new System.Collections.Generic.Dictionary<Guid, string>();
@@ -176,6 +177,7 @@ namespace ClashManager.ManagerCollision.Views
                         if ((DateTime.UtcNow - _lastScrollEventUtc) > _scrollIdleTimeout)
                         {
                             _isUserScrolling = false;
+                            _suppressUIUpdates = false;
                             _scrollIdleTimer.Stop();
                             Log("Scroll idle detected: resume sync");
                             // Возобновим мониторинг Clash Detective
@@ -189,6 +191,7 @@ namespace ClashManager.ManagerCollision.Views
             {
                 _lastUserScrollUtc = DateTime.UtcNow;
                 _isUserScrolling = true;
+                _suppressUIUpdates = true;
                 _lastScrollEventUtc = DateTime.UtcNow;
                 if (!(_scrollIdleTimer?.IsEnabled ?? false)) _scrollIdleTimer?.Start();
                 // Во время скролла приостанавливаем мониторинг Clash Detective
@@ -483,6 +486,9 @@ namespace ClashManager.ManagerCollision.Views
 
         private void TestsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
+			// Не обновляем список во время пользовательского скролла
+			if (_suppressUIUpdates) return;
+			
 			// Если выбрано несколько тестов через чекбоксы — показываем объединённый список коллизий этих тестов
 			var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
 			var checkedTests = allTests.Where(t => _checkedTestIds.Contains(t.Guid)).ToList();
@@ -2683,8 +2689,8 @@ namespace ClashManager.ManagerCollision.Views
 		{
 			try
 			{
-				// Если сейчас идет синхронизация из Clash Detective — не делаем лишних refresh'ей
-                if (_isSyncingFromClashDetective || _isUserScrolling)
+				// Если сейчас идет синхронизация из Clash Detective или пользователь скроллит — не делаем лишних refresh'ей
+				if (_isSyncingFromClashDetective || _isUserScrolling || _suppressUIUpdates)
 				{
 					return;
 				}
@@ -3807,6 +3813,7 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
         {
             _lastUserScrollUtc = DateTime.UtcNow;
             _isUserScrolling = true;
+            _suppressUIUpdates = true;
             _lastScrollEventUtc = DateTime.UtcNow;
             if (!(_scrollIdleTimer?.IsEnabled ?? false)) _scrollIdleTimer?.Start();
         }
