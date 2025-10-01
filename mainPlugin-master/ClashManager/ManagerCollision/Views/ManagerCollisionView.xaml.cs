@@ -3651,6 +3651,13 @@ namespace ClashManager.ManagerCollision.Views
 				{
 					try
 					{
+						// Временно отключаем обработчик OnTestsChanged, чтобы избежать перезагрузки тестов
+						var clashDoc = Application.ActiveDocument?.Clash as DocumentClash;
+						if (clashDoc?.TestsData != null)
+						{
+							clashDoc.TestsData.Changed -= OnTestsChanged;
+						}
+
 						// Преобразуем строку статуса в ClashResultStatus
 						ClashResultStatus statusEnum;
 						switch (newStatus)
@@ -3694,9 +3701,21 @@ namespace ClashManager.ManagerCollision.Views
 						{
 							throw new InvalidOperationException($"Неизвестный тип объекта: {item.Item?.GetType()?.Name}");
 						}
+
+						// Восстанавливаем обработчик OnTestsChanged
+						if (clashDoc?.TestsData != null)
+						{
+							clashDoc.TestsData.Changed += OnTestsChanged;
+						}
 					}
 					catch (Exception ex)
 					{
+						// Восстанавливаем обработчик в случае ошибки
+						var clashDoc = Application.ActiveDocument?.Clash as DocumentClash;
+						if (clashDoc?.TestsData != null)
+						{
+							clashDoc.TestsData.Changed += OnTestsChanged;
+						}
 						Log($"Ошибка при обновлении статуса в Navisworks: {ex.Message}");
 						throw;
 					}
