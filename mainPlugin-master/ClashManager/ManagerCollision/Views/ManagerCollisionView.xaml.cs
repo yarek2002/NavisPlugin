@@ -3754,9 +3754,19 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
                         Log($"Статус обновлен на: {newStatus}");
                     }
                     
+                    // Временно сбрасываем флаги скролла для обновления UI
+                    bool wasUserScrolling = _isUserScrolling;
+                    bool wasSuppressUIUpdates = _suppressUIUpdates;
+                    _isUserScrolling = false;
+                    _suppressUIUpdates = false;
+                    
                     // Обновляем UI для синхронизации с Clash Detective
                     RefreshCollisionsList();
                     Log("UI обновлен для всех выбранных элементов");
+                    
+                    // Восстанавливаем флаги скролла
+                    _isUserScrolling = wasUserScrolling;
+                    _suppressUIUpdates = wasSuppressUIUpdates;
                 }
                 catch (Exception ex)
                 {
@@ -3784,7 +3794,17 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
                         item.Status = newStatus;
                         Log($"Статус в модели установлен: {item.Status}");
 
+                        // Временно сбрасываем флаги скролла для обновления UI
+                        bool wasUserScrolling = _isUserScrolling;
+                        bool wasSuppressUIUpdates = _suppressUIUpdates;
+                        _isUserScrolling = false;
+                        _suppressUIUpdates = false;
+                        
                         RefreshCollisionsList();
+                        
+                        // Восстанавливаем флаги скролла
+                        _isUserScrolling = wasUserScrolling;
+                        _suppressUIUpdates = wasSuppressUIUpdates;
                     }
                     catch (Exception ex)
                     {
