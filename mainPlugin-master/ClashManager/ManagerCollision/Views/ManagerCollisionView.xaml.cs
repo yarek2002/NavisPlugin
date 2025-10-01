@@ -2820,14 +2820,24 @@ namespace ClashManager.ManagerCollision.Views
         {
             try
             {
+                Log($"AddClashToMergedList called: clashGuid={clashGuid}, testGuid={testGuid}");
+                
                 // Находим тест по GUID
                 var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
                 var test = allTests.FirstOrDefault(t => t.Guid == testGuid);
-                if (test == null) return;
+                if (test == null) 
+                {
+                    Log($"Test not found for GUID: {testGuid}");
+                    return;
+                }
+                
+                Log($"Found test: {test.DisplayName}");
 
                 // Ищем коллизию в тесте
                 var clash = FindResultByGuid(test, clashGuid);
                 var group = FindGroupByGuid(test, clashGuid);
+                
+                Log($"Found clash: {clash != null}, group: {group != null}");
                 
                 if (clash != null || group != null)
                 {
@@ -2851,13 +2861,19 @@ namespace ClashManager.ManagerCollision.Views
                     };
 
                     // Добавляем в текущий список коллизий
-                    var currentItems = CollisionsList.ItemsSource as System.Collections.Generic.List<CollisionListItem>;
+                    var currentItems = CollisionsList.ItemsSource as System.Collections.Generic.List<object>;
                     if (currentItems != null)
                     {
                         currentItems.Add(collisionItem);
                         CollisionsList.ItemsSource = null;
                         CollisionsList.ItemsSource = currentItems;
                         Log($"Added clash {itemName} to merged list from test {test.DisplayName}");
+                    }
+                    else
+                    {
+                        // Если список пустой или имеет другой тип, пересоздаем объединенный список
+                        Log("Rebuilding merged list to include new clash");
+                        TestsList_SelectionChanged(null, null);
                     }
                 }
             }
@@ -3521,7 +3537,7 @@ namespace ClashManager.ManagerCollision.Views
                         if (AreMultipleTestsChecked())
                         {
                             // При множественном выборе тестов добавляем коллизию в объединенный список
-                            Log("Item not found in merged list; adding to merged list");
+                            Log($"Item not found in merged list; adding to merged list. Current items count: {CollisionsList.Items?.Count ?? 0}");
                             AddClashToMergedList(selectedGuid, testGuid.Value);
                             
                             // Ищем элемент в обновленном списке
