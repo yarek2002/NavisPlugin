@@ -3371,7 +3371,7 @@ namespace ClashManager.ManagerCollision.Views
             try
             {
                 // Проверяем, не синхронизируем ли мы уже выбор из плагина
-                if (_isSyncingFromPlugin || _isUserScrolling || AreMultipleTestsChecked()) return;
+                if (_isSyncingFromPlugin || _isUserScrolling) return;
 
                 Guid currentClashGuid = GetCurrentClashDetectiveSelection();
 
