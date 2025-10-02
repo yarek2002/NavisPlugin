@@ -611,17 +611,27 @@ namespace ClashManager.ManagerCollision.Views
 		private void SearchButton_Click(object sender, RoutedEventArgs e) => ApplySearch();
 		private void ResetButton_Click(object sender, RoutedEventArgs e)
 		{
-			SetSearchText(string.Empty);
-			TestsList_SelectionChanged(null, null);
+			try
+			{
+				SetSearchText(string.Empty);
+				TestsList_SelectionChanged(null, null);
+			}
+			catch (Exception ex) { Log($"Error in ResetButton_Click: {ex.Message}"); }
 		}
-		private void SearchBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+	private void SearchBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+	{
+		try
 		{
 			if (e.Key == System.Windows.Input.Key.Enter) ApplySearch();
 		}
+		catch (Exception ex) { Log($"Error in SearchBox_KeyDown: {ex.Message}"); }
+	}
 
 
 
-		private void ApplySearch()
+	private void ApplySearch()
+	{
+		try
 		{
 			string query = (GetSearchText() ?? string.Empty).Trim();
 			if (string.IsNullOrEmpty(query))
@@ -633,6 +643,8 @@ namespace ClashManager.ManagerCollision.Views
 			// Всегда используем фильтрацию для показа всех найденных элементов
 			ApplySearchFilter(query);
 		}
+		catch (Exception ex) { Log($"Error in ApplySearch: {ex.Message}"); }
+	}
 
 		private void ApplySearchFilter(string query)
 		{
@@ -729,6 +741,8 @@ namespace ClashManager.ManagerCollision.Views
 				SubscribeToCollisionItemsPropertyChanged(sortedItems);
 				ApplySorting();
 				UpdateCollisionCounters();
+				
+				Log($"ApplySearchFilter: applied {sortedItems.Count} items for query: {query}");
 			}
 			catch (Exception ex)
 			{
@@ -1132,15 +1146,15 @@ namespace ClashManager.ManagerCollision.Views
 			return null;
 		}
 
-		private void SetSearchText(string text)
+	private void SetSearchText(string text)
+	{
+		try
 		{
-			try
-			{
-				var tb = System.Windows.LogicalTreeHelper.FindLogicalNode(this, "SearchBox") as System.Windows.Controls.TextBox;
-				if (tb != null) tb.Text = text ?? string.Empty;
-			}
-			catch { }
+			var tb = System.Windows.LogicalTreeHelper.FindLogicalNode(this, "SearchBox") as System.Windows.Controls.TextBox;
+			if (tb != null) tb.Text = text ?? string.Empty;
 		}
+		catch (Exception ex) { Log($"Error in SetSearchText: {ex.Message}"); }
+	}
 
 
 
@@ -2557,16 +2571,24 @@ namespace ClashManager.ManagerCollision.Views
 			Log("SearchByGuidRadioButton_Checked: режим поиска 'По GUID' активирован");
 		}
 
-		private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+	private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+	{
+		try
 		{
 			if (_searchTimer == null) return;
 
 			// Reset the timer
 			_searchTimer.Stop();
 			_searchTimer.Start();
+			
+			Log($"SearchBox_TextChanged: timer restarted");
 		}
+		catch (Exception ex) { Log($"Error in SearchBox_TextChanged: {ex.Message}"); }
+	}
 
-		private void SearchTimer_Tick(object sender, EventArgs e)
+	private void SearchTimer_Tick(object sender, EventArgs e)
+	{
+		try
 		{
 			if (_searchTimer == null) return;
 
@@ -2587,7 +2609,12 @@ namespace ClashManager.ManagerCollision.Views
 					ApplySearchFilter(currentQuery);
 				}
 			}
+		
+		Log("Search Timer completed successfully");
 		}
+		catch (Exception ex) { Log($"Error in SearchTimer_Tick: {ex.Message}"); }
+		
+	}
 
 		private void GridViewColumnHeaderClicked(object sender, System.Windows.Input.MouseButtonEventArgs e)
 		{

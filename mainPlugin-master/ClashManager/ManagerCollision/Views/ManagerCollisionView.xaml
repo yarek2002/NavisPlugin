@@ -7,42 +7,7 @@
 		mc:Ignorable="d"
 		Title="Менеджер коллизий" Height="600" Width="900" WindowStartupLocation="CenterOwner">
     
-    <!-- Стили для ComboBox статусов -->
-    <Window.Resources>
-        <!-- DataTemplate для элементов ComboBox -->
-        <DataTemplate x:Key="StatusItemTemplate">
-            <TextBlock Text="{Binding}" 
-                       Foreground="Black"
-                       Padding="2">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding}" Value="Новый">
-                                <Setter Property="Background" Value="#FFFFE6E6"/>
-                                <Setter Property="Foreground" Value="Black"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding}" Value="Активный">
-                                <Setter Property="Background" Value="#FFFFF0E6"/>
-                                <Setter Property="Foreground" Value="Black"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding}" Value="Проанализирован">
-                                <Setter Property="Background" Value="#FFE6F0FF"/>
-                                <Setter Property="Foreground" Value="Black"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding}" Value="Утвержден">
-                                <Setter Property="Background" Value="#FFE6FFE6"/>
-                                <Setter Property="Foreground" Value="Black"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding}" Value="Исправлен">
-                                <Setter Property="Background" Value="#FFFFFFE6"/>
-                                <Setter Property="Foreground" Value="Black"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
-        </DataTemplate>
-    </Window.Resources>
+   
     
     <Grid>
         <Grid.ColumnDefinitions>
