@@ -128,8 +128,7 @@
                                                     SelectedItem="{Binding Status}"
                                                     SelectionChanged="StatusComboBox_SelectionChanged"
                                                     Loaded="StatusComboBox_Loaded"
-                                                    Tag="{Binding}"
-                                                    ItemTemplate="{StaticResource StatusItemTemplate}"/>
+                                                    Tag="{Binding}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
