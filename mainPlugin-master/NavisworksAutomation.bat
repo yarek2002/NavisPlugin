@@ -1,6 +1,5 @@
 @echo off
 REM Скрипт автоматизации выгрузки отчетов из Navisworks
-REM Автор: AI Assistant
 REM Дата: %DATE% %TIME%
 
 setlocal enabledelayedexpansion
