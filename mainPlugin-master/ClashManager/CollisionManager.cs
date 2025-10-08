@@ -27,6 +27,7 @@ namespace ClashManager
     [Command("AutoNaming", LargeIcon = "IMG/7_32.png", ToolTip = "Авто-наименование групп коллизий")]
     [Command("ZoneAssignment", LargeIcon = "IMG/6_32.png", ToolTip = "Назначение зон коллизиям")]
     [Command("ZoneGrouping", LargeIcon = "IMG/4_32.png", ToolTip = "Авто-группировка по зонам")]
+    [Command("ReportAutomation", LargeIcon = "IMG/7_32.png", ToolTip = "Автоматизация выгрузки отчетов")]
 
 
     public class CollisionGrouperCommandHandler : CommandHandlerPlugin
@@ -67,6 +68,9 @@ namespace ClashManager
                         break;
                     case "ZoneGrouping":
                         command = (IExternalCommand)new ZoneGroupingCmd();
+                        break;
+                    case "ReportAutomation":
+                        command = (IExternalCommand)new ReportAutomationCmd();
                         break;
                 }
                 command.Execute();

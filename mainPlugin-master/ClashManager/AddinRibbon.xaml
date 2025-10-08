@@ -80,6 +80,13 @@
 								  Text="Авто-группировка&#x0A;по зонам"
 								  Orientation="Vertical"
 								  />
+				<local:NWRibbonButton x:Uid="Button_10" Id="ReportAutomation"
+								  Size="Large"
+								  KeyTip="B10"
+								  ShowText="True"
+								  Text="Автоматизация&#x0A;отчетов"
+								  Orientation="Vertical"
+								  />
 
 
 

@@ -177,6 +177,9 @@
     <Compile Include="ZoneGrouping\ZoneGrouping.cs" />
     <Compile Include="ZoneGrouping\CollisionZoneGrouping.cs" />
     <Compile Include="ZoneHelper.cs" />
+    <Compile Include="Automation\ReportAutomation.cs" />
+    <Compile Include="Automation\AutomationSettings.cs" />
+    <Compile Include="Externals\ReportAutomationCmd.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="AddinRibbon.xaml">
