@@ -2720,10 +2720,64 @@ namespace ClashManager.ManagerCollision.Views
 		{
 			try
 			{
-				var items = CollisionsList?.ItemsSource;
-				if (items == null)
+				// Получаем все тесты из документа (не только отображаемые)
+				var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList();
+				if (allTests == null || allTests.Count == 0)
 				{
-					MessageBox.Show("Список пуст — нечего экспортировать.");
+					MessageBox.Show("Нет тестов коллизий для экспорта.");
+					return;
+				}
+
+				// Собираем все коллизии из всех тестов
+				var allCollisionItems = new System.Collections.Generic.List<CollisionListItem>();
+
+				foreach (var test in allTests)
+				{
+					// Добавляем группы с их коллизиями (все уровни)
+					foreach (var tpl in EnumerateAllGroupsWithLevel(test))
+					{
+						var group = tpl.Group;
+						var groupItem = new CollisionListItem
+						{
+							Name = group.DisplayName ?? string.Empty,
+							Status = ToRuStatus(group.Status),
+							AssignedTo = (group.AssignedTo ?? string.Empty).ToString(),
+							Guid = group.Guid,
+							IsGroup = true,
+							Item = group,
+							TestName = test.DisplayName ?? string.Empty,
+							GroupClashCount = GetAllResultsFromGroup(group).Count(),
+							Level = GetCachedLevelFromGroup(group),
+							GridIntersection = GetCachedGridFromGroup(group),
+							TestGuid = test.Guid
+						};
+						allCollisionItems.Add(groupItem);
+					}
+
+					// Добавляем одиночные коллизии (не в группах)
+					foreach (var result in test.Children.OfType<ClashResult>())
+					{
+						var resultItem = new CollisionListItem
+						{
+							Name = result.DisplayName ?? string.Empty,
+							Status = ToRuStatus(result.Status),
+							AssignedTo = (result.AssignedTo ?? string.Empty).ToString(),
+							Guid = result.Guid,
+							IsGroup = false,
+							Item = result,
+							TestName = test.DisplayName ?? string.Empty,
+							GroupClashCount = 0,
+							Level = GetCachedLevelFromItems(result.CompositeItem1, result.CompositeItem2, result),
+							GridIntersection = GetCachedGridFromResult(result),
+							TestGuid = test.Guid
+						};
+						allCollisionItems.Add(resultItem);
+					}
+				}
+
+				if (allCollisionItems.Count == 0)
+				{
+					MessageBox.Show("Коллизии не найдены — нечего экспортировать.");
 					return;
 				}
 
@@ -2731,7 +2785,7 @@ namespace ClashManager.ManagerCollision.Views
 				var sfd = new Microsoft.Win32.SaveFileDialog
 				{
 					Filter = "CSV (*.csv)|*.csv",
-					FileName = $"Collisions_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+					FileName = $"AllCollisions_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
 					OverwritePrompt = true
 				};
 				if (sfd.ShowDialog() != true) return;
@@ -2749,24 +2803,21 @@ namespace ClashManager.ManagerCollision.Views
 						"Название теста",
 						"Кол-во коллизий в группе");
 
-					foreach (var obj in items)
+					foreach (var c in allCollisionItems)
 					{
-						if (obj is CollisionListItem c)
-						{
-							WriteCsvRow(writer,
-								c.Name,
-								c.Status,
-								c.AssignedTo,
-								c.Guid.ToString(),
-								c.Level,
-								c.GridIntersection,
-								c.TestName,
-								c.GroupClashCount.ToString());
-						}
+						WriteCsvRow(writer,
+							c.Name,
+							c.Status,
+							c.AssignedTo,
+							c.Guid.ToString(),
+							c.Level,
+							c.GridIntersection,
+							c.TestName,
+							c.GroupClashCount.ToString());
 					}
 				}
 
-				MessageBox.Show("Экспорт завершен.");
+				MessageBox.Show($"Экспорт завершен. Экспортировано {allCollisionItems.Count} коллизий из {allTests.Count} тестов.");
 			}
 			catch (Exception ex)
 			{
