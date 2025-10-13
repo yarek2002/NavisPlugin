@@ -187,6 +187,16 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn Width="120">
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="Кол-во коллизий в группе" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="GroupClashCount" />
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding GroupClashCount}" ContextMenu="{StaticResource CopyContextMenu}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                         </GridView>
                     </ListView.View>
                 </ListView>

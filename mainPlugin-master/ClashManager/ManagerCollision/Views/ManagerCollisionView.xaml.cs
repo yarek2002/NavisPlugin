@@ -109,6 +109,7 @@ namespace ClashManager.ManagerCollision.Views
 			public string GridIntersection { get; set; }
 			public string TestName { get; set; }
 			public object Item { get; set; }
+			public int GroupClashCount { get; set; }
 
 			public event PropertyChangedEventHandler PropertyChanged;
 
@@ -510,7 +511,8 @@ namespace ClashManager.ManagerCollision.Views
 							Level = GetCachedLevelFromGroup(x.Group),
 							GridIntersection = GetCachedGridFromGroup(x.Group),
 							TestName = t.DisplayName ?? string.Empty,
-							Item = x.Group
+							Item = x.Group,
+							GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
 						});
 					var ungroupedResultRowsMerged = t.Children
 						.OfType<ClashResult>()
@@ -526,7 +528,8 @@ namespace ClashManager.ManagerCollision.Views
 							Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
 							GridIntersection = GetCachedGridFromResult(r),
                             TestName = t.DisplayName ?? string.Empty,
-							Item = r
+							Item = r,
+							GroupClashCount = 0
 						});
 					mergedRows.AddRange(groupRowsMerged);
 					mergedRows.AddRange(ungroupedResultRowsMerged);
@@ -559,7 +562,8 @@ namespace ClashManager.ManagerCollision.Views
 					Level = GetCachedLevelFromGroup(x.Group),
 					GridIntersection = GetCachedGridFromGroup(x.Group),
 					TestName = selectedTest.DisplayName ?? string.Empty,
-					Item = x.Group
+					Item = x.Group,
+					GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
 				});
 
 			var ungroupedResultRows = selectedTest.Children
@@ -576,7 +580,8 @@ namespace ClashManager.ManagerCollision.Views
 					Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
 					GridIntersection = GetCachedGridFromResult(r),
                     TestName = selectedTest.DisplayName ?? string.Empty,
-					Item = r
+					Item = r,
+					GroupClashCount = 0
 				});
 
 			var rows = groupRows.Concat(ungroupedResultRows).ToList();
@@ -682,7 +687,8 @@ namespace ClashManager.ManagerCollision.Views
 							Level = GetCachedLevelFromGroup(x.Group),
 							GridIntersection = GetCachedGridFromGroup(x.Group),
 							TestName = test.DisplayName ?? string.Empty,
-							Item = x.Group
+							Item = x.Group,
+							GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
 						});
 
 					// Добавляем отдельные результаты (оптимизированно)
@@ -700,7 +706,8 @@ namespace ClashManager.ManagerCollision.Views
 							Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
 							GridIntersection = GetCachedGridFromResult(r),
 							TestName = test.DisplayName ?? string.Empty,
-							Item = r
+							Item = r,
+							GroupClashCount = 0
 						});
 
 					allItems.AddRange(groupRows);

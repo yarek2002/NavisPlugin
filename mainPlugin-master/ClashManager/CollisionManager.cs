@@ -25,9 +25,6 @@ namespace ClashManager
     [Command("MagicWand", LargeIcon = "IMG/4_32.png", ToolTip = "Автоматическая группировка и кластеризация")]
     [Command("ManagerCollision", LargeIcon = "IMG/6_32.png", ToolTip = "Менеджер")]
     [Command("AutoNaming", LargeIcon = "IMG/7_32.png", ToolTip = "Авто-наименование групп коллизий")]
-    [Command("ZoneAssignment", LargeIcon = "IMG/6_32.png", ToolTip = "Назначение зон коллизиям")]
-    [Command("ZoneGrouping", LargeIcon = "IMG/4_32.png", ToolTip = "Авто-группировка по зонам")]
-    [Command("ReportAutomation", LargeIcon = "IMG/7_32.png", ToolTip = "Автоматизация выгрузки отчетов")]
 
 
     public class CollisionGrouperCommandHandler : CommandHandlerPlugin
