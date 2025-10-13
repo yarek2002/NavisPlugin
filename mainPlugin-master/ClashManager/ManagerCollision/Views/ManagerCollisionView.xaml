@@ -137,16 +137,6 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Width="220">
-                                <GridViewColumn.Header>
-                                    <TextBlock Text="GUID" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="Guid" />
-                                </GridViewColumn.Header>
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Guid}" ContextMenu="{StaticResource CopyContextMenu}" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
                             <GridViewColumn Width="100">
                                 <GridViewColumn.Header>
                                     <TextBlock Text="Уровень" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="Level" />
@@ -184,6 +174,16 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding GroupClashCount}" ContextMenu="{StaticResource CopyContextMenu}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                             <GridViewColumn Width="220">
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="GUID" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="Guid" />
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Guid}" ContextMenu="{StaticResource CopyContextMenu}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
