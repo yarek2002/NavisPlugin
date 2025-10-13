@@ -93,6 +93,7 @@
 
                     <!-- Поле поиска и кнопки -->
                     <DockPanel LastChildFill="True">
+                        <Button x:Name="ExportCsvButton" Content="Экспорт CSV" Width="110" DockPanel.Dock="Right" Click="ExportCsvButton_Click" />
                         <TextBox Name="SearchBox" DockPanel.Dock="Left" Width="260" Margin="0,0,6,0" KeyDown="SearchBox_KeyDown" TextChanged="SearchBox_TextChanged" />
                         <Button x:Name="SearchButton" Content="Найти" Width="80" Margin="0,0,6,0" Click="SearchButton_Click" />
                         <Button x:Name="RefreshButton" Content="🔄"  Width="30" Margin="0,0,6,0" Click="RefreshButton_Click"/>

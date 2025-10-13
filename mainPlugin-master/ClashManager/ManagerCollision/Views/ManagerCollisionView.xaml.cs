@@ -2716,6 +2716,82 @@ namespace ClashManager.ManagerCollision.Views
 			TestsList_SelectionChanged(null, null);
 		}
 
+		private void ExportCsvButton_Click(object sender, RoutedEventArgs e)
+		{
+			try
+			{
+				var items = CollisionsList?.ItemsSource;
+				if (items == null)
+				{
+					MessageBox.Show("Список пуст — нечего экспортировать.");
+					return;
+				}
+
+				// Выбираем путь сохранения
+				var sfd = new Microsoft.Win32.SaveFileDialog
+				{
+					Filter = "CSV (*.csv)|*.csv",
+					FileName = $"Collisions_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+					OverwritePrompt = true
+				};
+				if (sfd.ShowDialog() != true) return;
+
+				using (var writer = new StreamWriter(sfd.FileName, false, System.Text.Encoding.UTF8))
+				{
+					// Заголовки соответствуют видимым столбцам
+					WriteCsvRow(writer,
+						"Имя",
+						"Статус",
+						"Назначение",
+						"GUID",
+						"Уровень",
+						"Пересечения сетки",
+						"Название теста",
+						"Кол-во коллизий в группе");
+
+					foreach (var obj in items)
+					{
+						if (obj is CollisionListItem c)
+						{
+							WriteCsvRow(writer,
+								c.Name,
+								c.Status,
+								c.AssignedTo,
+								c.Guid.ToString(),
+								c.Level,
+								c.GridIntersection,
+								c.TestName,
+								c.GroupClashCount.ToString());
+						}
+					}
+				}
+
+				MessageBox.Show("Экспорт завершен.");
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"Ошибка экспорта: {ex.Message}");
+			}
+		}
+
+		private static void WriteCsvRow(StreamWriter writer, params string[] columns)
+		{
+			// Экранируем значения по CSV-правилам
+			string Escape(string s)
+			{
+				if (s == null) return string.Empty;
+				s = s.Replace("\r", " ").Replace("\n", " ");
+				bool mustQuote = s.Contains(';') || s.Contains('"') || s.Contains(',') || s.Contains('\t');
+				// Используем ; как разделитель, чтобы не конфликтовать с локальными Excel
+				string value = s.Replace("\"", "\"\"");
+				return mustQuote ? $"\"{value}\"" : value;
+			}
+
+			// Разделитель — ; (точка с запятой)
+			var line = string.Join(";", columns.Select(Escape));
+			writer.WriteLine(line);
+		}
+
 		/// <summary>
 		/// Обновляет список коллизий для отображения изменений
 		/// </summary>
