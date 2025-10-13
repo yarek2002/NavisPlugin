@@ -2841,15 +2841,6 @@ namespace ClashManager.ManagerCollision.Views
                 Log($"Error copying text to clipboard: {ex.Message}");
             }
         }
-    }
-}
-    }
-}
-			catch (Exception ex)
-			{
-				System.Diagnostics.Debug.WriteLine($"Ошибка при обработке закрытия документа: {ex.Message}");
-			}
-		}
 
 		/// <summary>
 		/// Обработчик изменения тестов коллизий
