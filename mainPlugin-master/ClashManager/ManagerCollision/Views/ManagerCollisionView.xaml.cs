@@ -2785,7 +2785,7 @@ namespace ClashManager.ManagerCollision.Views
 				var sfd = new Microsoft.Win32.SaveFileDialog
 				{
 					Filter = "CSV (*.csv)|*.csv",
-					FileName = $"AllCollisions_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+					FileName = $"Отчет_Коллизии_{DateTime.Now:yyyyMMdd}.csv",
 					OverwritePrompt = true
 				};
 				if (sfd.ShowDialog() != true) return;
