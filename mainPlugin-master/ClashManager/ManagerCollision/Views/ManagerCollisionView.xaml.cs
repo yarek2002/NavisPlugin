@@ -2792,16 +2792,59 @@ namespace ClashManager.ManagerCollision.Views
 			}
 		}
 
-		/// <summary>
-		/// Обработчик закрытия файла документа
-		/// </summary>
-		private void OnDocumentClosing(object sender, EventArgs e)
-		{
-			try
-			{
-				// Очищаем все кэши и состояние при закрытии документа
-				ClearAllCachesAndState();
-			}
+        /// <summary>
+        /// Handle close of ManagerCollisionView window
+        /// </summary>
+        protected override void OnClosed(EventArgs e)
+        {
+            StopClashDetectiveMonitoring();
+            base.OnClosed(e);
+        }
+
+        /// <summary>
+        /// Handle copy menu item click for text controls
+        /// </summary>
+        private void CopyTextMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var menuItem = sender as System.Windows.Controls.MenuItem;
+                if (menuItem == null) return;
+
+                var contextMenu = menuItem.Parent as ContextMenu;
+                if (contextMenu == null) return;
+
+                // Get the text from the control that opened the context menu
+                string textToCopy = null;
+
+                if (contextMenu.PlacementTarget is System.Windows.Controls.TextBlock textBlock)
+                {
+                    textToCopy = textBlock.Text;
+                }
+                else if (contextMenu.PlacementTarget is System.Windows.Controls.ComboBox comboBox)
+                {
+                    textToCopy = comboBox.SelectedItem?.ToString();
+                }
+
+                if (!string.IsNullOrEmpty(textToCopy))
+                {
+                    System.Windows.Clipboard.SetText(textToCopy);
+                    Log($"Successfully copied text to clipboard: {textToCopy}");
+                }
+                else
+                {
+                    Log("No text to copy");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Error copying text to clipboard: {ex.Message}");
+            }
+        }
+    }
+}
+    }
+}
 			catch (Exception ex)
 			{
 				System.Diagnostics.Debug.WriteLine($"Ошибка при обработке закрытия документа: {ex.Message}");
