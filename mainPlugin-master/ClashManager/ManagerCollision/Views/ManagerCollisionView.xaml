@@ -137,16 +137,6 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Width="160">
-                                <GridViewColumn.Header>
-                                    <TextBlock Text="Назначение" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="AssignedTo" />
-                                </GridViewColumn.Header>
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding AssignedTo}" ContextMenu="{StaticResource CopyContextMenu}" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
                             <GridViewColumn Width="220">
                                 <GridViewColumn.Header>
                                     <TextBlock Text="GUID" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="Guid" />
@@ -194,6 +184,16 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding GroupClashCount}" ContextMenu="{StaticResource CopyContextMenu}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="160">
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="Назначение" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="AssignedTo" />
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding AssignedTo}" ContextMenu="{StaticResource CopyContextMenu}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
