@@ -137,7 +137,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Width="100">
+                            <GridViewColumn Width="80">
                                 <GridViewColumn.Header>
                                     <TextBlock Text="Уровень" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="Level" />
                                 </GridViewColumn.Header>
@@ -167,7 +167,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Width="120">
+                            <GridViewColumn Width="140">
                                 <GridViewColumn.Header>
                                     <TextBlock Text="Кол-во коллизий в группе" MouseLeftButtonDown="GridViewColumnHeaderClicked" Tag="GroupClashCount" />
                                 </GridViewColumn.Header>
