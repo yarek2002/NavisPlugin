@@ -4102,13 +4102,5 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
 
 
 
-        /// <summary>
-        /// Обработчик закрытия окна - останавливаем мониторинг
-        /// </summary>
-        protected override void OnClosed(EventArgs e)
-        {
-            StopClashDetectiveMonitoring();
-            base.OnClosed(e);
-        }
-	}
+    }
 }
