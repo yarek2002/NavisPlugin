@@ -203,38 +203,23 @@ namespace CollisionGrouperPlugin
         // Оптимизированная проверка, содержит ли набор элемент
         private bool ContainsItem(SelectionSet selectionSet, ModelItem item, Document doc)
         {
-			// Строгая проверка соответствия модели набора и элемента:
-			// определяем, для каких моделей текущий Search вообще даёт результаты,
-			// прогоняя его по корню каждой модели документа. Затем требуем, чтобы
-			// модель элемента входила в это множество.
+			// Быстрый префильтр по модели: запускаем поиск набора только в корне модели элемента
+			// Если совпадений нет — набор не относится к этой модели
 			if (selectionSet.Search != null)
 			{
-				string itemModelName = GetModelFileNameWithoutExtension(item);
-				bool modelMatches = false;
 				Search modelProbeSearch = new Search();
 				modelProbeSearch.SearchConditions.CopyFrom(selectionSet.Search.SearchConditions);
 				modelProbeSearch.PruneBelowMatch = selectionSet.Search.PruneBelowMatch;
-
-				foreach (Model model in doc.Models)
+				ModelItem itemModelRoot = GetRootModelItem(item);
+				if (itemModelRoot != null)
 				{
-					ModelItem root = model.RootItem;
-					ModelItemCollection roots = new ModelItemCollection { root };
+					ModelItemCollection roots = new ModelItemCollection { itemModelRoot };
 					modelProbeSearch.Selection.CopyFrom(roots);
 					ModelItemCollection probeMatches = modelProbeSearch.FindAll(doc, true);
-					if (probeMatches != null && probeMatches.Count > 0)
+					if (probeMatches == null || probeMatches.Count == 0)
 					{
-						string modelName = Path.GetFileNameWithoutExtension(model.FileName) ?? string.Empty;
-						if (!string.IsNullOrEmpty(modelName) && string.Equals(modelName, itemModelName, StringComparison.OrdinalIgnoreCase))
-						{
-							modelMatches = true;
-							break;
-						}
+						return false;
 					}
-				}
-
-				if (!modelMatches)
-				{
-					return false;
 				}
 			}
 
