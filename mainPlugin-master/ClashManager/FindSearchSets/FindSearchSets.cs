@@ -6,6 +6,7 @@ using Autodesk.Navisworks.Api;
 using System.Xml.Linq; // Для парсинга XML
 using Microsoft.Win32; // Для OpenFileDialog
 using System.IO;
+using System.IO;
 
 namespace CollisionGrouperPlugin
 {
@@ -202,27 +203,40 @@ namespace CollisionGrouperPlugin
         // Оптимизированная проверка, содержит ли набор элемент
         private bool ContainsItem(SelectionSet selectionSet, ModelItem item, Document doc)
         {
-			// Строгая проверка соответствия модели: если у набора задана Selection (корни поиска),
-			// требуем совпадение модели элемента хотя бы с одним корнем поиска
-			if (selectionSet.Search != null && selectionSet.Search.Selection != null && selectionSet.Search.Selection.Count > 0)
-            {
-                string itemModelName = GetModelFileNameWithoutExtension(item);
-                bool modelMatches = false;
-				foreach (ModelItem rootCandidate in selectionSet.Search.Selection)
-                {
-					string locationModelName = GetModelFileNameWithoutExtension(rootCandidate);
-					if (!string.IsNullOrEmpty(locationModelName) && string.Equals(locationModelName, itemModelName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        modelMatches = true;
-                        break;
-                    }
-                }
+			// Строгая проверка соответствия модели набора и элемента:
+			// определяем, для каких моделей текущий Search вообще даёт результаты,
+			// прогоняя его по корню каждой модели документа. Затем требуем, чтобы
+			// модель элемента входила в это множество.
+			if (selectionSet.Search != null)
+			{
+				string itemModelName = GetModelFileNameWithoutExtension(item);
+				bool modelMatches = false;
+				Search modelProbeSearch = new Search();
+				modelProbeSearch.SearchConditions.CopyFrom(selectionSet.Search.SearchConditions);
+				modelProbeSearch.PruneBelowMatch = selectionSet.Search.PruneBelowMatch;
 
-                if (!modelMatches)
-                {
-                    return false;
-                }
-            }
+				foreach (Model model in doc.Models)
+				{
+					ModelItem root = model.RootItem;
+					ModelItemCollection roots = new ModelItemCollection { root };
+					modelProbeSearch.Selection.CopyFrom(roots);
+					ModelItemCollection probeMatches = modelProbeSearch.FindAll(doc, true);
+					if (probeMatches != null && probeMatches.Count > 0)
+					{
+						string modelName = Path.GetFileNameWithoutExtension(model.FileName) ?? string.Empty;
+						if (!string.IsNullOrEmpty(modelName) && string.Equals(modelName, itemModelName, StringComparison.OrdinalIgnoreCase))
+						{
+							modelMatches = true;
+							break;
+						}
+					}
+				}
+
+				if (!modelMatches)
+				{
+					return false;
+				}
+			}
 
             if (selectionSet.HasExplicitModelItems)
             {
