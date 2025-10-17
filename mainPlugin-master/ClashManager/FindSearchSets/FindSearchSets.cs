@@ -202,16 +202,16 @@ namespace CollisionGrouperPlugin
         // Оптимизированная проверка, содержит ли набор элемент
         private bool ContainsItem(SelectionSet selectionSet, ModelItem item, Document doc)
         {
-            // Строгая проверка соответствия модели: если у набора заданы Locations,
-            // требуем совпадение модели элемента с одной из локаций набора
-            if (selectionSet.Search != null && selectionSet.Search.Locations != null && selectionSet.Search.Locations.Count > 0)
+			// Строгая проверка соответствия модели: если у набора задана Selection (корни поиска),
+			// требуем совпадение модели элемента хотя бы с одним корнем поиска
+			if (selectionSet.Search != null && selectionSet.Search.Selection != null && selectionSet.Search.Selection.Count > 0)
             {
                 string itemModelName = GetModelFileNameWithoutExtension(item);
                 bool modelMatches = false;
-                foreach (ModelItem location in selectionSet.Search.Locations)
+				foreach (ModelItem rootCandidate in selectionSet.Search.Selection)
                 {
-                    string locationModelName = GetModelFileNameWithoutExtension(location);
-                    if (!string.IsNullOrEmpty(locationModelName) && string.Equals(locationModelName, itemModelName, StringComparison.OrdinalIgnoreCase))
+					string locationModelName = GetModelFileNameWithoutExtension(rootCandidate);
+					if (!string.IsNullOrEmpty(locationModelName) && string.Equals(locationModelName, itemModelName, StringComparison.OrdinalIgnoreCase))
                     {
                         modelMatches = true;
                         break;
