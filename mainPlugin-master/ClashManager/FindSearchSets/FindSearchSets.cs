@@ -5,6 +5,7 @@ using System.Windows;
 using Autodesk.Navisworks.Api;
 using System.Xml.Linq; // Для парсинга XML
 using Microsoft.Win32; // Для OpenFileDialog
+using System.IO;
 
 namespace CollisionGrouperPlugin
 {
@@ -201,6 +202,28 @@ namespace CollisionGrouperPlugin
         // Оптимизированная проверка, содержит ли набор элемент
         private bool ContainsItem(SelectionSet selectionSet, ModelItem item, Document doc)
         {
+            // Строгая проверка соответствия модели: если у набора заданы Locations,
+            // требуем совпадение модели элемента с одной из локаций набора
+            if (selectionSet.Search != null && selectionSet.Search.Locations != null && selectionSet.Search.Locations.Count > 0)
+            {
+                string itemModelName = GetModelFileNameWithoutExtension(item);
+                bool modelMatches = false;
+                foreach (ModelItem location in selectionSet.Search.Locations)
+                {
+                    string locationModelName = GetModelFileNameWithoutExtension(location);
+                    if (!string.IsNullOrEmpty(locationModelName) && string.Equals(locationModelName, itemModelName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        modelMatches = true;
+                        break;
+                    }
+                }
+
+                if (!modelMatches)
+                {
+                    return false;
+                }
+            }
+
             if (selectionSet.HasExplicitModelItems)
             {
                 // Для explicit наборов: быстрая проверка
@@ -226,6 +249,30 @@ namespace CollisionGrouperPlugin
                 // Если элемент (или его descendants) matches, возвращаем true
                 return matches.Contains(item);
             }
+        }
+
+        // Вспомогательный метод: получить корневой элемент модели (верхний узел файла модели)
+        private ModelItem GetRootModelItem(ModelItem modelItem)
+        {
+            if (modelItem == null) return null;
+            ModelItem current = modelItem;
+            ModelItem root = null;
+            while (current != null)
+            {
+                root = current;
+                current = current.Parent;
+            }
+            return root;
+        }
+
+        // Вспомогательный метод: получить имя файла модели без расширения
+        private string GetModelFileNameWithoutExtension(ModelItem modelItem)
+        {
+            ModelItem root = GetRootModelItem(modelItem);
+            if (root == null) return string.Empty;
+            string displayName = root.DisplayName ?? string.Empty;
+            string name = Path.GetFileNameWithoutExtension(displayName);
+            return name ?? string.Empty;
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
