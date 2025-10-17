@@ -233,22 +233,24 @@ namespace CollisionGrouperPlugin
 					return false;
 				}
 
-				// Пост-фильтр: проверяем, что поиск набора вообще даёт результаты в корне модели элемента
-				if (selectionSet.Search != null)
+				// Пост-фильтр: учитываем, какие NWC явно выбраны в поисковом наборе (Selection корни)
+				// Если корни заданы, требуем совпадение модели элемента с одной из моделей корней
+				if (selectionSet.Selection != null && selectionSet.Selection.Count > 0)
 				{
-					Search modelProbeSearch = new Search();
-					modelProbeSearch.SearchConditions.CopyFrom(selectionSet.Search.SearchConditions);
-					modelProbeSearch.PruneBelowMatch = selectionSet.Search.PruneBelowMatch;
-					ModelItem itemModelRoot = GetRootModelItem(item);
-					if (itemModelRoot != null)
+					Model itemModel = item.Model;
+					bool modelAllowed = false;
+					foreach (ModelItem root in selectionSet.Selection)
 					{
-						ModelItemCollection modelRoot = new ModelItemCollection { itemModelRoot };
-						modelProbeSearch.Selection.CopyFrom(modelRoot);
-						ModelItemCollection probeMatches = modelProbeSearch.FindAll(doc, true);
-						if (probeMatches == null || probeMatches.Count == 0)
+						Model rootModel = root?.Model;
+						if (rootModel != null && rootModel == itemModel)
 						{
-							return false;
+							modelAllowed = true;
+							break;
 						}
+					}
+					if (!modelAllowed)
+					{
+						return false;
 					}
 				}
 
