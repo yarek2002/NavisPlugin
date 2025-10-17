@@ -201,13 +201,6 @@ namespace CollisionGrouperPlugin
         // Оптимизированная проверка, содержит ли набор элемент
         private bool ContainsItem(SelectionSet selectionSet, ModelItem item, Document doc)
         {
-            // Проверка, что модель набора (NWC) совпадает с моделью объекта
-            ModelPath itemModelPath = ModelPath.Create(item.Model);
-            if (!selectionSet.Search.Locations.Contains(itemModelPath))
-            {
-                return false;
-            }
-
             if (selectionSet.HasExplicitModelItems)
             {
                 // Для explicit наборов: быстрая проверка
