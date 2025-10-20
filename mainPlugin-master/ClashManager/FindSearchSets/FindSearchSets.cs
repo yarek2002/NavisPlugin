@@ -230,25 +230,27 @@ namespace CollisionGrouperPlugin
                 }
 
                 // Пост-фильтр: учитываем явно выбранные модели (корни) в наборе
-                // Если у набора есть выбранные элементы, оставляем набор только если модель элемента совпадает
+                // Требуем, чтобы список выбранных корней был непустым и содержал модель элемента
                 ModelItemCollection selectedRoots = selectionSet.GetSelectedItems();
-                if (selectedRoots != null && selectedRoots.Count > 0)
+                if (selectedRoots == null || selectedRoots.Count == 0)
                 {
-                    Model itemModel = item.Model;
-                    bool modelAllowed = false;
-                    foreach (ModelItem root in selectedRoots)
+                    return false;
+                }
+
+                Model itemModel = item.Model;
+                bool modelAllowed = false;
+                foreach (ModelItem root in selectedRoots)
+                {
+                    Model rootModel = root?.Model;
+                    if (rootModel != null && rootModel == itemModel)
                     {
-                        Model rootModel = root?.Model;
-                        if (rootModel != null && rootModel == itemModel)
-                        {
-                            modelAllowed = true;
-                            break;
-                        }
+                        modelAllowed = true;
+                        break;
                     }
-                    if (!modelAllowed)
-                    {
-                        return false;
-                    }
+                }
+                if (!modelAllowed)
+                {
+                    return false;
                 }
 
                 return true;
