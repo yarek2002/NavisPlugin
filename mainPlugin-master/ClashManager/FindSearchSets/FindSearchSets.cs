@@ -223,8 +223,35 @@ namespace CollisionGrouperPlugin
                 // Выполняем поиск (recursive=true для проверки descendants, если нужно)
                 ModelItemCollection matches = tempSearch.FindAll(doc, true);
 
-                // Если элемент (или его descendants) matches, возвращаем true
-                return matches.Contains(item);
+                // Если элемент (или его descendants) matches, применяем пост-фильтр по выбранным моделям набора
+                if (!matches.Contains(item))
+                {
+                    return false;
+                }
+
+                // Пост-фильтр: учитываем явно выбранные модели (корни) в наборе
+                // Если у набора есть выбранные элементы, оставляем набор только если модель элемента совпадает
+                ModelItemCollection selectedRoots = selectionSet.GetSelectedItems();
+                if (selectedRoots != null && selectedRoots.Count > 0)
+                {
+                    Model itemModel = item.Model;
+                    bool modelAllowed = false;
+                    foreach (ModelItem root in selectedRoots)
+                    {
+                        Model rootModel = root?.Model;
+                        if (rootModel != null && rootModel == itemModel)
+                        {
+                            modelAllowed = true;
+                            break;
+                        }
+                    }
+                    if (!modelAllowed)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
             }
         }
 
