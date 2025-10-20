@@ -233,27 +233,29 @@ namespace CollisionGrouperPlugin
 					return false;
 				}
 
-				// Пост-фильтр: учитываем, какие NWC явно выбраны в поисковом наборе (Selection корни)
-				// Если корни заданы, требуем совпадение модели элемента с одной из моделей корней
-				if (selectionSet.Selection != null && selectionSet.Selection.Count > 0)
+				// Пост-фильтр: учитываем, какие NWC явно выбраны в наборе (GetSelectedItems())
+				// Если выбранные элементы заданы, требуем совпадение модели элемента с одной из их моделей
 				{
-					Model itemModel = item.Model;
-					bool modelAllowed = false;
-					foreach (ModelItem root in selectionSet.Selection)
+					ModelItemCollection selectedRoots = selectionSet.GetSelectedItems();
+					if (selectedRoots != null && selectedRoots.Count > 0)
+				{
+						Model itemModel = item.Model;
+						bool modelAllowed = false;
+						foreach (ModelItem root in selectedRoots)
 					{
-						Model rootModel = root?.Model;
-						if (rootModel != null && rootModel == itemModel)
+							Model rootModel = root?.Model;
+							if (rootModel != null && rootModel == itemModel)
 						{
-							modelAllowed = true;
-							break;
+								modelAllowed = true;
+								break;
 						}
 					}
-					if (!modelAllowed)
+						if (!modelAllowed)
 					{
-						return false;
+							return false;
 					}
 				}
-
+				}
 				return true;
             }
         }
