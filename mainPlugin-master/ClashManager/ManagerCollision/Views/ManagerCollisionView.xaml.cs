@@ -133,24 +133,29 @@ namespace ClashManager.ManagerCollision.Views
 			}
 		}
 
-		public ManagerCollisionView()
+	public ManagerCollisionView()
+	{
+		InitializeComponent();
+		// Сброс лога при старте окна
+		try 
+		{ 
+			File.WriteAllText(GetLogPath(), ""); 
+			Log("=== ManagerCollisionView started ===");
+		} 
+		catch (Exception ex) { LogError("Failed to reset log file", ex); }
+		// Включаем клавиатурную интероп-совместимость для модельного окна в Win32-хосте (Navisworks)
+		try { ElementHost.EnableModelessKeyboardInterop(this); } catch (Exception ex) { LogError("Failed to enable modeless keyboard interop", ex); }
+		// Обеспечим корректную активацию окна и ввод с клавиатуры
+		try
 		{
-			InitializeComponent();
-			// Сброс лога при старте окна
-			try { File.WriteAllText(GetLogPath(), ""); } catch { }
-			// Включаем клавиатурную интероп-совместимость для модельного окна в Win32-хосте (Navisworks)
-			try { ElementHost.EnableModelessKeyboardInterop(this); } catch { }
-			// Обеспечим корректную активацию окна и ввод с клавиатуры
-			try
+			// Привязываем Owner к главному окну процесса Navisworks для корректной активации
+			var hwnd = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
+			if (hwnd != IntPtr.Zero)
 			{
-				// Привязываем Owner к главному окну процесса Navisworks для корректной активации
-				var hwnd = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
-				if (hwnd != IntPtr.Zero)
-				{
-					new System.Windows.Interop.WindowInteropHelper(this).Owner = hwnd;
-				}
+				new System.Windows.Interop.WindowInteropHelper(this).Owner = hwnd;
 			}
-			catch { }
+		}
+		catch (Exception ex) { LogError("Failed to set window owner", ex); }
 			this.WindowStyle = WindowStyle.SingleBorderWindow; // Обычный стиль окна
 			this.ShowInTaskbar = false; // Не обязательно, но удобно
 			this.Topmost = true; // Позволяет окну получать фокус поверх Navisworks
@@ -184,9 +189,9 @@ namespace ClashManager.ManagerCollision.Views
                             // Возобновим мониторинг Clash Detective
                             _clashDetectiveMonitorTimer?.Start();
                         }
-                    };
+					};
 				}
-				catch { }
+				catch (Exception ex) { LogError("Failed to initialize window loaded event", ex); }
 			};
             CollisionsList.PreviewMouseWheel += (s, e) =>
             {
@@ -224,13 +229,21 @@ namespace ClashManager.ManagerCollision.Views
 			StartClashDetectiveMonitoring();
 		}
 
-		private void LoadTests()
+	private void LoadTests()
+	{
+		try
 		{
 			var tests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? Enumerable.Empty<ClashTest>().ToList();
 			// Оборачиваем в объекты с IsSelected для чекбоксов
 			var testRows = tests.Select(t => new { Test = t, DisplayName = t.DisplayName, IsSelected = false, Guid = t.Guid }).ToList();
 			TestsList.ItemsSource = testRows;
+			Log($"Loaded {tests.Count} tests");
 		}
+		catch (Exception ex)
+		{
+			LogError("Error in LoadTests", ex);
+		}
+	}
 
 		private sealed class ResultRow
 		{
@@ -308,6 +321,7 @@ namespace ClashManager.ManagerCollision.Views
                         catch (Exception ex)
                         {
                             System.Diagnostics.Debug.WriteLine($"Error getting closest intersection: {ex.Message}");
+                            LogError("Error getting closest intersection", ex);
                             continue;
                         }
 
@@ -346,6 +360,7 @@ namespace ClashManager.ManagerCollision.Views
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error in GetClashGridInfo: {ex.Message}");
+                LogError("Error in GetClashGridInfo", ex);
                 return (NA, NA, NA, NA, null);
             }
         }
@@ -423,7 +438,7 @@ namespace ClashManager.ManagerCollision.Views
                                 {
                                     testGi = level.ClosestIntersection(testPoint);
                                 }
-                                catch { continue; }
+                                catch (Exception ex) { LogError("Error getting test intersection", ex); continue; }
 
                                 if (testGi != null)
                                 {
@@ -451,7 +466,7 @@ namespace ClashManager.ManagerCollision.Views
                         {
                             centerGi = level.ClosestIntersection(clash.Center);
                         }
-                        catch { continue; }
+                        catch (Exception ex) { LogError("Error getting center intersection", ex); continue; }
 
                         if (centerGi != null)
                         {
@@ -621,7 +636,7 @@ namespace ClashManager.ManagerCollision.Views
 				SetSearchText(string.Empty);
 				TestsList_SelectionChanged(null, null);
 			}
-			catch (Exception ex) { Log($"Error in ResetButton_Click: {ex.Message}"); }
+			catch (Exception ex) { LogError("Error in ResetButton_Click", ex); }
 		}
 	private void SearchBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
 	{
@@ -629,7 +644,7 @@ namespace ClashManager.ManagerCollision.Views
 		{
 			if (e.Key == System.Windows.Input.Key.Enter) ApplySearch();
 		}
-		catch (Exception ex) { Log($"Error in SearchBox_KeyDown: {ex.Message}"); }
+		catch (Exception ex) { LogError("Error in SearchBox_KeyDown", ex); }
 	}
 
 
@@ -648,7 +663,7 @@ namespace ClashManager.ManagerCollision.Views
 			// Всегда используем фильтрацию для показа всех найденных элементов
 			ApplySearchFilter(query);
 		}
-		catch (Exception ex) { Log($"Error in ApplySearch: {ex.Message}"); }
+		catch (Exception ex) { LogError("Error in ApplySearch", ex); }
 	}
 
 		private void ApplySearchFilter(string query)
@@ -855,14 +870,14 @@ namespace ClashManager.ManagerCollision.Views
 							OpenFound(test, g.Guid, true);
 							return true;
 						}
-					}
 				}
 			}
-			catch { }
-			return false;
 		}
+		catch (Exception ex) { LogError("Error in OpenFoundByName", ex); }
+		return false;
+	}
 
-		private void OpenFound(ClashTest test, Guid id, bool isGroup)
+	private void OpenFound(ClashTest test, Guid id, bool isGroup)
 		{
 			try
 			{
@@ -922,27 +937,27 @@ namespace ClashManager.ManagerCollision.Views
 					}
 				}
 			}
-			catch { }
-		}
+		catch (Exception ex) { LogError("Error in OpenFound", ex); }
+	}
 
-		private string GetSearchText()
+	private string GetSearchText()
 		{
 			try
 			{
 				var tb = System.Windows.LogicalTreeHelper.FindLogicalNode(this, "SearchBox") as System.Windows.Controls.TextBox;
 				return tb?.Text ?? string.Empty;
 			}
-			catch { return string.Empty; }
+			catch (Exception ex) { LogError("Error in GetSearchText", ex); return string.Empty; }
 		}
 
-		private bool GetCheckBoxState(string name)
+	private bool GetCheckBoxState(string name)
 		{
 			try
 			{
 				var cb = System.Windows.LogicalTreeHelper.FindLogicalNode(this, name) as System.Windows.Controls.CheckBox;
 				return cb?.IsChecked ?? false;
 			}
-			catch { return false; }
+			catch (Exception ex) { LogError($"Error in GetCheckBoxState for {name}", ex); return false; }
 		}
 
 		private System.Collections.Generic.List<object> GetCheckedCollisionRows()
@@ -1130,28 +1145,28 @@ namespace ClashManager.ManagerCollision.Views
 					container = list.ItemContainerGenerator.ContainerFromItem(item) as System.Windows.DependencyObject;
 				}
 				if (container == null) return;
-				var cb = FindFirstCheckbox(container);
-				if (cb != null) cb.IsChecked = isChecked;
-			}
-			catch { }
+			var cb = FindFirstCheckbox(container);
+			if (cb != null) cb.IsChecked = isChecked;
 		}
+		catch (Exception ex) { LogError("Error in SetCheckboxState", ex); }
+	}
 
-		private System.Windows.Controls.CheckBox FindFirstCheckbox(DependencyObject parent)
+	private System.Windows.Controls.CheckBox FindFirstCheckbox(DependencyObject parent)
+	{
+		try
 		{
-			try
+			int count = VisualTreeHelper.GetChildrenCount(parent);
+			for (int i = 0; i < count; i++)
 			{
-				int count = VisualTreeHelper.GetChildrenCount(parent);
-				for (int i = 0; i < count; i++)
-				{
-					var child = VisualTreeHelper.GetChild(parent, i);
-					if (child is System.Windows.Controls.CheckBox c) return c;
-					var deeper = FindFirstCheckbox(child);
-					if (deeper != null) return deeper;
-				}
+				var child = VisualTreeHelper.GetChild(parent, i);
+				if (child is System.Windows.Controls.CheckBox c) return c;
+				var deeper = FindFirstCheckbox(child);
+				if (deeper != null) return deeper;
 			}
-			catch { }
-			return null;
 		}
+		catch (Exception ex) { LogError("Error in FindFirstCheckbox", ex); }
+		return null;
+	}
 
 	private void SetSearchText(string text)
 	{
@@ -1160,7 +1175,7 @@ namespace ClashManager.ManagerCollision.Views
 			var tb = System.Windows.LogicalTreeHelper.FindLogicalNode(this, "SearchBox") as System.Windows.Controls.TextBox;
 			if (tb != null) tb.Text = text ?? string.Empty;
 		}
-		catch (Exception ex) { Log($"Error in SetSearchText: {ex.Message}"); }
+		catch (Exception ex) { LogError("Error in SetSearchText", ex); }
 	}
 
 
@@ -1585,27 +1600,60 @@ namespace ClashManager.ManagerCollision.Views
 					if (tab != null)
 					{
 						var sel = tab.GetCurrentPattern(System.Windows.Automation.SelectionItemPattern.Pattern) as System.Windows.Automation.SelectionItemPattern;
-						try { sel?.Select(); Log($"Activated panel: {n}"); } catch { }
-						break;
-					}
+					try { sel?.Select(); Log($"Activated panel: {n}"); } catch (Exception ex) { LogError($"Failed to activate panel: {n}", ex); }
+					break;
 				}
 			}
-			catch { }
+		}
+		catch (Exception ex) { LogError("Failed to activate panel", ex); }
 		}
 
-		private static string GetLogPath()
-		{
-			try { return Path.Combine(Path.GetTempPath(), "ClashSelection.log"); } catch { return "ClashSelection.log"; }
-		}
-
-		private void Log(string message)
-		{
-			try
+	private static string GetLogPath()
+	{
+		try 
+		{ 
+			string logDir = @"C:\temp";
+			if (!Directory.Exists(logDir))
 			{
-				File.AppendAllText(GetLogPath(), $"[{DateTime.Now:HH:mm:ss.fff}] {message}\r\n");
+				Directory.CreateDirectory(logDir);
 			}
-			catch { }
+			return Path.Combine(logDir, "ClashSelection.log"); 
+		} 
+		catch (Exception ex) 
+		{ 
+			System.Diagnostics.Debug.WriteLine($"Error getting log path: {ex.Message}");
+			return "ClashSelection.log"; 
 		}
+	}
+
+	private void Log(string message)
+	{
+		try
+		{
+			File.AppendAllText(GetLogPath(), $"[{DateTime.Now:HH:mm:ss.fff}] {message}\r\n");
+		}
+		catch (Exception ex)
+		{
+			System.Diagnostics.Debug.WriteLine($"Error writing log: {ex.Message}");
+		}
+	}
+
+	private void LogError(string message, Exception ex = null)
+	{
+		try
+		{
+			string errorMsg = $"[ERROR] {message}";
+			if (ex != null)
+			{
+				errorMsg += $"\r\nException: {ex.GetType().Name}: {ex.Message}\r\nStackTrace: {ex.StackTrace}";
+			}
+			File.AppendAllText(GetLogPath(), $"[{DateTime.Now:HH:mm:ss.fff}] {errorMsg}\r\n");
+		}
+		catch (Exception logEx)
+		{
+			System.Diagnostics.Debug.WriteLine($"Error writing error log: {logEx.Message}");
+		}
+	}
 
 		private bool TryRenameGroupOnce(ClashTest test, Guid groupGuid, string newName)
 		{
@@ -1622,36 +1670,36 @@ namespace ClashManager.ManagerCollision.Views
 				PumpDispatcherOnce();
 				return true;
 			}
-			catch { return false; }
-		}
+		catch (Exception ex) { LogError("Failed to rename group", ex); return false; }
+	}
 
-		private bool TryInvokeMethod(object target, string[] methodNames, object[] args)
+	private bool TryInvokeMethod(object target, string[] methodNames, object[] args)
+	{
+		foreach (var name in methodNames)
 		{
-			foreach (var name in methodNames)
+			var methods = target.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)
+				.Where(m => string.Equals(m.Name, name, StringComparison.Ordinal))
+				.ToList();
+			foreach (var m in methods)
 			{
-				var methods = target.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)
-					.Where(m => string.Equals(m.Name, name, StringComparison.Ordinal))
-					.ToList();
-				foreach (var m in methods)
+				var pars = m.GetParameters();
+				if (pars.Length != args.Length) continue;
+				bool compatible = true;
+				for (int i = 0; i < pars.Length; i++)
 				{
-					var pars = m.GetParameters();
-					if (pars.Length != args.Length) continue;
-					bool compatible = true;
-					for (int i = 0; i < pars.Length; i++)
+					if (args[i] == null) continue;
+					if (!pars[i].ParameterType.IsAssignableFrom(args[i].GetType()))
 					{
-						if (args[i] == null) continue;
-						if (!pars[i].ParameterType.IsAssignableFrom(args[i].GetType()))
-						{
-							compatible = false;
-							break;
-						}
+						compatible = false;
+						break;
 					}
-					if (!compatible) continue;
-					try { m.Invoke(target, args); return true; } catch { }
 				}
+				if (!compatible) continue;
+				try { m.Invoke(target, args); return true; } catch (Exception ex) { LogError($"Failed to invoke method: {name}", ex); }
 			}
-			return false;
 		}
+		return false;
+	}
 
 		private void FocusOnItems(ModelItemCollection items)
 		{
@@ -1918,9 +1966,9 @@ namespace ClashManager.ManagerCollision.Views
 					try { if (ec != null && ec.Current.ExpandCollapseState != System.Windows.Automation.ExpandCollapseState.Expanded) ec.Expand(); } catch { }
 				}
 				var sel = current.GetCurrentPattern(System.Windows.Automation.SelectionItemPattern.Pattern) as System.Windows.Automation.SelectionItemPattern;
-				try { sel?.Select(); } catch { }
+				try { sel?.Select(); } catch (Exception ex) { LogError("Error selecting automation item", ex); }
 			}
-			catch { }
+			catch (Exception ex) { LogError("Error in NavigateToAutomationItemByIndex", ex); }
 		}
 
 		private System.Collections.Generic.IEnumerable<ResultRow> EnumerateResultsWithGroupFromTest(ClashTest test)
@@ -2590,7 +2638,7 @@ namespace ClashManager.ManagerCollision.Views
 			
 			Log($"SearchBox_TextChanged: timer restarted");
 		}
-		catch (Exception ex) { Log($"Error in SearchBox_TextChanged: {ex.Message}"); }
+		catch (Exception ex) { LogError("Error in SearchBox_TextChanged", ex); }
 	}
 
 	private void SearchTimer_Tick(object sender, EventArgs e)
@@ -2619,7 +2667,7 @@ namespace ClashManager.ManagerCollision.Views
 		
 		Log("Search Timer completed successfully");
 		}
-		catch (Exception ex) { Log($"Error in SearchTimer_Tick: {ex.Message}"); }
+		catch (Exception ex) { LogError("Error in SearchTimer_Tick", ex); }
 		
 	}
 
@@ -3609,7 +3657,7 @@ namespace ClashManager.ManagerCollision.Views
             }
             catch (Exception ex)
             {
-                Log($"Error in ClashDetectiveMonitorTimer_Tick: {ex.Message}");
+                LogError("Error in ClashDetectiveMonitorTimer_Tick", ex);
             }
         }
 
@@ -3670,7 +3718,7 @@ namespace ClashManager.ManagerCollision.Views
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex) { LogError("Error in GetCurrentClashDetectiveSelection fallback", ex); }
 
                 return Guid.Empty;
             }
@@ -3849,10 +3897,10 @@ namespace ClashManager.ManagerCollision.Views
         {
             try
             {
-                return _checkedTestIds != null && _checkedTestIds.Count > 1;
-            }
-            catch { return false; }
+            return _checkedTestIds != null && _checkedTestIds.Count > 1;
         }
+        catch (Exception ex) { LogError("Error in AreMultipleTestsChecked", ex); return false; }
+    }
 
         /// <summary>
         /// Выбирает тест в списке тестов плагина
