@@ -1626,7 +1626,7 @@ namespace ClashManager.ManagerCollision.Views
 		}
 	}
 
-	private void Log(string message)
+	private static void Log(string message)
 	{
 		try
 		{
@@ -1638,7 +1638,7 @@ namespace ClashManager.ManagerCollision.Views
 		}
 	}
 
-	private void LogError(string message, Exception ex = null)
+	private static void LogError(string message, Exception ex = null)
 	{
 		try
 		{
