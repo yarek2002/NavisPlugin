@@ -79,44 +79,12 @@ jobs:
           name: navisworks-plugin-debug
           path: .
 
-      - name: Determine release type
-        id: release-info
-        run: |
-          # Определяем тип релиза
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            $releaseType = "${{ github.event.inputs.release_type }}"
-          } elseif ("${{ github.ref }}" -eq "refs/heads/main") {
-            $releaseType = "stable"
-          } else {
-            $releaseType = "experimental"
-          }
-          
-          # Генерируем название и тег
-          $runNumber = "${{ github.run_number }}"
-          $branchName = "${{ github.ref_name }}"
-          
-          if ($releaseType -eq "stable") {
-            $tagName = "v$runNumber"
-            $releaseName = "Stable Build $runNumber"
-            $isPreRelease = "false"
-          } else {
-            $tagName = "experimental-$runNumber"
-            $releaseName = "Experimental Build $runNumber - $branchName"
-            $isPreRelease = "true"
-          }
-          
-          # Выводим переменные
-          Write-Output "tag_name=$tagName"
-          Write-Output "release_name=$releaseName"
-          Write-Output "prerelease=$isPreRelease"
-        shell: pwsh
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.release-info.outputs.tag_name }}
-          name: ${{ steps.release-info.outputs.release_name }}
-          prerelease: ${{ steps.release-info.outputs.prerelease }}
+          tag_name: ${{ github.run_number }}
+          name: ${{ github.ref_name == 'main' && 'Stable Build' || 'Experimental Build' }} ${{ github.run_number }} - ${{ github.ref_name }}
+          prerelease: ${{ github.ref_name != 'main' }}
           files: plugin.zip
           body: |
             ${{ github.ref_name != 'main' && '⚠️ ЭКСПЕРИМЕНТАЛЬНАЯ ВЕРСИЯ - МОГУТ БЫТЬ ОШИБКИ ⚠️' || '✅ Стабильная версия' }}
@@ -125,6 +93,7 @@ jobs:
             - Ветка: ${{ github.ref_name }}
             - Коммит: ${{ github.sha }}
             - Запуск: ${{ github.run_number }}
+            - Дата: ${{ github.event.head_commit.timestamp }}
             
             ${{ startsWith(github.ref, 'refs/heads/experiment-') && '**Использовать на свой страх и риск!**' || '' }}
         env:
