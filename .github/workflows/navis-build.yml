@@ -82,8 +82,8 @@ jobs:
       - name: Determine release type
         id: release-info
         run: |
-          # Определяем тип релиза на основе ветки или ручного ввода
-          if ("${{ github.event_name }}" == "workflow_dispatch") {
+          # Определяем тип релиза
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
             $releaseType = "${{ github.event.inputs.release_type }}"
           } elseif ("${{ github.ref }}" -eq "refs/heads/main") {
             $releaseType = "stable"
@@ -98,15 +98,17 @@ jobs:
           if ($releaseType -eq "stable") {
             $tagName = "v$runNumber"
             $releaseName = "Stable Build $runNumber"
+            $isPreRelease = "false"
           } else {
             $tagName = "experimental-$runNumber"
             $releaseName = "Experimental Build $runNumber - $branchName"
+            $isPreRelease = "true"
           }
           
           # Выводим переменные
-          echo "tag_name=$tagName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          echo "release_name=$releaseName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          echo "prerelease=$($releaseType -eq 'experimental')" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Output "tag_name=$tagName"
+          Write-Output "release_name=$releaseName"
+          Write-Output "prerelease=$isPreRelease"
         shell: pwsh
 
       - name: Create GitHub Release
