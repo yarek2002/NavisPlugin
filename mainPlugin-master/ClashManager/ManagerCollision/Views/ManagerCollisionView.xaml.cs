@@ -2971,7 +2971,7 @@ namespace ClashManager.ManagerCollision.Views
 		}
 
 		/// <summary>
-		/// Load saved GridView column order and widths (if file exists)
+		/// Load saved GridView column order and widths
 		/// Matching by Tag first, then by Header string. Unknown columns left in their current order.
 		/// </summary>
 		ptivate void LoadColumnLayout()
