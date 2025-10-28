@@ -229,31 +229,44 @@ namespace CollisionGrouperPlugin
                     return false;
                 }
 
-                // Пост-фильтр: учитываем явно выбранные модели (корни) в наборе
-                // Если корни не заданы, считаем, что ограничений по моделям нет
-                ModelItemCollection selectedRoots = selectionSet.GetSelectedItems();
-                if (selectedRoots == null || selectedRoots.Count == 0)
-                {
-                    return true;
-                }
-
+                // Пост-фильтр по моделям:
+                // 1) Пытаемся подтвердить совпадение через явно выбранные корни набора (GetSelectedItems)
+                // 2) Если не подтвердилось, делаем fallback: прогоняем поиск набора по корню модели элемента
+                //    и принимаем набор, только если есть совпадения в этой модели
                 Model itemModel = item.Model;
                 bool modelAllowed = false;
-                foreach (ModelItem root in selectedRoots)
+
+                ModelItemCollection selectedRoots = selectionSet.GetSelectedItems();
+                if (selectedRoots != null && selectedRoots.Count > 0)
                 {
-                    Model rootModel = root?.Model;
-                    if (rootModel != null && rootModel == itemModel)
+                    foreach (ModelItem root in selectedRoots)
                     {
-                        modelAllowed = true;
-                        break;
+                        Model rootModel = root?.Model;
+                        if (rootModel != null && rootModel == itemModel)
+                        {
+                            modelAllowed = true;
+                            break;
+                        }
                     }
                 }
-                if (!modelAllowed)
+
+                if (!modelAllowed && selectionSet.Search != null && itemModel != null)
                 {
-                    return false;
+                    // fallback-проверка по корню модели элемента
+                    Search probe = new Search();
+                    probe.SearchConditions.CopyFrom(selectionSet.Search.SearchConditions);
+                    probe.PruneBelowMatch = selectionSet.Search.PruneBelowMatch;
+                    ModelItem modelRoot = itemModel.RootItem;
+                    if (modelRoot != null)
+                    {
+                        ModelItemCollection rootSelection = new ModelItemCollection { modelRoot };
+                        probe.Selection.CopyFrom(rootSelection);
+                        ModelItemCollection probeMatches = probe.FindAll(doc, true);
+                        modelAllowed = (probeMatches != null && probeMatches.Count > 0);
+                    }
                 }
 
-                return true;
+                return modelAllowed;
             }
         }
 

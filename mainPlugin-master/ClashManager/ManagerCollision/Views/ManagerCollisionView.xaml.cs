@@ -222,6 +222,9 @@ namespace ClashManager.ManagerCollision.Views
 			_clashDetectiveMonitorTimer.Interval = TimeSpan.FromMilliseconds(500);
 			_clashDetectiveMonitorTimer.Tick += ClashDetectiveMonitorTimer_Tick;
 			StartClashDetectiveMonitoring();
+
+			//restorecolumns order and width if user saved it
+			LoadColumnLayout();
 		}
 
 		private void LoadTests()
@@ -2931,9 +2934,109 @@ namespace ClashManager.ManagerCollision.Views
         /// </summary>
         protected override void OnClosed(EventArgs e)
         {
+			SaveColumnLayot();
+
             StopClashDetectiveMonitoring();
             base.OnClosed(e);
         }
+
+		private void SaveColumnLayot()
+		{ try
+			{
+				var gridView = CollisionList.View as System.Windows.Controls.GridView;
+				if (gridView == null) return;
+
+				var list = new System.Collections.Generic.List<ColumnLayoutInfo>();
+				foreach (var column in gridView.Columns)
+				{
+					list.Add(new
+					{
+						Header = column.Header?.ToString() ?? string.Empty,
+						Tag = col.Tag?.ToString() ?? string.Empty,
+						Width = column.Width
+					});
+				}
+			string folder - Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NavisworksClashManager");
+			Directory.CreateDirectory(folder);
+			string path = Path.Combine(folder, "ColumnLayout.json");
+
+			var options = new JsonSerializerOptions { WriteIndented = true };
+			File.WriteAllText(path, JsonSerializer.Serialize(list, options));
+			Log($"Column layout saved to {path}");
+			}
+			catch (Exception ex)
+			{
+				Log($"Error saving column layout: {ex.Message}");
+			}
+		}
+
+		ptivate void LoadColumnLayout()
+		{
+			try
+			{
+				var gridView = CollisionList.View as System.Windows.Controls.GridView;
+				if (!File.Exists(path)) return;
+
+				var json = File.ReadAllText(path);
+				var items = JsonSerializer.Deserialize<System.Collections.Generic.List<ColumnLayoutItem>>(json);
+				if (items == null || items.Count == 0) return;
+
+				var gridView = CollisionsList.View as System.Windows.Controls.GridView;
+				if (gridView == null) return;
+
+				// map existing columns by Tag and Header
+				var existing = gridView.Columns.ToList();
+				var used = new System.Collections.Generic.HashSet<System.Windows.Controls.GridViewColumn>();
+				var ordered = new System.Collections.Generic.List<System.Windows.Controls.GridViewColumn>();
+
+				foreach (var it in items)
+				{
+					System.Windows.Controls.GridViewColumn found = null;
+					if (!string.IsNullOrEmpty(it.Tag))
+					{
+						found = existing.FirstOrDefault(c => (c.Tag?.ToString() ?? string.Empty) == it.Tag);
+					}
+					if (found == null && !string.IsNullOrEmpty(it.Header))
+					{
+						found = existing.FirstOrDefault(c => (c.Header?.ToString() ?? string.Empty) == it.Header);
+					}
+					if (found != null && !used.Contains(found))
+					{
+						// apply width if valid
+						if (it.Width > 0) found.Width = it.Width;
+						ordered.Add(found);
+						used.Add(found);
+					}
+				}
+
+				// append columns not present in saved layout (preserve them)
+				foreach (var c in existing)
+				{
+					if (!used.Contains(c)) ordered.Add(c);
+				}
+
+				// reassign columns in the saved order
+				gridView.Columns.Clear();
+				foreach (var c in ordered) gridView.Columns.Add(c);
+
+				Log($"Loaded column layout from {path}");
+			}
+			catch (Exception ex)
+			{
+				Log($"LoadColumnLayout error: {ex.Message}");
+			}
+		}
+
+		private class ColumnLayoutItem
+		{
+			[JsonPropertyName("Header")]
+			public string Header { get; set; }
+			[JsonPropertyName("Tag")]
+			public string Tag { get; set; }
+			[JsonPropertyName("Width")]
+			public double Width { get; set; }
+		}
+
 
         /// <summary>
         /// Handle copy menu item click for text controls
