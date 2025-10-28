@@ -2983,7 +2983,7 @@ namespace ClashManager.ManagerCollision.Views
         /// </summary>
         protected override void OnClosed(EventArgs e)
         {
-			SaveColumnLayot();
+			SaveColumnLayout();
 
             StopClashDetectiveMonitoring();
             base.OnClosed(e);
@@ -3008,7 +3008,7 @@ private void SaveColumnLayout()
             list.Add(new ColumnLayoutItem
             {
                 Header = column.Header?.ToString() ?? string.Empty,
-                Tag = column.Tag?.ToString() ?? string.Empty,
+                Tag = string.Empty,
                 Width = column.Width
             });
         }
@@ -3048,9 +3048,7 @@ private void LoadColumnLayout()
         foreach (var it in items)
         {
             System.Windows.Controls.GridViewColumn found = null;
-            if (!string.IsNullOrEmpty(it.Tag))
-                found = existing.FirstOrDefault(c => (c.Tag?.ToString() ?? string.Empty) == it.Tag);
-            if (found == null && !string.IsNullOrEmpty(it.Header))
+            if (!string.IsNullOrEmpty(it.Header))
                 found = existing.FirstOrDefault(c => (c.Header?.ToString() ?? string.Empty) == it.Header);
             if (found != null && !used.Contains(found))
             {
