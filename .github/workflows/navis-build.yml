@@ -26,7 +26,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+    build:
     runs-on: windows-latest
     if: |
       github.event_name == 'push' ||
@@ -40,31 +40,13 @@ jobs:
       - name: Setup NuGet
         uses: NuGet/setup-nuget@v2
 
+      - name: Restore NuGet packages
+        run: nuget restore "mainPlugin-master\CUM.sln"
+        shell: cmd
+
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      # КЭШ NUGET ПАКЕТОВ
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~\AppData\Local\NuGet\v3-cache
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.config', '**.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-      - name: List workspace files
-        run: |
-          echo "=== FILES IN WORKSPACE ==="
-          dir .
-          echo "=== RECURSIVE ==="
-          dir /s
-        shell: cmd
-      # ВОССТАНОВЛЕНИЕ ПАКЕТОВ
-      - name: Restore NuGet packages
-        run: nuget restore "CUM.sln"
-        shell: cmd
-        working-directory: ${{ github.workspace }}
-
-      # СБОРКА
       - name: Build with MSBuild
         run: |
           msbuild "mainPlugin-master\ClashManager\С.M.2021.csproj" ^
@@ -74,7 +56,6 @@ jobs:
         shell: cmd
         working-directory: ${{ github.workspace }}
 
-      # ПРОВЕРКА ВЫВОДА
       - name: Verify build output
         run: |
           if not exist "mainPlugin-master\ClashManager\bin\Debug\*.dll" (
@@ -86,7 +67,6 @@ jobs:
           dir "mainPlugin-master\ClashManager\bin\Debug\*.pdb"
         shell: powershell
 
-      # АРХИВ
       - name: Archive plugin DLL + PDB
         run: |
           mkdir publish -Force
@@ -95,7 +75,6 @@ jobs:
           Compress-Archive -Path publish\* -DestinationPath plugin.zip -Force
         shell: powershell
 
-      # ЗАГРУЗКА АРТЕФАКТА
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
