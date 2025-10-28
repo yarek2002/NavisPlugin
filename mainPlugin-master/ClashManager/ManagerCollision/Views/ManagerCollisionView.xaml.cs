@@ -2940,96 +2940,93 @@ namespace ClashManager.ManagerCollision.Views
             base.OnClosed(e);
         }
 
-		private void SaveColumnLayot()
-		{ try
-			{
-				var gridView = CollisionList.View as System.Windows.Controls.GridView;
-				if (gridView == null) return;
-
-				var list = new System.Collections.Generic.List<ColumnLayoutInfo>();
-				foreach (var column in gridView.Columns)
-				{
-					list.Add(new
-					{
-						Header = column.Header?.ToString() ?? string.Empty,
-						Tag = col.Tag?.ToString() ?? string.Empty,
-						Width = column.Width
-					});
-				}
-			string folder - Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NavisworksClashManager");
-			Directory.CreateDirectory(folder);
-			string path = Path.Combine(folder, "ColumnLayout.json");
-
-			var options = new JsonSerializerOptions { WriteIndented = true };
-			File.WriteAllText(path, JsonSerializer.Serialize(list, options));
-			Log($"Column layout saved to {path}");
-			}
-			catch (Exception ex)
-			{
-				Log($"Error saving column layout: {ex.Message}");
-			}
-		}
 
 		/// <summary>
 		/// Load saved GridView column order and widths (if exist)
 		/// Matching by Tag first, then by Header string. Unknown columns left in their current order.
 		/// </summary>
-		ptivate void LoadColumnLayout()
-		{
-			try
-			{
-				var gridView = CollisionList.View as System.Windows.Controls.GridView;
-				if (!File.Exists(path)) return;
+		// ...existing code...
+private void SaveColumnLayout()
+{
+    try
+    {
+        var gridView = CollisionsList.View as System.Windows.Controls.GridView;
+        if (gridView == null) return;
 
-				var json = File.ReadAllText(path);
-				var items = JsonSerializer.Deserialize<System.Collections.Generic.List<ColumnLayoutItem>>(json);
-				if (items == null || items.Count == 0) return;
+        var list = new System.Collections.Generic.List<ColumnLayoutItem>();
+        foreach (var column in gridView.Columns)
+        {
+            list.Add(new ColumnLayoutItem
+            {
+                Header = column.Header?.ToString() ?? string.Empty,
+                Tag = column.Tag?.ToString() ?? string.Empty,
+                Width = column.Width
+            });
+        }
 
-				var gridView = CollisionsList.View as System.Windows.Controls.GridView;
-				if (gridView == null) return;
+        string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NavisworksClashManager");
+        Directory.CreateDirectory(folder);
+        string path = Path.Combine(folder, "ColumnLayout.json");
 
-				// map existing columns by Tag and Header
-				var existing = gridView.Columns.ToList();
-				var used = new System.Collections.Generic.HashSet<System.Windows.Controls.GridViewColumn>();
-				var ordered = new System.Collections.Generic.List<System.Windows.Controls.GridViewColumn>();
+        var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+        File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(list, options));
+        Log($"Column layout saved to {path}");
+    }
+    catch (Exception ex)
+    {
+        Log($"Error saving column layout: {ex.Message}");
+    }
+}
 
-				foreach (var it in items)
-				{
-					System.Windows.Controls.GridViewColumn found = null;
-					if (!string.IsNullOrEmpty(it.Tag))
-					{
-						found = existing.FirstOrDefault(c => (c.Tag?.ToString() ?? string.Empty) == it.Tag);
-					}
-					if (found == null && !string.IsNullOrEmpty(it.Header))
-					{
-						found = existing.FirstOrDefault(c => (c.Header?.ToString() ?? string.Empty) == it.Header);
-					}
-					if (found != null && !used.Contains(found))
-					{
-						// apply width if valid
-						if (it.Width > 0) found.Width = it.Width;
-						ordered.Add(found);
-						used.Add(found);
-					}
-				}
+private void LoadColumnLayout()
+{
+    try
+    {
+        string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NavisworksClashManager", "ColumnLayout.json");
+        if (!File.Exists(path)) return;
 
-				// append columns not present in saved layout (preserve them)
-				foreach (var c in existing)
-				{
-					if (!used.Contains(c)) ordered.Add(c);
-				}
+        var json = File.ReadAllText(path);
+        var items = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<ColumnLayoutItem>>(json);
+        if (items == null || items.Count == 0) return;
 
-				// reassign columns in the saved order
-				gridView.Columns.Clear();
-				foreach (var c in ordered) gridView.Columns.Add(c);
+        var gridView = CollisionsList.View as System.Windows.Controls.GridView;
+        if (gridView == null) return;
 
-				Log($"Loaded column layout from {path}");
-			}
-			catch (Exception ex)
-			{
-				Log($"LoadColumnLayout error: {ex.Message}");
-			}
-		}
+        var existing = gridView.Columns.ToList();
+        var used = new System.Collections.Generic.HashSet<System.Windows.Controls.GridViewColumn>();
+        var ordered = new System.Collections.Generic.List<System.Windows.Controls.GridViewColumn>();
+
+        foreach (var it in items)
+        {
+            System.Windows.Controls.GridViewColumn found = null;
+            if (!string.IsNullOrEmpty(it.Tag))
+                found = existing.FirstOrDefault(c => (c.Tag?.ToString() ?? string.Empty) == it.Tag);
+            if (found == null && !string.IsNullOrEmpty(it.Header))
+                found = existing.FirstOrDefault(c => (c.Header?.ToString() ?? string.Empty) == it.Header);
+            if (found != null && !used.Contains(found))
+            {
+                if (it.Width > 0) found.Width = it.Width;
+                ordered.Add(found);
+                used.Add(found);
+            }
+        }
+
+        foreach (var c in existing)
+        {
+            if (!used.Contains(c)) ordered.Add(c);
+        }
+
+        gridView.Columns.Clear();
+        foreach (var c in ordered) gridView.Columns.Add(c);
+
+        Log($"Loaded column layout from {path}");
+    }
+    catch (Exception ex)
+    {
+        Log($"LoadColumnLayout error: {ex.Message}");
+    }
+}
+// ...existing code...
 
 		private class ColumnLayoutItem
 		{
