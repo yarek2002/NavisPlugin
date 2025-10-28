@@ -51,7 +51,13 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.config', '**.csproj') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
-
+      - name: List workspace files
+        run: |
+          echo "=== FILES IN WORKSPACE ==="
+          dir .
+          echo "=== RECURSIVE ==="
+          dir /s
+        shell: cmd
       # ВОССТАНОВЛЕНИЕ ПАКЕТОВ
       - name: Restore NuGet packages
         run: nuget restore "CUM.sln"
