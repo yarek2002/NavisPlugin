@@ -18,6 +18,8 @@ using Application = Autodesk.Navisworks.Api.Application;
 using ClashManager;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Newtonsoft.Json;
+using System.Windows.Data;
 
 namespace ClashManager.ManagerCollision.Views
 {
@@ -227,6 +229,9 @@ namespace ClashManager.ManagerCollision.Views
 			_clashDetectiveMonitorTimer.Interval = TimeSpan.FromMilliseconds(500);
 			_clashDetectiveMonitorTimer.Tick += ClashDetectiveMonitorTimer_Tick;
 			StartClashDetectiveMonitoring();
+
+			//restorecolumns order and width if user saved it
+			LoadColumnLayout();
 		}
 
 	private void LoadTests()
@@ -2979,9 +2984,139 @@ namespace ClashManager.ManagerCollision.Views
         /// </summary>
         protected override void OnClosed(EventArgs e)
         {
+			SaveColumnLayout();
+
             StopClashDetectiveMonitoring();
             base.OnClosed(e);
         }
+
+
+		/// <summary>
+		/// Load saved GridView column order and widths (if exist)
+		/// Matching by Tag first, then by Header string. Unknown columns left in their current order.
+		/// </summary>
+		// ...existing code...
+private void SaveColumnLayout()
+{
+    try
+    {
+        var gridView = CollisionsList.View as System.Windows.Controls.GridView;
+        if (gridView == null) return;
+
+        var list = new System.Collections.Generic.List<ColumnLayoutItem>();
+        foreach (var column in gridView.Columns)
+        {
+            list.Add(new ColumnLayoutItem
+            {
+                Header = column.Header?.ToString() ?? string.Empty,
+                Tag = GetColumnKey(column),
+                Width = column.Width
+            });
+        }
+
+        string folder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "NavisworksClashManager");
+        Directory.CreateDirectory(folder);
+        string path = Path.Combine(folder, "ColumnLayout.json");
+
+        var jsonOut = JsonConvert.SerializeObject(list, Formatting.Indented);
+        File.WriteAllText(path, jsonOut);
+        Log($"Column layout saved to {path}");
+    }
+    catch (Exception ex)
+    {
+        Log($"Error saving column layout: {ex.Message}");
+    }
+}
+
+private void LoadColumnLayout()
+{
+    try
+    {
+        string path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "NavisworksClashManager",
+            "ColumnLayout.json");
+        if (!File.Exists(path)) return;
+
+        var json = File.ReadAllText(path);
+        var items = JsonConvert.DeserializeObject<System.Collections.Generic.List<ColumnLayoutItem>>(json);
+        if (items == null || items.Count == 0) return;
+
+        var gridView = CollisionsList.View as System.Windows.Controls.GridView;
+        if (gridView == null) return;
+
+        var existing = gridView.Columns.ToList();
+        var used = new System.Collections.Generic.HashSet<System.Windows.Controls.GridViewColumn>();
+        var ordered = new System.Collections.Generic.List<System.Windows.Controls.GridViewColumn>();
+
+        foreach (var it in items)
+        {
+            System.Windows.Controls.GridViewColumn found = null;
+            if (!string.IsNullOrEmpty(it.Tag))
+                found = existing.FirstOrDefault(c => string.Equals(GetColumnKey(c), it.Tag, StringComparison.Ordinal));
+            if (found == null && !string.IsNullOrEmpty(it.Header))
+                found = existing.FirstOrDefault(c => (c.Header?.ToString() ?? string.Empty) == it.Header);
+            if (found != null && !used.Contains(found))
+            {
+                if (it.Width > 0) found.Width = it.Width;
+                ordered.Add(found);
+                used.Add(found);
+            }
+        }
+
+        foreach (var c in existing)
+        {
+            if (!used.Contains(c)) ordered.Add(c);
+        }
+
+        gridView.Columns.Clear();
+        foreach (var c in ordered) gridView.Columns.Add(c);
+
+        Log($"Loaded column layout from {path}");
+    }
+    catch (Exception ex)
+    {
+        Log($"LoadColumnLayout error: {ex.Message}");
+    }
+}
+// ...existing code...
+
+		private class ColumnLayoutItem
+		{
+			[JsonProperty("Header")]
+			public string Header { get; set; }
+			[JsonProperty("Tag")]
+			public string Tag { get; set; }
+			[JsonProperty("Width")]
+			public double Width { get; set; }
+		}
+
+        private static string GetColumnKey(System.Windows.Controls.GridViewColumn column)
+        {
+            // Prefer binding path as a stable identifier
+            if (column.DisplayMemberBinding is Binding binding && binding.Path != null && !string.IsNullOrEmpty(binding.Path.Path))
+            {
+                return binding.Path.Path;
+            }
+            // Fallback to header text
+            return GetHeaderText(column.Header);
+        }
+
+        private static string GetHeaderText(object header)
+        {
+            if (header == null) return string.Empty;
+            if (header is string s) return s;
+            if (header is TextBlock tb) return tb.Text ?? string.Empty;
+            if (header is ContentControl cc)
+            {
+                if (cc.Content is TextBlock ctb) return ctb.Text ?? string.Empty;
+                return cc.Content?.ToString() ?? string.Empty;
+            }
+            return header.ToString() ?? string.Empty;
+        }
+
 
         /// <summary>
         /// Handle copy menu item click for text controls

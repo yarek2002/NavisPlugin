@@ -223,8 +223,50 @@ namespace CollisionGrouperPlugin
                 // Выполняем поиск (recursive=true для проверки descendants, если нужно)
                 ModelItemCollection matches = tempSearch.FindAll(doc, true);
 
-                // Если элемент (или его descendants) matches, возвращаем true
-                return matches.Contains(item);
+                // Если элемент (или его descendants) matches, применяем пост-фильтр по выбранным моделям набора
+                if (!matches.Contains(item))
+                {
+                    return false;
+                }
+
+                // Пост-фильтр по моделям:
+                // 1) Пытаемся подтвердить совпадение через явно выбранные корни набора (GetSelectedItems)
+                // 2) Если не подтвердилось, делаем fallback: прогоняем поиск набора по корню модели элемента
+                //    и принимаем набор, только если есть совпадения в этой модели
+                Model itemModel = item.Model;
+                bool modelAllowed = false;
+
+                ModelItemCollection selectedRoots = selectionSet.GetSelectedItems();
+                if (selectedRoots != null && selectedRoots.Count > 0)
+                {
+                    foreach (ModelItem root in selectedRoots)
+                    {
+                        Model rootModel = root?.Model;
+                        if (rootModel != null && rootModel == itemModel)
+                        {
+                            modelAllowed = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!modelAllowed && selectionSet.Search != null && itemModel != null)
+                {
+                    // fallback-проверка по корню модели элемента
+                    Search probe = new Search();
+                    probe.SearchConditions.CopyFrom(selectionSet.Search.SearchConditions);
+                    probe.PruneBelowMatch = selectionSet.Search.PruneBelowMatch;
+                    ModelItem modelRoot = itemModel.RootItem;
+                    if (modelRoot != null)
+                    {
+                        ModelItemCollection rootSelection = new ModelItemCollection { modelRoot };
+                        probe.Selection.CopyFrom(rootSelection);
+                        ModelItemCollection probeMatches = probe.FindAll(doc, true);
+                        modelAllowed = (probeMatches != null && probeMatches.Count > 0);
+                    }
+                }
+
+                return modelAllowed;
             }
         }
 
