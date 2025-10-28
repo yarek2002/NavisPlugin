@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - 'experiment-*'   # ОБЯЗАТЕЛЬНО в кавычках!
+      - 'experiment-*'  
       - 'test-*'
       - 'feature-*'
   pull_request:
