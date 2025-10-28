@@ -111,31 +111,52 @@ jobs:
           echo "is_stable=$( [ '${{ github.ref }}' = 'refs/heads/main' ] && echo true || echo false )" >> $GITHUB_OUTPUT
         shell: bash
 
-      - name: Create Git tag
+      - name: Determine release type and tag
+        id: release
         run: |
-          git config user.email "action@github.com"
-          git config user.name "GitHub Action"
-          git tag "${{ steps.tag.outputs.tag_name }}"
-          git push origin "${{ steps.tag.outputs.tag_name }}"
+          # Определяем, стабильный ли релиз
+          IS_STABLE=false
+          TAG_PREFIX=""
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Ручной запуск — смотрим input
+            INPUT_TYPE="${{ github.event.inputs.release_type }}"
+            if [ "$INPUT_TYPE" = "stable" ]; then
+              IS_STABLE=true
+              TAG_NAME="v${{ github.run_number }}"
+            else
+              BRANCH="${{ github.ref_name }}"
+              TAG_NAME="experimental-${{ github.run_number }}-$BRANCH"
+            fi
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            # Пуш в main
+            IS_STABLE=true
+            TAG_NAME="v${{ github.run_number }}"
+          else
+            # Любая другая ветка (experiment-*, etc.)
+            BRANCH="${{ github.ref_name }}"
+            TAG_NAME="experimental-${{ github.run_number }}-$BRANCH"
+          fi
+
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "is_stable=$IS_STABLE" >> $GITHUB_OUTPUT
+          echo "branch=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.tag_name }}
-          name: >
-            ${{ steps.tag.outputs.is_stable == 'true' && 'Stable Build' || 'Experimental Build' }}
-            #${{ github.run_number }}
-          prerelease: ${{ steps.tag.outputs.is_stable != 'true' }}
+          tag_name: ${{ steps.release.outputs.tag_name }}
+          name: ${{ steps.release.outputs.is_stable == 'true' && 'Stable Build' || 'Experimental Build' }} #${{ github.run_number }}
+          prerelease: ${{ steps.release.outputs.is_stable != 'true' }}
           files: plugin.zip
           body: |
-            ${{ steps.tag.outputs.is_stable == 'true' && 'СТАБИЛЬНАЯ ВЕРСИЯ' || 'ЭКСПЕРИМЕНТАЛЬНАЯ ВЕРСИЯ - МОГУТ БЫТЬ ОШИБКИ' }}
+            ${{ steps.release.outputs.is_stable == 'true' && 'СТАБИЛЬНАЯ ВЕРСИЯ' || 'ЭКСПЕРИМЕНТАЛЬНАЯ ВЕРСИЯ - МОГУТ БЫТЬ ОШИБКИ' }}
             
             **Сборка:**
-            - Ветка: `${{ github.ref_name }}`
+            - Ветка: `${{ steps.release.outputs.branch }}`
             - Коммит: `${{ github.sha }}`
             - Запуск: `#${{ github.run_number }}`
-            - Тип: ${{ steps.tag.outputs.is_stable == 'true' && 'stable' || 'experimental' }}
-
-            ${{ startsWith(github.ref_name, 'experiment-') && '**Только для тестирования!**' || '' }}
+            - Тип: ${{ steps.release.outputs.is_stable == 'true' && 'stable' || 'experimental' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
