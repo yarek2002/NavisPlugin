@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main   # запуск только при пуше в main
-      - experiment-*   # добавляем экспериментальные ветки
+      - 'experiment-*'   # добавляем экспериментальные ветки
 
     paths-ignore:
       - "README.md"   # игнорировать изменения README
