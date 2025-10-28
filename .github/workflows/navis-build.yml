@@ -3,14 +3,15 @@ name: Build Navisworks Plugin
 on:
   push:
     branches:
-      - main   # запуск только при пуше в main
-      - 'experiment-*'   # добавляем экспериментальные ветки
-
-    paths-ignore:
-      - "README.md"   # игнорировать изменения README
-      - "README.MD"   # (на всякий случай, если кто-то изменит регистр)
-
-  workflow_dispatch:   # Ручной запуск для любых веток
+      - main
+      - 'experiment-*'   # ОБЯЗАТЕЛЬНО в кавычках!
+      - 'test-*'
+      - 'feature-*'
+  pull_request:
+    branches:
+      - main
+      - 'experiment-*'
+  workflow_dispatch:
     inputs:
       release_type:
         description: 'Тип релиза'
@@ -18,8 +19,8 @@ on:
         default: 'experimental'
         type: choice
         options:
-        - experimental
-        - stable
+          - experimental
+          - stable
 
 permissions:
   contents: write
@@ -27,6 +28,11 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    # ЗАПУСКАЕМСЯ ДЛЯ ЛЮБОЙ ВЕТКИ
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.action == 'opened')
 
     steps:
       - name: Checkout repository
@@ -66,11 +72,12 @@ jobs:
   release:
     needs: build
     runs-on: windows-latest
-    # Запускаем релиз для main ИЛИ экспериментальных веток ИЛИ ручного запуска
+    # ЗАПУСКАЕМ РЕЛИЗ ТОЛЬКО ДЛЯ PUSH (не для pull_request)
     if: |
-      github.ref == 'refs/heads/main' ||
-      startsWith(github.ref, 'refs/heads/experiment-') ||
-      github.event_name == 'workflow_dispatch'
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' ||
+       startsWith(github.ref, 'refs/heads/experiment-') ||
+       github.event_name == 'workflow_dispatch')
 
     steps:
       - name: Download artifact
@@ -79,21 +86,40 @@ jobs:
           name: navisworks-plugin-debug
           path: .
 
+      - name: Create Git tag
+        id: create-tag
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            TAG_NAME="v${{ github.run_number }}"
+          else
+            # Убираем 'refs/heads/' из названия ветки
+            BRANCH_NAME="${{ github.ref }}"
+            BRANCH_NAME=${BRANCH_NAME#refs/heads/}
+            TAG_NAME="experimental-${{ github.run_number }}-$BRANCH_NAME"
+          fi
+          
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+          
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+        shell: bash
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.run_number }}
-          name: ${{ github.ref_name == 'main' && 'Stable Build' || 'Experimental Build' }} ${{ github.run_number }} - ${{ github.ref_name }}
-          prerelease: ${{ github.ref_name != 'main' }}
+          tag_name: ${{ steps.create-tag.outputs.tag_name }}
+          name: ${{ github.ref == 'refs/heads/main' && 'Stable Build' || 'Experimental Build' }} ${{ github.run_number }}
+          prerelease: ${{ github.ref != 'refs/heads/main' }}
           files: plugin.zip
           body: |
-            ${{ github.ref_name != 'main' && '⚠️ ЭКСПЕРИМЕНТАЛЬНАЯ ВЕРСИЯ - МОГУТ БЫТЬ ОШИБКИ ⚠️' || '✅ Стабильная версия' }}
+            ${{ github.ref != 'refs/heads/main' && '⚠️ ЭКСПЕРИМЕНТАЛЬНАЯ ВЕРСИЯ - МОГУТ БЫТЬ ОШИБКИ ⚠️' || '✅ Стабильная версия' }}
             
             **Детали сборки:**
             - Ветка: ${{ github.ref_name }}
             - Коммит: ${{ github.sha }}
             - Запуск: ${{ github.run_number }}
-            - Дата: ${{ github.event.head_commit.timestamp }}
             
             ${{ startsWith(github.ref, 'refs/heads/experiment-') && '**Использовать на свой страх и риск!**' || '' }}
         env:
