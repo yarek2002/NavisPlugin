@@ -3101,7 +3101,20 @@ private void LoadColumnLayout()
                 return binding.Path.Path;
             }
             // Fallback to header text
-            return column.Header?.ToString() ?? string.Empty;
+            return GetHeaderText(column.Header);
+        }
+
+        private static string GetHeaderText(object header)
+        {
+            if (header == null) return string.Empty;
+            if (header is string s) return s;
+            if (header is TextBlock tb) return tb.Text ?? string.Empty;
+            if (header is ContentControl cc)
+            {
+                if (cc.Content is TextBlock ctb) return ctb.Text ?? string.Empty;
+                return cc.Content?.ToString() ?? string.Empty;
+            }
+            return header.ToString() ?? string.Empty;
         }
 
 
