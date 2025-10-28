@@ -661,6 +661,11 @@ namespace ClashManager.ManagerCollision.Views
 	{
 		try
 		{
+			if (_isUserScrolling || _suppressUIUpdates)
+			{
+				_pendingListRefresh = true;
+				return;
+			}
 			string query = (GetSearchText() ?? string.Empty).Trim();
 			if (string.IsNullOrEmpty(query))
 			{
@@ -678,6 +683,11 @@ namespace ClashManager.ManagerCollision.Views
 		{
 			try
 			{
+				if (_isUserScrolling || _suppressUIUpdates)
+				{
+					_pendingListRefresh = true;
+					return;
+				}
 				var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
 
 				// Определяем, по каким тестам искать: выбранные через чекбоксы или все тесты
