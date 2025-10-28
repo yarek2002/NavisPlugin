@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - 'experiment-*'  
+      - 'experiment-*'
       - 'test-*'
       - 'feature-*'
   pull_request:
@@ -28,7 +28,6 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
-    # ЗАПУСКАЕМСЯ ДЛЯ ЛЮБОЙ ВЕТКИ
     if: |
       github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
@@ -38,37 +37,51 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check libs
-        run: dir mainPlugin-master\ClashManager\libs
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore "mainPlugin-master\CUM.sln"
+        shell: cmd
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
       - name: Build with MSBuild
-        run: msbuild mainPlugin-master\ClashManager\С.M.2021.csproj /p:Configuration=Debug /p:OutputPath=bin\Debug
+        run: |
+          msbuild "mainPlugin-master\ClashManager\С.M.2021.csproj" ^
+            /p:Configuration=Debug ^
+            /p:OutputPath=bin\Debug ^
+            /p:WarningLevel=0
+        shell: cmd
         working-directory: ${{ github.workspace }}
 
-      - name: Show all build outputs
-        run: dir mainPlugin-master\ClashManager -Recurse
-        working-directory: ${{ github.workspace }}
-
-      - name: List build output
-        run: dir .\mainPlugin-master\ClashManager\bin\Debug -Recurse
-        working-directory: ${{ github.workspace }}
+      - name: Verify build output
+        run: |
+          if not exist "mainPlugin-master\ClashManager\bin\Debug\*.dll" (
+            echo "ERROR: DLL not found after build!"
+            exit 1
+          )
+          echo "Build successful. DLLs:"
+          dir "mainPlugin-master\ClashManager\bin\Debug\*.dll"
+          dir "mainPlugin-master\ClashManager\bin\Debug\*.pdb"
+        shell: powershell
 
       - name: Archive plugin DLL + PDB
         run: |
-          mkdir publish
+          mkdir publish -Force
           copy "mainPlugin-master\ClashManager\bin\Debug\*.dll" publish\
           copy "mainPlugin-master\ClashManager\bin\Debug\*.pdb" publish\
-          Compress-Archive -Path publish\* -DestinationPath plugin.zip
+          Compress-Archive -Path publish\* -DestinationPath plugin.zip -Force
+        shell: powershell
 
-      - name: Upload artifact (download via Actions)
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: navisworks-plugin-debug
           path: plugin.zip
 
+  # РЕЛИЗ
   release:
     needs: build
     runs-on: windows-latest
@@ -78,6 +91,7 @@ jobs:
         startsWith(github.ref, 'refs/heads/experiment-')
       ) ||
       github.event_name == 'workflow_dispatch'
+
     steps:
       - name: Checkout repository (full history)
         uses: actions/checkout@v4
@@ -88,59 +102,40 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: navisworks-plugin-debug
-
-      - name: Determine tag name
-        id: tag
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            RELEASE_TYPE="${{ github.event.inputs.release_type }}"
-            if [ "$RELEASE_TYPE" = "stable" ]; then
-              TAG="v${{ github.run_number }}"
-            else
-              BRANCH="${{ github.ref_name }}"
-              TAG="experimental-${{ github.run_number }}-$BRANCH"
-            fi
-          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            TAG="v${{ github.run_number }}"
-          else
-            BRANCH="${{ github.ref_name }}"
-            TAG="experimental-${{ github.run_number }}-$BRANCH"
-          fi
-
-          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
-          echo "is_stable=$( [ '${{ github.ref }}' = 'refs/heads/main' ] && echo true || echo false )" >> $GITHUB_OUTPUT
-        shell: bash
+          path: .
 
       - name: Determine release type and tag
         id: release
         run: |
-          # Определяем, стабильный ли релиз
           IS_STABLE=false
-          TAG_PREFIX=""
+          BRANCH="${{ github.ref_name }}"
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # Ручной запуск — смотрим input
             INPUT_TYPE="${{ github.event.inputs.release_type }}"
             if [ "$INPUT_TYPE" = "stable" ]; then
               IS_STABLE=true
               TAG_NAME="v${{ github.run_number }}"
             else
-              BRANCH="${{ github.ref_name }}"
               TAG_NAME="experimental-${{ github.run_number }}-$BRANCH"
             fi
           elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            # Пуш в main
             IS_STABLE=true
             TAG_NAME="v${{ github.run_number }}"
           else
-            # Любая другая ветка (experiment-*, etc.)
-            BRANCH="${{ github.ref_name }}"
             TAG_NAME="experimental-${{ github.run_number }}-$BRANCH"
           fi
 
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "is_stable=$IS_STABLE" >> $GITHUB_OUTPUT
-          echo "branch=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create Git tag
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git tag "${{ steps.release.outputs.tag_name }}"
+          git push origin "${{ steps.release.outputs.tag_name }}"
         shell: bash
 
       - name: Create GitHub Release
@@ -152,11 +147,13 @@ jobs:
           files: plugin.zip
           body: |
             ${{ steps.release.outputs.is_stable == 'true' && 'СТАБИЛЬНАЯ ВЕРСИЯ' || 'ЭКСПЕРИМЕНТАЛЬНАЯ ВЕРСИЯ - МОГУТ БЫТЬ ОШИБКИ' }}
-            
+
             **Сборка:**
             - Ветка: `${{ steps.release.outputs.branch }}`
             - Коммит: `${{ github.sha }}`
             - Запуск: `#${{ github.run_number }}`
             - Тип: ${{ steps.release.outputs.is_stable == 'true' && 'stable' || 'experimental' }}
+
+            ${{ startsWith(github.ref_name, 'experiment-') && '**Только для тестирования!**' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
