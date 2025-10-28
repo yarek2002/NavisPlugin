@@ -18,6 +18,7 @@ using Application = Autodesk.Navisworks.Api.Application;
 using ClashManager;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace ClashManager.ManagerCollision.Views
 {
