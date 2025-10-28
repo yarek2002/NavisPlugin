@@ -58,13 +58,14 @@ jobs:
 
       - name: Verify build output
         run: |
-          if not exist "mainPlugin-master\ClashManager\bin\Debug\*.dll" (
-            echo "ERROR: DLL not found after build!"
+          $dllPath = "mainPlugin-master\ClashManager\bin\Debug\*.dll"
+          if (-not (Test-Path $dllPath)) {
+            Write-Error "ERROR: DLL not found after build!"
             exit 1
-          )
-          echo "Build successful. DLLs:"
-          dir "mainPlugin-master\ClashManager\bin\Debug\*.dll"
-          dir "mainPlugin-master\ClashManager\bin\Debug\*.pdb"
+          }
+          Write-Host "Build successful. DLLs:"
+          Get-ChildItem $dllPath | ForEach-Object { $_.Name }
+          Get-ChildItem "mainPlugin-master\ClashManager\bin\Debug\*.pdb" | ForEach-Object { $_.Name }
         shell: powershell
 
       - name: Archive plugin DLL + PDB
