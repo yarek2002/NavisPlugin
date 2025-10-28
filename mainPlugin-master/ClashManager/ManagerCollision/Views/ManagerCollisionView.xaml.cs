@@ -18,7 +18,7 @@ using Application = Autodesk.Navisworks.Api.Application;
 using ClashManager;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace ClashManager.ManagerCollision.Views
 {
@@ -3017,8 +3017,8 @@ private void SaveColumnLayout()
         Directory.CreateDirectory(folder);
         string path = Path.Combine(folder, "ColumnLayout.json");
 
-        var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
-        File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(list, options));
+        var jsonOut = JsonConvert.SerializeObject(list, Formatting.Indented);
+        File.WriteAllText(path, jsonOut);
         Log($"Column layout saved to {path}");
     }
     catch (Exception ex)
@@ -3035,7 +3035,7 @@ private void LoadColumnLayout()
         if (!File.Exists(path)) return;
 
         var json = File.ReadAllText(path);
-        var items = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<ColumnLayoutItem>>(json);
+        var items = JsonConvert.DeserializeObject<System.Collections.Generic.List<ColumnLayoutItem>>(json);
         if (items == null || items.Count == 0) return;
 
         var gridView = CollisionsList.View as System.Windows.Controls.GridView;
@@ -3079,11 +3079,11 @@ private void LoadColumnLayout()
 
 		private class ColumnLayoutItem
 		{
-			[JsonPropertyName("Header")]
+			[JsonProperty("Header")]
 			public string Header { get; set; }
-			[JsonPropertyName("Tag")]
+			[JsonProperty("Tag")]
 			public string Tag { get; set; }
-			[JsonPropertyName("Width")]
+			[JsonProperty("Width")]
 			public double Width { get; set; }
 		}
 
