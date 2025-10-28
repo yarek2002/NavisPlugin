@@ -19,6 +19,7 @@ using ClashManager;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
+using System.Windows.Data;
 
 namespace ClashManager.ManagerCollision.Views
 {
@@ -3008,7 +3009,7 @@ private void SaveColumnLayout()
             list.Add(new ColumnLayoutItem
             {
                 Header = column.Header?.ToString() ?? string.Empty,
-                Tag = string.Empty,
+                Tag = GetColumnKey(column),
                 Width = column.Width
             });
         }
@@ -3053,7 +3054,9 @@ private void LoadColumnLayout()
         foreach (var it in items)
         {
             System.Windows.Controls.GridViewColumn found = null;
-            if (!string.IsNullOrEmpty(it.Header))
+            if (!string.IsNullOrEmpty(it.Tag))
+                found = existing.FirstOrDefault(c => string.Equals(GetColumnKey(c), it.Tag, StringComparison.Ordinal));
+            if (found == null && !string.IsNullOrEmpty(it.Header))
                 found = existing.FirstOrDefault(c => (c.Header?.ToString() ?? string.Empty) == it.Header);
             if (found != null && !used.Contains(found))
             {
@@ -3089,6 +3092,17 @@ private void LoadColumnLayout()
 			[JsonProperty("Width")]
 			public double Width { get; set; }
 		}
+
+        private static string GetColumnKey(System.Windows.Controls.GridViewColumn column)
+        {
+            // Prefer binding path as a stable identifier
+            if (column.DisplayMemberBinding is Binding binding && binding.Path != null && !string.IsNullOrEmpty(binding.Path.Path))
+            {
+                return binding.Path.Path;
+            }
+            // Fallback to header text
+            return column.Header?.ToString() ?? string.Empty;
+        }
 
 
         /// <summary>
