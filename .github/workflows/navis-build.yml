@@ -3,11 +3,24 @@ name: Build Navisworks Plugin
 on:
   push:
     branches:
-      - main   # запуск только при пуше в main
-
-    paths-ignore:
-      - "README.md"   # игнорировать изменения README
-      - "README.MD"   # (на всякий случай, если кто-то изменит регистр)
+      - main
+      - 'experiment-*'  
+      - 'test-*'
+      - 'feature-*'
+  pull_request:
+    branches:
+      - main
+      - 'experiment-*'
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Тип релиза'
+        required: true
+        default: 'experimental'
+        type: choice
+        options:
+          - experimental
+          - stable
 
 permissions:
   contents: write
@@ -15,6 +28,11 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    # ЗАПУСКАЕМСЯ ДЛЯ ЛЮБОЙ ВЕТКИ
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.action == 'opened')
 
     steps:
       - name: Checkout repository
@@ -23,7 +41,6 @@ jobs:
       - name: Check libs
         run: dir mainPlugin-master\ClashManager\libs
 
-
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
@@ -31,17 +48,13 @@ jobs:
         run: msbuild mainPlugin-master\ClashManager\С.M.2021.csproj /p:Configuration=Debug /p:OutputPath=bin\Debug
         working-directory: ${{ github.workspace }}
 
-
       - name: Show all build outputs
         run: dir mainPlugin-master\ClashManager -Recurse
         working-directory: ${{ github.workspace }}
 
-
       - name: List build output
         run: dir .\mainPlugin-master\ClashManager\bin\Debug -Recurse
         working-directory: ${{ github.workspace }}
-
-
 
       - name: Archive plugin DLL + PDB
         run: |
@@ -59,20 +72,91 @@ jobs:
   release:
     needs: build
     runs-on: windows-latest
-    if: github.ref == 'refs/heads/main'
-
+    if: |
+      github.event_name == 'push' && (
+        github.ref == 'refs/heads/main' ||
+        startsWith(github.ref, 'refs/heads/experiment-')
+      ) ||
+      github.event_name == 'workflow_dispatch'
     steps:
+      - name: Checkout repository (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: navisworks-plugin-debug
-          path: .
+
+      - name: Determine tag name
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RELEASE_TYPE="${{ github.event.inputs.release_type }}"
+            if [ "$RELEASE_TYPE" = "stable" ]; then
+              TAG="v${{ github.run_number }}"
+            else
+              BRANCH="${{ github.ref_name }}"
+              TAG="experimental-${{ github.run_number }}-$BRANCH"
+            fi
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            TAG="v${{ github.run_number }}"
+          else
+            BRANCH="${{ github.ref_name }}"
+            TAG="experimental-${{ github.run_number }}-$BRANCH"
+          fi
+
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+          echo "is_stable=$( [ '${{ github.ref }}' = 'refs/heads/main' ] && echo true || echo false )" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Determine release type and tag
+        id: release
+        run: |
+          # Определяем, стабильный ли релиз
+          IS_STABLE=false
+          TAG_PREFIX=""
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Ручной запуск — смотрим input
+            INPUT_TYPE="${{ github.event.inputs.release_type }}"
+            if [ "$INPUT_TYPE" = "stable" ]; then
+              IS_STABLE=true
+              TAG_NAME="v${{ github.run_number }}"
+            else
+              BRANCH="${{ github.ref_name }}"
+              TAG_NAME="experimental-${{ github.run_number }}-$BRANCH"
+            fi
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            # Пуш в main
+            IS_STABLE=true
+            TAG_NAME="v${{ github.run_number }}"
+          else
+            # Любая другая ветка (experiment-*, etc.)
+            BRANCH="${{ github.ref_name }}"
+            TAG_NAME="experimental-${{ github.run_number }}-$BRANCH"
+          fi
+
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "is_stable=$IS_STABLE" >> $GITHUB_OUTPUT
+          echo "branch=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}
-          name: Debug Build ${{ github.run_number }}
+          tag_name: ${{ steps.release.outputs.tag_name }}
+          name: ${{ steps.release.outputs.is_stable == 'true' && 'Stable Build' || 'Experimental Build' }} #${{ github.run_number }}
+          prerelease: ${{ steps.release.outputs.is_stable != 'true' }}
           files: plugin.zip
+          body: |
+            ${{ steps.release.outputs.is_stable == 'true' && 'СТАБИЛЬНАЯ ВЕРСИЯ' || 'ЭКСПЕРИМЕНТАЛЬНАЯ ВЕРСИЯ - МОГУТ БЫТЬ ОШИБКИ' }}
+            
+            **Сборка:**
+            - Ветка: `${{ steps.release.outputs.branch }}`
+            - Коммит: `${{ github.sha }}`
+            - Запуск: `#${{ github.run_number }}`
+            - Тип: ${{ steps.release.outputs.is_stable == 'true' && 'stable' || 'experimental' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
