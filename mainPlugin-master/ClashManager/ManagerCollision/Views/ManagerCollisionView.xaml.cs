@@ -3013,7 +3013,9 @@ private void SaveColumnLayout()
             });
         }
 
-        string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NavisworksClashManager");
+        string folder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "NavisworksClashManager");
         Directory.CreateDirectory(folder);
         string path = Path.Combine(folder, "ColumnLayout.json");
 
@@ -3031,7 +3033,10 @@ private void LoadColumnLayout()
 {
     try
     {
-        string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "NavisworksClashManager", "ColumnLayout.json");
+        string path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "NavisworksClashManager",
+            "ColumnLayout.json");
         if (!File.Exists(path)) return;
 
         var json = File.ReadAllText(path);
