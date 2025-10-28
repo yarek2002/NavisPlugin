@@ -54,6 +54,7 @@ namespace ClashManager.ManagerCollision.Views
 		private readonly TimeSpan _scrollIdleTimeout = TimeSpan.FromMilliseconds(700);
 		private bool _suppressUIUpdates = false;
 		private bool _isSyncingFromPlugin = false;
+		private bool _pendingListRefresh = false;
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _levelCache = new System.Collections.Generic.Dictionary<Guid, string>();
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _gridCache = new System.Collections.Generic.Dictionary<Guid, string>();
 
@@ -186,10 +187,12 @@ namespace ClashManager.ManagerCollision.Views
                         {
                             _isUserScrolling = false;
                             _suppressUIUpdates = false;
-                            _scrollIdleTimer.Stop();
+							_scrollIdleTimer.Stop();
                             Log("Scroll idle detected: resume sync");
                             // Возобновим мониторинг Clash Detective
                             _clashDetectiveMonitorTimer?.Start();
+							// Выполним отложенное обновление списка, если было запрошено во время скролла
+							TryPerformPendingListRefresh();
                         }
 					};
 				}
@@ -2903,9 +2906,10 @@ namespace ClashManager.ManagerCollision.Views
 		{
 			try
 			{
-				// Если сейчас идет синхронизация из Clash Detective или пользователь скроллит — не делаем лишних refresh'ей
+				// Если сейчас идёт синхронизация или пользователь скроллит — откладываем refresh
 				if (_isSyncingFromClashDetective || _isUserScrolling || _suppressUIUpdates)
 				{
+					_pendingListRefresh = true;
 					return;
 				}
 
@@ -2925,10 +2929,19 @@ namespace ClashManager.ManagerCollision.Views
 
 				// Обновляем счетчики
 				UpdateCollisionCounters();
+				_pendingListRefresh = false;
 			}
 			catch (Exception ex)
 			{
 				Log($"Ошибка при обновлении списка коллизий: {ex.Message}");
+			}
+		}
+
+		private void TryPerformPendingListRefresh()
+		{
+			if (_pendingListRefresh && !_isUserScrolling && !_suppressUIUpdates)
+			{
+				RefreshCollisionsList();
 			}
 		}
 
