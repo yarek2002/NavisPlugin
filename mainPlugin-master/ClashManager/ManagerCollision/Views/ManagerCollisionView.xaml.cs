@@ -196,6 +196,15 @@ namespace ClashManager.ManagerCollision.Views
 							TryPerformPendingListRefresh();
                         }
 					};
+					// Включаем виртуализацию и отложенную прокрутку для снижения нагрузки при скролле
+					try
+					{
+						VirtualizingStackPanel.SetIsVirtualizing(CollisionsList, true);
+						VirtualizingStackPanel.SetVirtualizationMode(CollisionsList, VirtualizationMode.Recycling);
+						ScrollViewer.SetCanContentScroll(CollisionsList, true);
+						ScrollViewer.SetIsDeferredScrollingEnabled(CollisionsList, true);
+					}
+					catch { }
 				}
 				catch (Exception ex) { LogError("Failed to initialize window loaded event", ex); }
 			};
