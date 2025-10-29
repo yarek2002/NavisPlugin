@@ -189,7 +189,7 @@ namespace ClashManager.ManagerCollision.Views
                             _suppressUIUpdates = false;
 							_scrollIdleTimer.Stop();
                             try { System.Windows.Input.Mouse.OverrideCursor = null; } catch {}
-                            Log("Scroll idle detected: resume sync");
+					if (!_isUserScrolling && !_suppressUIUpdates) Log("Scroll idle detected: resume sync");
                             // Возобновим мониторинг Clash Detective
                             _clashDetectiveMonitorTimer?.Start();
 							// Выполним отложенное обновление списка, если было запрошено во время скролла
@@ -203,6 +203,9 @@ namespace ClashManager.ManagerCollision.Views
 						VirtualizingStackPanel.SetVirtualizationMode(CollisionsList, VirtualizationMode.Recycling);
 						ScrollViewer.SetCanContentScroll(CollisionsList, true);
 						ScrollViewer.SetIsDeferredScrollingEnabled(CollisionsList, true);
+						// Настройки кэша виртуализации: 1 viewport до и после
+						CollisionsList.SetValue(VirtualizingPanel.CacheLengthUnitProperty, VirtualizationCacheLengthUnit.Viewport);
+						CollisionsList.SetValue(VirtualizingPanel.CacheLengthProperty, new VirtualizationCacheLength(1.0, 1.0));
 					}
 					catch { }
 				}
@@ -793,7 +796,7 @@ namespace ClashManager.ManagerCollision.Views
 				ApplySorting();
 				UpdateCollisionCounters();
 				
-				Log($"ApplySearchFilter: applied {sortedItems.Count} items for query: {query}");
+				if (!_isUserScrolling && !_suppressUIUpdates) Log($"ApplySearchFilter: applied {sortedItems.Count} items for query: {query}");
 			}
 			catch (Exception ex)
 			{
@@ -2937,7 +2940,7 @@ namespace ClashManager.ManagerCollision.Views
 				// Если активен поиск — пере-применяем фильтр, иначе не пересобираем весь список
 				if (!string.IsNullOrEmpty(_lastSearchQuery))
 				{
-					Log("RefreshCollisionsList: активен поиск, пере-применяем ApplySearch без полной пересборки");
+					if (!_isUserScrolling && !_suppressUIUpdates) Log("RefreshCollisionsList: активен поиск, пере-применяем ApplySearch без полной пересборки");
 					ApplySearch();
 				}
 				else
@@ -2945,7 +2948,7 @@ namespace ClashManager.ManagerCollision.Views
 					// Легкий рефреш текущего представления, без смены ItemsSource
 					var view = System.Windows.Data.CollectionViewSource.GetDefaultView(CollisionsList.ItemsSource);
 					view?.Refresh();
-					Log("RefreshCollisionsList: выполнен легкий refresh текущего представления");
+					if (!_isUserScrolling && !_suppressUIUpdates) Log("RefreshCollisionsList: выполнен легкий refresh текущего представления");
 				}
 
 				// Обновляем счетчики
