@@ -203,9 +203,9 @@ namespace ClashManager.ManagerCollision.Views
 						VirtualizingStackPanel.SetVirtualizationMode(CollisionsList, VirtualizationMode.Recycling);
 						ScrollViewer.SetCanContentScroll(CollisionsList, true);
 						ScrollViewer.SetIsDeferredScrollingEnabled(CollisionsList, true);
-						// Настройки кэша виртуализации: 1 viewport до и после
-						CollisionsList.SetValue(VirtualizingPanel.CacheLengthUnitProperty, VirtualizationCacheLengthUnit.Viewport);
-						CollisionsList.SetValue(VirtualizingPanel.CacheLengthProperty, new VirtualizationCacheLength(1.0, 1.0));
+						// Настройки кэша виртуализации: 1 экран (в единицах элементов) до и после
+						CollisionsList.SetValue(VirtualizingPanel.CacheLengthUnitProperty, VirtualizationCacheLengthUnit.Item);
+						CollisionsList.SetValue(VirtualizingPanel.CacheLengthProperty, new VirtualizationCacheLength(10.0, 10.0));
 					}
 					catch { }
 				}
