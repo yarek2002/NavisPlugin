@@ -188,6 +188,7 @@ namespace ClashManager.ManagerCollision.Views
                             _isUserScrolling = false;
                             _suppressUIUpdates = false;
 							_scrollIdleTimer.Stop();
+                            try { System.Windows.Input.Mouse.OverrideCursor = null; } catch {}
                             Log("Scroll idle detected: resume sync");
                             // Возобновим мониторинг Clash Detective
                             _clashDetectiveMonitorTimer?.Start();
@@ -207,6 +208,7 @@ namespace ClashManager.ManagerCollision.Views
                 if (!(_scrollIdleTimer?.IsEnabled ?? false)) _scrollIdleTimer?.Start();
                 // Во время скролла приостанавливаем мониторинг Clash Detective
                 _clashDetectiveMonitorTimer?.Stop();
+                try { System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.Arrow; } catch {}
             };
 
             CollisionsList.PreviewMouseUp += (s, e) =>
