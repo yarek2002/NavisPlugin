@@ -219,9 +219,12 @@ namespace ClashManager.ManagerCollision.Views
 			
 			LoadTests();
 
+			// Предварительно заполняем кэши для всех объектов в тестах до загрузки
+			PrePopulateCaches();
+
 			// Initialize search timer for dynamic filtering
 			_searchTimer = new DispatcherTimer();
-			_searchTimer.Interval = TimeSpan.FromMilliseconds(300);
+			_searchTimer.Interval = TimeSpan.FromMilliseconds(500); // Увеличиваем интервал для снижения нагрузки
 			_searchTimer.Tick += SearchTimer_Tick;
 
 			// Initialize Clash Detective monitoring timer
@@ -2929,6 +2932,45 @@ namespace ClashManager.ManagerCollision.Views
 			catch (Exception ex)
 			{
 				Log($"Ошибка при обновлении списка коллизий: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// Предварительно заполняет кэши для всех объектов в тестах коллизий
+		/// </summary>
+		private void PrePopulateCaches()
+		{
+			try
+			{
+				var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList();
+				if (allTests == null) return;
+
+				Log($"Pre-populating caches for {allTests.Count} tests");
+
+				foreach (var test in allTests)
+				{
+					// Проходим по всем группам и одиночным коллизиям в тестах
+					foreach (var tpl in EnumerateAllGroupsWithLevel(test))
+					{
+						var group = tpl.Group;
+						// Предвычисляем информацию для групп
+						_levelCache[group.Guid] = GetLevelFromGroup(group);
+						_gridCache[group.Guid] = GetGridIntersectionFromGroup(group);
+					}
+
+					foreach (var result in GetAllResultsFromTest(test))
+					{
+						// Предвычисляем информацию для результатов
+						_levelCache[result.Guid] = GetLevelFromItems(result.CompositeItem1, result.CompositeItem2, result);
+						_gridCache[result.Guid] = FormatGridIntersectionDisplay(result);
+					}
+				}
+
+				Log($"Caches populated: {_levelCache.Count} level entries, {_gridCache.Count} grid entries");
+			}
+			catch (Exception ex)
+			{
+				LogError("Error during cache pre-population", ex);
 			}
 		}
 
