@@ -508,18 +508,54 @@ namespace ClashManager.ManagerCollision.Views
             return (levelName, intersectionName, line1, line2, pos);
         }
 
-        private void TestsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		private void TestsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			// Не обновляем список во время пользовательского скролла
-			if (_suppressUIUpdates) return;
-			
-			// Если выбрано несколько тестов через чекбоксы — показываем объединённый список коллизий этих тестов
-			var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
-			var checkedTests = allTests.Where(t => _checkedTestIds.Contains(t.Guid)).ToList();
-			if (checkedTests.Count > 0)
+			try
 			{
-				var mergedRows = new System.Collections.Generic.List<object>();
-				foreach (var t in checkedTests)
+				// Не обновляем список во время пользовательского скролла
+				if (_suppressUIUpdates) return;
+
+				// Определяем, нужен ли полный рефреш списка или достаточно изменить выбор
+				bool isSingleTestSelection = _checkedTestIds.Count == 0 && TestsList.SelectedItem != null;
+
+				var selectedTest = (TestsList.SelectedItem != null) ? (TestsList.SelectedItem.GetType().GetProperty("Test")?.GetValue(TestsList.SelectedItem) as ClashTest) : null;
+
+				// Если выбрана сингловая коллизия и список уже содержит коллизии этого теста — просто изменяем визуальный выбор
+				if (isSingleTestSelection && selectedTest != null && CollisionsList.ItemsSource != null)
+				{
+					var currentTestGuid = selectedTest.Guid;
+					bool listMatchesTest = false;
+
+					// Проверяем, соответствует ли текущий список коллизий выбранному тесту
+					foreach (var item in CollisionsList.Items)
+					{
+						if (item is CollisionListItem collisionItem)
+						{
+							if (collisionItem.TestGuid == currentTestGuid)
+							{
+								listMatchesTest = true;
+								break;
+							}
+						}
+					}
+
+					// Если список уже соответствует тесту — просто обновляем счетчики, без пересборки
+					if (listMatchesTest)
+					{
+						Log($"SelectionChanged: список уже содержит коллизии теста {selectedTest.DisplayName}, обновляем счетчики");
+						UpdateCollisionCounters();
+						return;
+					}
+				}
+
+				// Если выбрано несколько тестов через чекбоксы — показываем объединённый список коллизий этих тестов
+				var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
+				var checkedTests = allTests.Where(t => _checkedTestIds.Contains(t.Guid)).ToList();
+				if (checkedTests.Count > 0)
+				{
+					Log($"SelectionChanged: перестраиваем список для {checkedTests.Count} выбранных тестов");
+					var mergedRows = new System.Collections.Generic.List<object>();
+					foreach (var t in checkedTests)
 				{
 					var groupRowsMerged = EnumerateAllGroupsWithLevel(t)
 						.Select(x => new CollisionListItem
