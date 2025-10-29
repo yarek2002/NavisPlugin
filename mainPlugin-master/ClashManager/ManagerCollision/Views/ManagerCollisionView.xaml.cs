@@ -230,8 +230,11 @@ namespace ClashManager.ManagerCollision.Views
 			_clashDetectiveMonitorTimer.Tick += ClashDetectiveMonitorTimer_Tick;
 			StartClashDetectiveMonitoring();
 
-			//restorecolumns order and width if user saved it
+            //restorecolumns order and width if user saved it
 			LoadColumnLayout();
+
+			// После загрузки окна запускаем асинхронное заполнение кэшей
+			PrePopulateCachesAsync();
 		}
 
 	private void LoadTests()
@@ -586,9 +589,11 @@ namespace ClashManager.ManagerCollision.Views
 					GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
 				});
 
-			var ungroupedResultRows = selectedTest.Children
-				.OfType<ClashResult>()
-				.Select(r => new CollisionListItem
+			// Оптимизированная сборка одиночных результатов без лишних вычислений
+			var ungroupedResultRows = new System.Collections.Generic.List<CollisionListItem>();
+			foreach (var r in selectedTest.Children.OfType<ClashResult>())
+			{
+				var item = new CollisionListItem
 				{
 					Name = r.DisplayName ?? string.Empty,
 					Status = ToRuStatus(r.Status),
@@ -596,13 +601,17 @@ namespace ClashManager.ManagerCollision.Views
 					Guid = r.Guid,
 					TestGuid = selectedTest.Guid,
 					IsGroup = false,
-							IsSelected = _checkedRowIds.Contains(r.Guid),
-					Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
-					GridIntersection = GetCachedGridFromResult(r),
-                    TestName = selectedTest.DisplayName ?? string.Empty,
+					IsSelected = _checkedRowIds.Contains(r.Guid),
+					Level = null, // Будет вычислено позднее
+					GridIntersection = null, // Будет вычислено позднее
+					TestName = selectedTest.DisplayName ?? string.Empty,
 					Item = r,
 					GroupClashCount = 0
-				});
+				};
+				item.Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r);
+				item.GridIntersection = GetCachedGridFromResult(r);
+				ungroupedResultRows.Add(item);
+			}
 
 			var rows = groupRows.Concat(ungroupedResultRows).ToList();
 			CollisionsList.ItemsSource = rows;
@@ -2933,7 +2942,71 @@ namespace ClashManager.ManagerCollision.Views
 		}
 
 		/// <summary>
-		/// Предварительно заполняет кэши для всех объектов в тестах коллизий
+		/// Асинхронно заполняет кэши для всех объектов в тестах коллизий
+		/// </summary>
+		private void PrePopulateCachesAsync()
+		{
+			try
+			{
+				var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList();
+				if (allTests == null || allTests.Count == 0) return;
+
+				Log($"Pre-populating caches async for {allTests.Count} tests");
+
+				// Запускаем заполнение кэшей в фоновом потоке
+				System.Threading.Tasks.Task.Run(() =>
+				{
+					try
+					{
+						foreach (var test in allTests)
+						{
+							if (test == null) continue;
+
+							// Обрабатываем группы
+							foreach (var tpl in EnumerateAllGroupsWithLevel(test))
+							{
+								var group = tpl.Group;
+								if (group != null)
+								{
+									_levelCache[group.Guid] = GetLevelFromGroup(group);
+									_gridCache[group.Guid] = GetGridIntersectionFromGroup(group);
+								}
+							}
+
+							// Обрабатываем одиночные результаты
+							foreach (var result in GetAllResultsFromTest(test))
+							{
+								if (result != null)
+								{
+									_levelCache[result.Guid] = GetLevelFromItems(result.CompositeItem1, result.CompositeItem2, result);
+									_gridCache[result.Guid] = FormatGridIntersectionDisplay(result);
+								}
+							}
+						}
+
+						// Логируем завершение в диспетчере UI
+						Dispatcher.Invoke(() =>
+						{
+							Log($"Caches populated async: {_levelCache.Count} level entries, {_gridCache.Count} grid entries");
+						});
+					}
+					catch (Exception ex)
+					{
+						Dispatcher.Invoke(() =>
+						{
+							LogError("Error during async cache pre-population", ex);
+						});
+					}
+				});
+			}
+			catch (Exception ex)
+			{
+				LogError("Error starting async cache pre-population", ex);
+			}
+		}
+
+		/// <summary>
+		/// Синхронный вариант наполнения кэшей (на случай необходимости)
 		/// </summary>
 		private void PrePopulateCaches()
 		{
