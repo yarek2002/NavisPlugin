@@ -254,6 +254,7 @@ namespace ClashManager.ManagerCollision.Views
 			// bind cached items and apply initial filter/sort
 			CollisionsList.ItemsSource = _allCollisionItemsCache;
 			ApplyFiltersAndSorting();
+			UpdateVirtualizationCacheLength();
 		}
 
 	private void LoadTests()
@@ -3086,6 +3087,7 @@ private void LoadColumnLayout()
 						});
 					}
 				}
+				UpdateVirtualizationCacheLength();
 			}
 			catch (Exception ex)
 			{
@@ -3133,11 +3135,24 @@ private void LoadColumnLayout()
 					view.SortDescriptions.Add(new System.ComponentModel.SortDescription(_currentSortProperty, dir));
 				}
 				view.Refresh();
+				UpdateVirtualizationCacheLength();
 			}
 			catch (Exception ex)
 			{
 				Log($"Error in ApplyFiltersAndSorting: {ex.Message}");
 			}
+		}
+
+		private void UpdateVirtualizationCacheLength()
+		{
+			try
+			{
+				int n = _allCollisionItemsCache?.Count ?? 0;
+				if (n <= 0) return;
+				CollisionsList.SetValue(VirtualizingPanel.CacheLengthUnitProperty, VirtualizationCacheLengthUnit.Item);
+				CollisionsList.SetValue(VirtualizingPanel.CacheLengthProperty, new VirtualizationCacheLength(n, n));
+			}
+			catch { }
 		}
 
         private static string GetColumnKey(System.Windows.Controls.GridViewColumn column)
