@@ -556,56 +556,56 @@ namespace ClashManager.ManagerCollision.Views
 					Log($"SelectionChanged: перестраиваем список для {checkedTests.Count} выбранных тестов");
 					var mergedRows = new System.Collections.Generic.List<object>();
 					foreach (var t in checkedTests)
-				{
-					var groupRowsMerged = EnumerateAllGroupsWithLevel(t)
-						.Select(x => new CollisionListItem
-						{
-							Name = x.Group.DisplayName ?? string.Empty,
-							Status = ToRuStatus(x.Group.Status),
-							AssignedTo = (x.Group.AssignedTo ?? string.Empty).ToString(),
-							Guid = x.Group.Guid,
-							TestGuid = t.Guid,
-							IsGroup = true,
-							IsSelected = _checkedRowIds.Contains(x.Group.Guid),
-							Level = GetCachedLevelFromGroup(x.Group),
-							GridIntersection = GetCachedGridFromGroup(x.Group),
-							TestName = t.DisplayName ?? string.Empty,
-							Item = x.Group,
-							GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
-						});
-					var ungroupedResultRowsMerged = t.Children
-						.OfType<ClashResult>()
-						.Select(r => new CollisionListItem
-						{
-							Name = r.DisplayName ?? string.Empty,
-							Status = ToRuStatus(r.Status),
-							AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
-							Guid = r.Guid,
-							TestGuid = t.Guid,
-							IsGroup = false,
-							IsSelected = _checkedRowIds.Contains(r.Guid),
-							Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
-							GridIntersection = GetCachedGridFromResult(r),
-                            TestName = t.DisplayName ?? string.Empty,
-							Item = r,
-							GroupClashCount = 0
-						});
-					mergedRows.AddRange(groupRowsMerged);
-					mergedRows.AddRange(ungroupedResultRowsMerged);
+					{
+						var groupRowsMerged = EnumerateAllGroupsWithLevel(t)
+							.Select(x => new CollisionListItem
+							{
+								Name = x.Group.DisplayName ?? string.Empty,
+								Status = ToRuStatus(x.Group.Status),
+								AssignedTo = (x.Group.AssignedTo ?? string.Empty).ToString(),
+								Guid = x.Group.Guid,
+								TestGuid = t.Guid,
+								IsGroup = true,
+								IsSelected = _checkedRowIds.Contains(x.Group.Guid),
+								Level = GetCachedLevelFromGroup(x.Group),
+								GridIntersection = GetCachedGridFromGroup(x.Group),
+								TestName = t.DisplayName ?? string.Empty,
+								Item = x.Group,
+								GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
+							});
+						var ungroupedResultRowsMerged = t.Children
+							.OfType<ClashResult>()
+							.Select(r => new CollisionListItem
+							{
+								Name = r.DisplayName ?? string.Empty,
+								Status = ToRuStatus(r.Status),
+								AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
+								Guid = r.Guid,
+								TestGuid = t.Guid,
+								IsGroup = false,
+								IsSelected = _checkedRowIds.Contains(r.Guid),
+								Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
+								GridIntersection = GetCachedGridFromResult(r),
+								TestName = t.DisplayName ?? string.Empty,
+								Item = r,
+								GroupClashCount = 0
+							});
+						mergedRows.AddRange(groupRowsMerged);
+						mergedRows.AddRange(ungroupedResultRowsMerged);
+					}
+					CollisionsList.ItemsSource = mergedRows;
+					SubscribeToCollisionItemsPropertyChanged(mergedRows);
+					ApplySorting();
+					UpdateCollisionCounters();
+					return;
 				}
-				CollisionsList.ItemsSource = mergedRows;
-				SubscribeToCollisionItemsPropertyChanged(mergedRows);
-				ApplySorting();
-				UpdateCollisionCounters();
-				return;
-			}
 
-			var selectedTest = (TestsList.SelectedItem != null) ? (TestsList.SelectedItem.GetType().GetProperty("Test")?.GetValue(TestsList.SelectedItem) as ClashTest) : null;
-			if (selectedTest == null)
-			{
-				CollisionsList.ItemsSource = null;
-				return;
-			}
+				var selectedTestChecked = (TestsList.SelectedItem != null) ? (TestsList.SelectedItem.GetType().GetProperty("Test")?.GetValue(TestsList.SelectedItem) as ClashTest) : null;
+				if (selectedTestChecked == null)
+				{
+					CollisionsList.ItemsSource = null;
+					return;
+				}
 
 			// Показываем по одной строке на группу, плюс отдельные (негрупповые) результаты теста (оптимизированно)
 			var groupRows = EnumerateAllGroupsWithLevel(selectedTest)
@@ -3021,8 +3021,8 @@ namespace ClashManager.ManagerCollision.Views
 							return;
 						}
 
-						int itemsProcessed = 0;
-						const int maxItemsPerTick = 5; // Ограничиваем количество операций за один тик
+				int itemsProcessed = 0;
+				const int maxItemsPerTick = 50; // Увеличено для более быстрого заполнения кэшей
 
 						while (itemsProcessed < maxItemsPerTick)
 						{
