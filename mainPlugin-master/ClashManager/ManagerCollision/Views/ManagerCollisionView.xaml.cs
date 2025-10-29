@@ -203,7 +203,7 @@ namespace ClashManager.ManagerCollision.Views
                 _lastScrollEventUtc = DateTime.UtcNow;
                 if (!(_scrollIdleTimer?.IsEnabled ?? false)) _scrollIdleTimer?.Start();
                 // Во время скролла приостанавливаем мониторинг Clash Detective
-                _clashDetectiveMonitorTimer?.Stop();
+                StopClashDetectiveMonitoring();
             };
 
             CollisionsList.PreviewMouseUp += (s, e) =>
