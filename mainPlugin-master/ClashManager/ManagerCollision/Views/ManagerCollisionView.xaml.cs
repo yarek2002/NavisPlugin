@@ -219,9 +219,6 @@ namespace ClashManager.ManagerCollision.Views
 			
 			LoadTests();
 
-			// Предварительно заполняем кэши для всех объектов в тестах до загрузки
-			PrePopulateCaches();
-
 			// Initialize search timer for dynamic filtering
 			_searchTimer = new DispatcherTimer();
 			_searchTimer.Interval = TimeSpan.FromMilliseconds(500); // Увеличиваем интервал для снижения нагрузки
