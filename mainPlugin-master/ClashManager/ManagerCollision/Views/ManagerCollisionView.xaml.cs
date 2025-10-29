@@ -57,6 +57,7 @@ namespace ClashManager.ManagerCollision.Views
 		private bool _pendingListRefresh = false;
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _levelCache = new System.Collections.Generic.Dictionary<Guid, string>();
 		private readonly System.Collections.Generic.Dictionary<Guid, string> _gridCache = new System.Collections.Generic.Dictionary<Guid, string>();
+		private System.Collections.Generic.List<CollisionListItem> _allCollisionItemsCache = new System.Collections.Generic.List<CollisionListItem>();
 
 		// Класс для оптимизированного отображения элементов списка
 		public class CollisionListItem : INotifyPropertyChanged
@@ -235,6 +236,7 @@ namespace ClashManager.ManagerCollision.Views
 			SubscribeToModelEvents();
 			
 			LoadTests();
+			RebuildAllItemsCache();
 
 			// Initialize search timer for dynamic filtering
 			_searchTimer = new DispatcherTimer();
@@ -249,6 +251,9 @@ namespace ClashManager.ManagerCollision.Views
 
 			//restorecolumns order and width if user saved it
 			LoadColumnLayout();
+			// bind cached items and apply initial filter/sort
+			CollisionsList.ItemsSource = _allCollisionItemsCache;
+			ApplyFiltersAndSorting();
 		}
 
 	private void LoadTests()
@@ -683,7 +688,8 @@ namespace ClashManager.ManagerCollision.Views
 			string query = (GetSearchText() ?? string.Empty).Trim();
 			if (string.IsNullOrEmpty(query))
 			{
-				TestsList_SelectionChanged(null, null);
+				_lastSearchQuery = string.Empty;
+				ApplyFiltersAndSorting();
 				return;
 			}
 
@@ -702,101 +708,14 @@ namespace ClashManager.ManagerCollision.Views
 					_pendingListRefresh = true;
 					return;
 				}
-				var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
-
-				// Определяем, по каким тестам искать: выбранные через чекбоксы или все тесты
-				var testsToSearch = _checkedTestIds.Count > 0
-					? allTests.Where(t => _checkedTestIds.Contains(t.Guid)).ToList()
-					: allTests; // Если нет выбранных через чекбоксы, используем все тесты
-
-				if (testsToSearch.Count == 0)
+				_lastSearchQuery = query;
+				// Привязываем источник кэша, если ещё не привязан
+				if (!ReferenceEquals(CollisionsList.ItemsSource, _allCollisionItemsCache))
 				{
-					CollisionsList.ItemsSource = null;
-					return;
+					CollisionsList.ItemsSource = _allCollisionItemsCache;
 				}
-
-				// Получаем все элементы из выбранных тестов
-				var allItems = new System.Collections.Generic.List<object>();
-
-				foreach (var test in testsToSearch)
-				{
-					// Добавляем группы (оптимизированно)
-					var groupRows = EnumerateAllGroupsWithLevel(test)
-						.Select(x => new CollisionListItem
-						{
-							Name = x.Group.DisplayName ?? string.Empty,
-								Status = ToRuStatus(x.Group.Status),
-							AssignedTo = (x.Group.AssignedTo ?? string.Empty).ToString(),
-							Guid = x.Group.Guid,
-							TestGuid = test.Guid,
-							IsGroup = true,
-							IsSelected = _checkedRowIds.Contains(x.Group.Guid),
-							Level = GetCachedLevelFromGroup(x.Group),
-							GridIntersection = GetCachedGridFromGroup(x.Group),
-							TestName = test.DisplayName ?? string.Empty,
-							Item = x.Group,
-							GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
-						});
-
-					// Добавляем отдельные результаты (оптимизированно)
-					var ungroupedResultRows = test.Children
-						.OfType<ClashResult>()
-						.Select(r => new CollisionListItem
-						{
-							Name = r.DisplayName ?? string.Empty,
-								Status = ToRuStatus(r.Status),
-							AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
-							Guid = r.Guid,
-							TestGuid = test.Guid,
-							IsGroup = false,
-							IsSelected = _checkedRowIds.Contains(r.Guid),
-							Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
-							GridIntersection = GetCachedGridFromResult(r),
-							TestName = test.DisplayName ?? string.Empty,
-							Item = r,
-							GroupClashCount = 0
-						});
-
-					allItems.AddRange(groupRows);
-					allItems.AddRange(ungroupedResultRows);
-				}
-
-				// Фильтруем элементы, которые содержат запрос
-				var filteredItems = allItems.Where(item =>
-				{
-					string name = item.GetType().GetProperty("Name")?.GetValue(item)?.ToString() ?? string.Empty;
-					if (_searchByNameMode)
-					{
-						return name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
-					}
-					else
-					{
-						Guid guid = (Guid)(item.GetType().GetProperty("Guid")?.GetValue(item) ?? Guid.Empty);
-						return guid.ToString().IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
-					}
-				}).ToList();
-
-				// Сортируем: сначала элементы, начинающиеся с запроса, потом остальные
-				var sortedItems = filteredItems.OrderByDescending(item =>
-				{
-					string name = item.GetType().GetProperty("Name")?.GetValue(item)?.ToString() ?? string.Empty;
-					if (_searchByNameMode)
-					{
-						return name.StartsWith(query, StringComparison.OrdinalIgnoreCase);
-					}
-					else
-					{
-						Guid guid = (Guid)(item.GetType().GetProperty("Guid")?.GetValue(item) ?? Guid.Empty);
-						return guid.ToString().StartsWith(query, StringComparison.OrdinalIgnoreCase);
-					}
-				}).ToList();
-
-				CollisionsList.ItemsSource = sortedItems;
-				SubscribeToCollisionItemsPropertyChanged(sortedItems);
-				ApplySorting();
-				UpdateCollisionCounters();
-				
-				if (!_isUserScrolling && !_suppressUIUpdates) Log($"ApplySearchFilter: applied {sortedItems.Count} items for query: {query}");
+				ApplyFiltersAndSorting();
+				if (!_isUserScrolling && !_suppressUIUpdates) Log($"ApplySearchFilter: applied filter for query: {query}");
 			}
 			catch (Exception ex)
 			{
@@ -2936,20 +2855,8 @@ namespace ClashManager.ManagerCollision.Views
 					_pendingListRefresh = true;
 					return;
 				}
-
-				// Если активен поиск — пере-применяем фильтр, иначе не пересобираем весь список
-				if (!string.IsNullOrEmpty(_lastSearchQuery))
-				{
-					if (!_isUserScrolling && !_suppressUIUpdates) Log("RefreshCollisionsList: активен поиск, пере-применяем ApplySearch без полной пересборки");
-					ApplySearch();
-				}
-				else
-				{
-					// Легкий рефреш текущего представления, без смены ItemsSource
-					var view = System.Windows.Data.CollectionViewSource.GetDefaultView(CollisionsList.ItemsSource);
-					view?.Refresh();
-					if (!_isUserScrolling && !_suppressUIUpdates) Log("RefreshCollisionsList: выполнен легкий refresh текущего представления");
-				}
+				// Применяем фильтры/сортировку к кэшу, без пересборки списка
+				ApplyFiltersAndSorting();
 
 				// Обновляем счетчики
 				UpdateCollisionCounters();
@@ -2965,7 +2872,7 @@ namespace ClashManager.ManagerCollision.Views
 		{
 			if (_pendingListRefresh && !_isUserScrolling && !_suppressUIUpdates)
 			{
-				RefreshCollisionsList();
+				ApplyFiltersAndSorting();
 			}
 		}
 
@@ -3130,6 +3037,109 @@ private void LoadColumnLayout()
 			public double Width { get; set; }
 		}
 
+		private void RebuildAllItemsCache()
+		{
+			try
+			{
+				var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
+				_allCollisionItemsCache = new System.Collections.Generic.List<CollisionListItem>(capacity: Math.Max(128, allTests.Sum(t => Math.Max(1, t.Children?.Count ?? 0))));
+				foreach (var test in allTests)
+				{
+					// Группы
+					foreach (var tpl in EnumerateAllGroupsWithLevel(test))
+					{
+						var g = tpl.Group;
+						_allCollisionItemsCache.Add(new CollisionListItem
+						{
+							Name = g.DisplayName ?? string.Empty,
+							Status = ToRuStatus(g.Status),
+							AssignedTo = (g.AssignedTo ?? string.Empty).ToString(),
+							Guid = g.Guid,
+							TestGuid = test.Guid,
+							IsGroup = true,
+							IsSelected = _checkedRowIds.Contains(g.Guid),
+							Level = GetCachedLevelFromGroup(g),
+							GridIntersection = GetCachedGridFromGroup(g),
+							TestName = test.DisplayName ?? string.Empty,
+							Item = g,
+							GroupClashCount = GetAllResultsFromGroup(g).Count()
+						});
+					}
+
+					// Одиночные коллизии
+					foreach (var r in test.Children.OfType<ClashResult>())
+					{
+						_allCollisionItemsCache.Add(new CollisionListItem
+						{
+							Name = r.DisplayName ?? string.Empty,
+							Status = ToRuStatus(r.Status),
+							AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
+							Guid = r.Guid,
+							TestGuid = test.Guid,
+							IsGroup = false,
+							IsSelected = _checkedRowIds.Contains(r.Guid),
+							Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
+							GridIntersection = GetCachedGridFromResult(r),
+							TestName = test.DisplayName ?? string.Empty,
+							Item = r,
+							GroupClashCount = 0
+						});
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				Log($"Error in RebuildAllItemsCache: {ex.Message}");
+			}
+		}
+
+		private void ApplyFiltersAndSorting()
+		{
+			try
+			{
+				if (_isUserScrolling || _suppressUIUpdates)
+				{
+					_pendingListRefresh = true;
+					return;
+				}
+				if (CollisionsList.ItemsSource == null)
+				{
+					CollisionsList.ItemsSource = _allCollisionItemsCache;
+				}
+				var view = System.Windows.Data.CollectionViewSource.GetDefaultView(CollisionsList.ItemsSource);
+				if (view == null) return;
+				string q = _lastSearchQuery ?? string.Empty;
+				var selectedTests = (_checkedTestIds != null && _checkedTestIds.Count > 0) ? new System.Collections.Generic.HashSet<Guid>(_checkedTestIds) : null;
+				view.Filter = o =>
+				{
+					var item = o as CollisionListItem;
+					if (item == null) return false;
+					if (selectedTests != null && !selectedTests.Contains(item.TestGuid)) return false;
+					if (string.IsNullOrEmpty(q)) return true;
+					if (_searchByNameMode)
+					{
+						return (item.Name ?? string.Empty).IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0;
+					}
+					else
+					{
+						return item.Guid.ToString().IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0;
+					}
+				};
+				// Sorting
+				view.SortDescriptions.Clear();
+				if (!string.IsNullOrEmpty(_currentSortProperty))
+				{
+					var dir = _currentSortAscending ? System.ComponentModel.ListSortDirection.Ascending : System.ComponentModel.ListSortDirection.Descending;
+					view.SortDescriptions.Add(new System.ComponentModel.SortDescription(_currentSortProperty, dir));
+				}
+				view.Refresh();
+			}
+			catch (Exception ex)
+			{
+				Log($"Error in ApplyFiltersAndSorting: {ex.Message}");
+			}
+		}
+
         private static string GetColumnKey(System.Windows.Controls.GridViewColumn column)
         {
             // Prefer binding path as a stable identifier
@@ -3211,6 +3221,8 @@ private void LoadColumnLayout()
 				
 				// Перезагружаем данные
 				LoadTests();
+				RebuildAllItemsCache();
+				ApplyFiltersAndSorting();
 				
 				// Восстанавливаем состояние галочек тестов
 				_checkedTestIds.Clear();
@@ -3275,21 +3287,22 @@ private void LoadColumnLayout()
                         Item = item
                     };
 
-                    // Добавляем в текущий список коллизий
-                    var currentItems = CollisionsList.ItemsSource as System.Collections.Generic.List<object>;
-                    if (currentItems != null)
+                    // Добавляем в кэш и обновляем представление
+                    _allCollisionItemsCache.Add(new CollisionListItem
                     {
-                        currentItems.Add(collisionItem);
-                        CollisionsList.ItemsSource = null;
-                        CollisionsList.ItemsSource = currentItems;
-                        Log($"Added clash {itemName} to merged list from test {test.DisplayName}");
-                    }
-                    else
-                    {
-                        // Если список пустой или имеет другой тип, пересоздаем объединенный список
-                        Log("Rebuilding merged list to include new clash");
-                        TestsList_SelectionChanged(null, null);
-                    }
+                        Name = itemName,
+                        Status = status,
+                        AssignedTo = assignedTo,
+                        Guid = clashGuid,
+                        TestGuid = testGuid,
+                        IsGroup = group != null,
+                        Item = item,
+                        Level = level,
+                        GridIntersection = grid,
+                        GroupClashCount = group != null ? GetAllResultsFromGroup(group).Count() : 0,
+                        TestName = test.DisplayName ?? string.Empty
+                    });
+                    ApplyFiltersAndSorting();
                 }
             }
             catch (Exception ex)
