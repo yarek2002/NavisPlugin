@@ -2942,66 +2942,171 @@ namespace ClashManager.ManagerCollision.Views
 		}
 
 		/// <summary>
-		/// Асинхронно заполняет кэши для всех объектов в тестах коллизий
+		/// Запускает неблокирующее заполнение кэшей для всех объектов в тестах коллизий
+		/// Используем DispatcherTimer для постепенной обработки без блокировки UI
 		/// </summary>
 		private void PrePopulateCachesAsync()
 		{
 			try
 			{
 				var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList();
-				if (allTests == null || allTests.Count == 0) return;
+				if (allTests == null || allTests.Count == 0)
+				{
+					Log("No tests found for cache population");
+					return;
+				}
 
-				Log($"Pre-populating caches async for {allTests.Count} tests");
+				Log($"Starting gradual cache population for {allTests.Count} tests");
 
-				// Запускаем заполнение кэшей в фоновом потоке
-				System.Threading.Tasks.Task.Run(() =>
+				// Создаем таймер для постепенной обработки
+				var cacheTimer = new DispatcherTimer();
+				cacheTimer.Interval = TimeSpan.FromMilliseconds(50); // Быстрый интервал, но неблокирующий
+
+				var testEnumerator = allTests.GetEnumerator();
+				var currentGroupEnumerator = System.Linq.Enumerable.Empty<(ClashResultGroup Group, int Level)>().GetEnumerator();
+				var currentResultEnumerator = System.Linq.Enumerable.Empty<ClashResult>().GetEnumerator();
+
+				int testsProcessed = 0;
+				int totalGroups = 0;
+				int totalResults = 0;
+				bool processingTests = true;
+				bool processingGroups = false;
+				bool processingResults = false;
+
+				cacheTimer.Tick += (s, e) =>
 				{
 					try
 					{
-						foreach (var test in allTests)
+						// Останавливаемся, если окно закрывается
+						if (_levelCache == null || _gridCache == null)
 						{
-							if (test == null) continue;
-
-							// Обрабатываем группы
-							foreach (var tpl in EnumerateAllGroupsWithLevel(test))
-							{
-								var group = tpl.Group;
-								if (group != null)
-								{
-									_levelCache[group.Guid] = GetLevelFromGroup(group);
-									_gridCache[group.Guid] = GetGridIntersectionFromGroup(group);
-								}
-							}
-
-							// Обрабатываем одиночные результаты
-							foreach (var result in GetAllResultsFromTest(test))
-							{
-								if (result != null)
-								{
-									_levelCache[result.Guid] = GetLevelFromItems(result.CompositeItem1, result.CompositeItem2, result);
-									_gridCache[result.Guid] = FormatGridIntersectionDisplay(result);
-								}
-							}
+							cacheTimer.Stop();
+							Log("Cache population stopped - window closed");
+							return;
 						}
 
-						// Логируем завершение в диспетчере UI
-						Dispatcher.Invoke(() =>
+						int itemsProcessed = 0;
+						const int maxItemsPerTick = 5; // Ограничиваем количество операций за один тик
+
+						while (itemsProcessed < maxItemsPerTick)
 						{
-							Log($"Caches populated async: {_levelCache.Count} level entries, {_gridCache.Count} grid entries");
-						});
+							if (processingTests)
+							{
+								if (!testEnumerator.MoveNext())
+								{
+									processingTests = false;
+									processingGroups = true;
+									testEnumerator.Dispose();
+									continue;
+								}
+
+								var test = testEnumerator.Current;
+								if (test == null) continue;
+
+								currentGroupEnumerator = EnumerateAllGroupsWithLevel(test).GetEnumerator();
+								currentResultEnumerator = GetAllResultsFromTest(test).GetEnumerator();
+								testsProcessed++;
+								Log($"Processing test {testsProcessed}: {test.DisplayName}");
+
+								processingTests = false;
+								processingGroups = true;
+								continue;
+							}
+
+							if (processingGroups)
+							{
+								if (!currentGroupEnumerator.MoveNext())
+								{
+									processingGroups = false;
+									processingResults = true;
+									currentGroupEnumerator.Dispose();
+									continue;
+								}
+
+								var group = currentGroupEnumerator.Current.Group;
+								if (group != null)
+								{
+									try
+									{
+										_levelCache[group.Guid] = GetLevelFromGroup(group);
+										_gridCache[group.Guid] = GetGridIntersectionFromGroup(group);
+										totalGroups++;
+									}
+									catch (Exception ex)
+									{
+										LogError($"Error processing group {group.DisplayName}", ex);
+									}
+								}
+								itemsProcessed++;
+							}
+							else if (processingResults)
+							{
+								if (!currentResultEnumerator.MoveNext())
+								{
+									processingResults = false;
+									processingTests = true;
+
+									// Проверяем, есть ли еще тесты
+									if (!testEnumerator.MoveNext())
+									{
+										// Все тесты обработаны
+										currentResultEnumerator.Dispose();
+										cacheTimer.Stop();
+										Log($"Cache population completed: {testsProcessed} tests, {totalGroups} groups, {totalResults} results. Total entries: {_levelCache.Count} levels, {_gridCache.Count} grids");
+										return;
+									}
+
+									// Начинаем новый тест
+									var nextTest = testEnumerator.Current;
+									testEnumerator.MoveNext(); // Пропускаем уже выбранный тест
+									if (nextTest == null) continue;
+
+									currentGroupEnumerator = EnumerateAllGroupsWithLevel(nextTest).GetEnumerator();
+									currentResultEnumerator = GetAllResultsFromTest(nextTest).GetEnumerator();
+									testsProcessed++; // Уже увеличили выше
+									Log($"Processing test {testsProcessed}: {nextTest.DisplayName}");
+
+									processingGroups = true;
+									continue;
+								}
+
+								var result = currentResultEnumerator.Current;
+								if (result != null)
+								{
+									try
+									{
+										_levelCache[result.Guid] = GetLevelFromItems(result.CompositeItem1, result.CompositeItem2, result);
+										_gridCache[result.Guid] = FormatGridIntersectionDisplay(result);
+										totalResults++;
+									}
+									catch (Exception ex)
+									{
+										LogError($"Error processing result {result.DisplayName}", ex);
+									}
+								}
+								itemsProcessed++;
+							}
+							else
+							{
+								// Все обработано
+								cacheTimer.Stop();
+								Log($"Cache population completed: {testsProcessed} tests, {totalGroups} groups, {totalResults} results. Total entries: {_levelCache.Count} levels, {_gridCache.Count} grids");
+								return;
+							}
+						}
 					}
 					catch (Exception ex)
 					{
-						Dispatcher.Invoke(() =>
-						{
-							LogError("Error during async cache pre-population", ex);
-						});
+						LogError("Error in cache population timer tick", ex);
+						cacheTimer.Stop();
 					}
-				});
+				};
+
+				cacheTimer.Start();
 			}
 			catch (Exception ex)
 			{
-				LogError("Error starting async cache pre-population", ex);
+				LogError("Error starting gradual cache pre-population", ex);
 			}
 		}
 
