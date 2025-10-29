@@ -51,11 +51,13 @@ namespace ClashManager.ManagerCollision.Views
 		private bool _isUserScrolling = false;
 		private DateTime _lastScrollEventUtc = DateTime.MinValue;
 		private DispatcherTimer _scrollIdleTimer;
-		private readonly TimeSpan _scrollIdleTimeout = TimeSpan.FromMilliseconds(700);
-		private bool _suppressUIUpdates = false;
-		private bool _isSyncingFromPlugin = false;
-		private readonly System.Collections.Generic.Dictionary<Guid, string> _levelCache = new System.Collections.Generic.Dictionary<Guid, string>();
-		private readonly System.Collections.Generic.Dictionary<Guid, string> _gridCache = new System.Collections.Generic.Dictionary<Guid, string>();
+        private readonly TimeSpan _scrollIdleTimeout = TimeSpan.FromMilliseconds(1200);
+        private bool _suppressUIUpdates = false;
+        private bool _isSyncingFromPlugin = false;
+        private readonly System.Collections.Generic.Dictionary<Guid, string> _levelCache = new System.Collections.Generic.Dictionary<Guid, string>();
+        private readonly System.Collections.Generic.Dictionary<Guid, string> _gridCache = new System.Collections.Generic.Dictionary<Guid, string>();
+        private DispatcherTimer _cachePopulationTimer;
+        private bool _shouldPauseCachePopulation = false;
 
 		// Класс для оптимизированного отображения элементов списка
 		public class CollisionListItem : INotifyPropertyChanged
@@ -186,8 +188,9 @@ namespace ClashManager.ManagerCollision.Views
                         {
                             _isUserScrolling = false;
                             _suppressUIUpdates = false;
+                            _shouldPauseCachePopulation = false;
                             _scrollIdleTimer.Stop();
-                            Log("Scroll idle detected: resume sync");
+                            Log("Scroll idle detected: resume sync and cache population");
                             // Возобновим мониторинг Clash Detective
                             _clashDetectiveMonitorTimer?.Start();
                         }
@@ -200,6 +203,7 @@ namespace ClashManager.ManagerCollision.Views
                 _lastUserScrollUtc = DateTime.UtcNow;
                 _isUserScrolling = true;
                 _suppressUIUpdates = true;
+                _shouldPauseCachePopulation = true;
                 _lastScrollEventUtc = DateTime.UtcNow;
                 if (!(_scrollIdleTimer?.IsEnabled ?? false)) _scrollIdleTimer?.Start();
                 // Во время скролла приостанавливаем мониторинг Clash Detective
@@ -654,7 +658,7 @@ namespace ClashManager.ManagerCollision.Views
 			SubscribeToCollisionItemsPropertyChanged(rows);
 			ApplySorting();
 			UpdateCollisionCounters();
-		}
+		}		
 
 		private System.Collections.Generic.IEnumerable<(ClashResultGroup Group, int Level)> EnumerateAllGroupsWithLevel(ClashTest test)
 		{
@@ -3009,127 +3013,126 @@ namespace ClashManager.ManagerCollision.Views
 				bool processingGroups = false;
 				bool processingResults = false;
 
-				cacheTimer.Tick += (s, e) =>
+                cacheTimer.Tick += (s, e) =>
 				{
 					try
 					{
-						// Останавливаемся, если окно закрывается
-						if (_levelCache == null || _gridCache == null)
+						// Останавливаемся, если окно закрывается или пользователь скроллит
+						if (_levelCache == null || _gridCache == null || _shouldPauseCachePopulation)
 						{
+							if (_shouldPauseCachePopulation)
+							{
+								Log("Cache population paused - user scrolling");
+								return;
+							}
 							cacheTimer.Stop();
 							Log("Cache population stopped - window closed");
 							return;
 						}
 
 				int itemsProcessed = 0;
-				const int maxItemsPerTick = 50; // Увеличено для более быстрого заполнения кэшей
+				const int maxItemsPerTick = 25; // Уменьшено для снижения нагрузки во время скролла
 
-						while (itemsProcessed < maxItemsPerTick)
-						{
-							if (processingTests)
-							{
-								if (!testEnumerator.MoveNext())
-								{
-									processingTests = false;
-									processingGroups = true;
-									testEnumerator.Dispose();
-									continue;
-								}
+                        while (itemsProcessed < maxItemsPerTick)
+                        {
+                            if (processingTests)
+                            {
+                                if (!testEnumerator.MoveNext())
+                                {
+                                    processingTests = false;
+                                    processingGroups = true;
+                                    testEnumerator.Dispose();
+                                    continue;
+                                }
 
-								var test = testEnumerator.Current;
-								if (test == null) continue;
+                                var test = testEnumerator.Current;
+                                if (test == null) continue;
 
-								currentGroupEnumerator = EnumerateAllGroupsWithLevel(test).GetEnumerator();
-								currentResultEnumerator = GetAllResultsFromTest(test).GetEnumerator();
-								testsProcessed++;
-								Log($"Processing test {testsProcessed}: {test.DisplayName}");
+                                currentGroupEnumerator = EnumerateAllGroupsWithLevel(test).GetEnumerator();
+                                currentResultEnumerator = GetAllResultsFromTest(test).GetEnumerator();
+                                testsProcessed++;
+                                Log($"Processing test {testsProcessed}: {test.DisplayName}");
 
-								processingTests = false;
-								processingGroups = true;
-								continue;
-							}
+                                processingTests = false;
+                                processingGroups = true;
+                                continue;
+                            }
 
-							if (processingGroups)
-							{
-								if (!currentGroupEnumerator.MoveNext())
-								{
-									processingGroups = false;
-									processingResults = true;
-									currentGroupEnumerator.Dispose();
-									continue;
-								}
+                            if (processingGroups)
+                            {
+                                if (!currentGroupEnumerator.MoveNext())
+                                {
+                                    processingGroups = false;
+                                    processingResults = true;
+                                    currentGroupEnumerator.Dispose();
+                                    continue;
+                                }
 
-								var group = currentGroupEnumerator.Current.Group;
-								if (group != null)
-								{
-									try
-									{
-										_levelCache[group.Guid] = GetLevelFromGroup(group);
-										_gridCache[group.Guid] = GetGridIntersectionFromGroup(group);
-										totalGroups++;
-									}
-									catch (Exception ex)
-									{
-										LogError($"Error processing group {group.DisplayName}", ex);
-									}
-								}
-								itemsProcessed++;
-							}
-							else if (processingResults)
-							{
-								if (!currentResultEnumerator.MoveNext())
-								{
-									processingResults = false;
-									processingTests = true;
-
-									// Проверяем, есть ли еще тесты
-									if (!testEnumerator.MoveNext())
-									{
-										// Все тесты обработаны
-										currentResultEnumerator.Dispose();
-										cacheTimer.Stop();
-										Log($"Cache population completed: {testsProcessed} tests, {totalGroups} groups, {totalResults} results. Total entries: {_levelCache.Count} levels, {_gridCache.Count} grids");
-										return;
-									}
-
-									// Начинаем новый тест
-									var nextTest = testEnumerator.Current;
-									testEnumerator.MoveNext(); // Пропускаем уже выбранный тест
-									if (nextTest == null) continue;
-
-									currentGroupEnumerator = EnumerateAllGroupsWithLevel(nextTest).GetEnumerator();
-									currentResultEnumerator = GetAllResultsFromTest(nextTest).GetEnumerator();
-									testsProcessed++; // Уже увеличили выше
-									Log($"Processing test {testsProcessed}: {nextTest.DisplayName}");
-
-									processingGroups = true;
-									continue;
-								}
-
-								var result = currentResultEnumerator.Current;
-								if (result != null)
-								{
-									try
-									{
-										_levelCache[result.Guid] = GetLevelFromItems(result.CompositeItem1, result.CompositeItem2, result);
-										_gridCache[result.Guid] = FormatGridIntersectionDisplay(result);
-										totalResults++;
-									}
-									catch (Exception ex)
-									{
-										LogError($"Error processing result {result.DisplayName}", ex);
-									}
-								}
-								itemsProcessed++;
-							}
-							else
-							{
-								// Все обработано
-								cacheTimer.Stop();
-								Log($"Cache population completed: {testsProcessed} tests, {totalGroups} groups, {totalResults} results. Total entries: {_levelCache.Count} levels, {_gridCache.Count} grids");
-								return;
-							}
-						}
+                                var group = currentGroupEnumerator.Current.Group;
+                                if (group != null)
+                                {
+                                    try
+                                    {
+                                        _levelCache[group.Guid] = GetLevelFromGroup(group);
+                                        _gridCache[group.Guid] = GetGridIntersectionFromGroup(group);
+                                        totalGroups++;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        LogError($"Error processing group {group.DisplayName}", ex);
+                                    }
+                                }
+                                itemsProcessed++;
+                            }
+                            else if (processingResults)
+                            {
+                                if (!currentResultEnumerator.MoveNext())
+                                {
+                                    processingResults = false;
+                                    // Try to start next test
+                                    if (!testEnumerator.MoveNext())
+                                    {
+                                        // All tests done
+                                        currentResultEnumerator.Dispose();
+                                        cacheTimer.Stop();
+                                        Log($"Cache population completed: {testsProcessed} tests, {totalGroups} groups, {totalResults} results. Total entries: {_levelCache.Count} levels, {_gridCache.Count} grids");
+                                        return;
+                                    }
+                                    // Start next test with groups
+                                    var nextTest = testEnumerator.Current;
+                                    currentGroupEnumerator = EnumerateAllGroupsWithLevel(nextTest).GetEnumerator();
+                                    currentResultEnumerator = GetAllResultsFromTest(nextTest).GetEnumerator();
+                                    testsProcessed++;
+                                    Log($"Processing test {testsProcessed}: {nextTest.DisplayName}");
+                                    processingGroups = true;
+                                }
+                                else
+                                {
+                                    var result = currentResultEnumerator.Current;
+                                    if (result != null)
+                                    {
+                                        try
+                                        {
+                                            _levelCache[result.Guid] = GetLevelFromItems(result.CompositeItem1, result.CompositeItem2, result);
+                                            _gridCache[result.Guid] = FormatGridIntersectionDisplay(result);
+                                            totalResults++;
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            LogError($"Error processing result {result.DisplayName}", ex);
+                                        }
+                                    }
+                                    itemsProcessed++;
+                                }
+                            }
+                            else
+                            {
+                                // All processed
+                                cacheTimer.Stop();
+                                Log($"Cache population completed: {testsProcessed} tests, {totalGroups} groups, {totalResults} results. Total entries: {_levelCache.Count} levels, {_gridCache.Count} grids");
+                                return;
+                            }
+                        }
 					}
 					catch (Exception ex)
 					{
