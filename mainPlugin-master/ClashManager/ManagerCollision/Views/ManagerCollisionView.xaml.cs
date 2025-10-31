@@ -203,7 +203,6 @@ namespace ClashManager.ManagerCollision.Views
                 _lastUserScrollUtc = DateTime.UtcNow;
                 _isUserScrolling = true;
                 _suppressUIUpdates = true;
-                _shouldPauseCachePopulation = true;
                 _lastScrollEventUtc = DateTime.UtcNow;
                 if (!(_scrollIdleTimer?.IsEnabled ?? false)) _scrollIdleTimer?.Start();
                 // Во время скролла приостанавливаем мониторинг Clash Detective
@@ -661,7 +660,7 @@ namespace ClashManager.ManagerCollision.Views
 		}	
 		catch (Exception ex) 
 		{
-			LogError (ex)
+			LogError (ex);
 		}	
 
 		private System.Collections.Generic.IEnumerable<(ClashResultGroup Group, int Level)> EnumerateAllGroupsWithLevel(ClashTest test)
