@@ -657,13 +657,12 @@ namespace ClashManager.ManagerCollision.Views
 			SubscribeToCollisionItemsPropertyChanged(rows);
 			ApplySorting();
 			UpdateCollisionCounters();
-			}	
+		}	
 		catch (Exception ex) 
-			{
-				LogError (ex);
-			}
+		{
+			LogError("Error in TestsList_SelectionChanged", ex);
 		}
-
+	}		
 		private System.Collections.Generic.IEnumerable<(ClashResultGroup Group, int Level)> EnumerateAllGroupsWithLevel(ClashTest test)
 		{
 			foreach (var g in test.Children.OfType<ClashResultGroup>())
