@@ -661,7 +661,9 @@ namespace ClashManager.ManagerCollision.Views
 		catch (Exception ex) 
 		{
 			LogError (ex);
-		}	
+		}
+	}	
+}	
 		private System.Collections.Generic.IEnumerable<(ClashResultGroup Group, int Level)> EnumerateAllGroupsWithLevel(ClashTest test)
 		{
 			foreach (var g in test.Children.OfType<ClashResultGroup>())
