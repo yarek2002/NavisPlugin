@@ -574,142 +574,157 @@ namespace ClashManager.ManagerCollision.Views
 				{
 					Log($"SelectionChanged: перестраиваем список для {checkedTests.Count} выбранных тестов");
 					
-					// Тяжелые операции выполняем в фоновом потоке
-					var mergedRows = await Task.Run(() =>
+					// Обрабатываем на UI потоке, но периодически отдаем управление для отзывчивости
+					var mergedRows = new System.Collections.Generic.List<object>();
+					int processedItems = 0;
+					
+					foreach (var t in checkedTests)
 					{
-						if (cancellationToken.IsCancellationRequested) return new System.Collections.Generic.List<object>();
+						if (cancellationToken.IsCancellationRequested) return;
 						
-						var result = new System.Collections.Generic.List<object>();
-						foreach (var t in checkedTests)
+						// Периодически отдаем управление UI для обработки других сообщений
+						if (processedItems % 50 == 0)
 						{
-							if (cancellationToken.IsCancellationRequested) return new System.Collections.Generic.List<object>();
-							
-							var groupRowsMerged = EnumerateAllGroupsWithLevel(t)
-								.Select(x => new CollisionListItem
-								{
-									Name = x.Group.DisplayName ?? string.Empty,
-									Status = ToRuStatus(x.Group.Status),
-									AssignedTo = (x.Group.AssignedTo ?? string.Empty).ToString(),
-									Guid = x.Group.Guid,
-									TestGuid = t.Guid,
-									IsGroup = true,
-									IsSelected = _checkedRowIds.Contains(x.Group.Guid),
-									Level = GetCachedLevelFromGroup(x.Group),
-									GridIntersection = GetCachedGridFromGroup(x.Group),
-									TestName = t.DisplayName ?? string.Empty,
-									Item = x.Group,
-									GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
-								});
-							var ungroupedResultRowsMerged = t.Children
-								.OfType<ClashResult>()
-								.Select(r => new CollisionListItem
-								{
-									Name = r.DisplayName ?? string.Empty,
-									Status = ToRuStatus(r.Status),
-									AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
-									Guid = r.Guid,
-									TestGuid = t.Guid,
-									IsGroup = false,
-									IsSelected = _checkedRowIds.Contains(r.Guid),
-									Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
-									GridIntersection = GetCachedGridFromResult(r),
-									TestName = t.DisplayName ?? string.Empty,
-									Item = r,
-									GroupClashCount = 0
-								});
-							result.AddRange(groupRowsMerged);
-							result.AddRange(ungroupedResultRowsMerged);
+							await Dispatcher.Yield(DispatcherPriority.Background);
+							if (cancellationToken.IsCancellationRequested) return;
 						}
-						return result;
-					}, cancellationToken);
+						
+						var groupRowsMerged = EnumerateAllGroupsWithLevel(t)
+							.Select(x => new CollisionListItem
+							{
+								Name = x.Group.DisplayName ?? string.Empty,
+								Status = ToRuStatus(x.Group.Status),
+								AssignedTo = (x.Group.AssignedTo ?? string.Empty).ToString(),
+								Guid = x.Group.Guid,
+								TestGuid = t.Guid,
+								IsGroup = true,
+								IsSelected = _checkedRowIds.Contains(x.Group.Guid),
+								Level = GetCachedLevelFromGroup(x.Group),
+								GridIntersection = GetCachedGridFromGroup(x.Group),
+								TestName = t.DisplayName ?? string.Empty,
+								Item = x.Group,
+								GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
+							}).ToList();
+						
+						processedItems += groupRowsMerged.Count;
+						
+						var ungroupedResultRowsMerged = t.Children
+							.OfType<ClashResult>()
+							.Select(r => new CollisionListItem
+							{
+								Name = r.DisplayName ?? string.Empty,
+								Status = ToRuStatus(r.Status),
+								AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
+								Guid = r.Guid,
+								TestGuid = t.Guid,
+								IsGroup = false,
+								IsSelected = _checkedRowIds.Contains(r.Guid),
+								Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
+								GridIntersection = GetCachedGridFromResult(r),
+								TestName = t.DisplayName ?? string.Empty,
+								Item = r,
+								GroupClashCount = 0
+							}).ToList();
+						
+						processedItems += ungroupedResultRowsMerged.Count;
+						
+						mergedRows.AddRange(groupRowsMerged);
+						mergedRows.AddRange(ungroupedResultRowsMerged);
+					}
 
 					if (cancellationToken.IsCancellationRequested) return;
 
-					// Обновляем UI на UI потоке
-					await Dispatcher.InvokeAsync(() =>
-					{
-						CollisionsList.ItemsSource = mergedRows;
-						SubscribeToCollisionItemsPropertyChanged(mergedRows);
-						ApplySorting();
-						UpdateCollisionCounters();
-					}, DispatcherPriority.Normal);
+					// Обновляем UI
+					CollisionsList.ItemsSource = mergedRows;
+					SubscribeToCollisionItemsPropertyChanged(mergedRows);
+					ApplySorting();
+					UpdateCollisionCounters();
 					return;
 				}
 
 				var selectedTestChecked = (TestsList.SelectedItem != null) ? (TestsList.SelectedItem.GetType().GetProperty("Test")?.GetValue(TestsList.SelectedItem) as ClashTest) : null;
 				if (selectedTestChecked == null)
 				{
-					await Dispatcher.InvokeAsync(() =>
-					{
-						CollisionsList.ItemsSource = null;
-					}, DispatcherPriority.Normal);
+					CollisionsList.ItemsSource = null;
 					return;
 				}
 
-				// Тяжелые операции выполняем в фоновом потоке
-				var (groupRows, ungroupedResultRows) = await Task.Run(() =>
+				// Обрабатываем на UI потоке с периодической отдачей управления
+				var groupRowsList = new System.Collections.Generic.List<CollisionListItem>();
+				var groupEnumerator = EnumerateAllGroupsWithLevel(selectedTest).GetEnumerator();
+				int groupCount = 0;
+				
+				while (groupEnumerator.MoveNext())
 				{
-					if (cancellationToken.IsCancellationRequested) 
-						return (new System.Collections.Generic.List<CollisionListItem>(), new System.Collections.Generic.List<CollisionListItem>());
-
-					// Показываем по одной строке на группу, плюс отдельные (негрупповые) результаты теста (оптимизированно)
-					var groupRowsList = EnumerateAllGroupsWithLevel(selectedTest)
-						.Select(x => new CollisionListItem
-						{
-							Name = x.Group.DisplayName ?? string.Empty,
-							Status = ToRuStatus(x.Group.Status),
-							AssignedTo = (x.Group.AssignedTo ?? string.Empty).ToString(),
-							Guid = x.Group.Guid,
-							TestGuid = selectedTest.Guid,
-							IsGroup = true,
-							IsSelected = _checkedRowIds.Contains(x.Group.Guid),
-							Level = GetCachedLevelFromGroup(x.Group),
-							GridIntersection = GetCachedGridFromGroup(x.Group),
-							TestName = selectedTest.DisplayName ?? string.Empty,
-							Item = x.Group,
-							GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
-						}).ToList();
-
-					// Оптимизированная сборка одиночных результатов без лишних вычислений
-					var ungroupedResultRowsList = new System.Collections.Generic.List<CollisionListItem>();
-					foreach (var r in selectedTest.Children.OfType<ClashResult>())
+					if (cancellationToken.IsCancellationRequested) return;
+					
+					// Отдаем управление каждые 50 элементов
+					if (groupCount % 50 == 0)
 					{
-						if (cancellationToken.IsCancellationRequested) break;
-						
-						var item = new CollisionListItem
-						{
-							Name = r.DisplayName ?? string.Empty,
-							Status = ToRuStatus(r.Status),
-							AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
-							Guid = r.Guid,
-							TestGuid = selectedTest.Guid,
-							IsGroup = false,
-							IsSelected = _checkedRowIds.Contains(r.Guid),
-							Level = null, // Будет вычислено позднее
-							GridIntersection = null, // Будет вычислено позднее
-							TestName = selectedTest.DisplayName ?? string.Empty,
-							Item = r,
-							GroupClashCount = 0
-						};
-						item.Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r);
-						item.GridIntersection = GetCachedGridFromResult(r);
-						ungroupedResultRowsList.Add(item);
+						await Dispatcher.Yield(DispatcherPriority.Background);
+						if (cancellationToken.IsCancellationRequested) return;
 					}
+					
+					var x = groupEnumerator.Current;
+					groupRowsList.Add(new CollisionListItem
+					{
+						Name = x.Group.DisplayName ?? string.Empty,
+						Status = ToRuStatus(x.Group.Status),
+						AssignedTo = (x.Group.AssignedTo ?? string.Empty).ToString(),
+						Guid = x.Group.Guid,
+						TestGuid = selectedTest.Guid,
+						IsGroup = true,
+						IsSelected = _checkedRowIds.Contains(x.Group.Guid),
+						Level = GetCachedLevelFromGroup(x.Group),
+						GridIntersection = GetCachedGridFromGroup(x.Group),
+						TestName = selectedTest.DisplayName ?? string.Empty,
+						Item = x.Group,
+						GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
+					});
+					groupCount++;
+				}
 
-					return (groupRowsList, ungroupedResultRowsList);
-				}, cancellationToken);
+				// Оптимизированная сборка одиночных результатов
+				var ungroupedResultRowsList = new System.Collections.Generic.List<CollisionListItem>();
+				int resultCount = 0;
+				foreach (var r in selectedTest.Children.OfType<ClashResult>())
+				{
+					if (cancellationToken.IsCancellationRequested) break;
+					
+					// Отдаем управление каждые 50 элементов
+					if (resultCount % 50 == 0)
+					{
+						await Dispatcher.Yield(DispatcherPriority.Background);
+						if (cancellationToken.IsCancellationRequested) break;
+					}
+					
+					var item = new CollisionListItem
+					{
+						Name = r.DisplayName ?? string.Empty,
+						Status = ToRuStatus(r.Status),
+						AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
+						Guid = r.Guid,
+						TestGuid = selectedTest.Guid,
+						IsGroup = false,
+						IsSelected = _checkedRowIds.Contains(r.Guid),
+						Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
+						GridIntersection = GetCachedGridFromResult(r),
+						TestName = selectedTest.DisplayName ?? string.Empty,
+						Item = r,
+						GroupClashCount = 0
+					};
+					ungroupedResultRowsList.Add(item);
+					resultCount++;
+				}
 
 				if (cancellationToken.IsCancellationRequested) return;
 
-				// Обновляем UI на UI потоке
-				await Dispatcher.InvokeAsync(() =>
-				{
-					var rows = groupRows.Concat(ungroupedResultRows).ToList();
-					CollisionsList.ItemsSource = rows;
-					SubscribeToCollisionItemsPropertyChanged(rows);
-					ApplySorting();
-					UpdateCollisionCounters();
-				}, DispatcherPriority.Normal);
+				// Обновляем UI
+				var rows = groupRowsList.Concat(ungroupedResultRowsList).ToList();
+				CollisionsList.ItemsSource = rows;
+				SubscribeToCollisionItemsPropertyChanged(rows);
+				ApplySorting();
+				UpdateCollisionCounters();
 			}	
 			catch (OperationCanceledException)
 			{
@@ -799,119 +814,111 @@ namespace ClashManager.ManagerCollision.Views
 
 				if (testsToSearch.Count == 0)
 				{
-					await Dispatcher.InvokeAsync(() =>
-					{
-						CollisionsList.ItemsSource = null;
-					}, DispatcherPriority.Normal);
+					CollisionsList.ItemsSource = null;
 					return;
 				}
 
-				// Передаем управление UI потоку для обработки других событий
-				await Task.Yield();
+				// Обрабатываем на UI потоке с периодической отдачей управления
+				var allItems = new System.Collections.Generic.List<object>();
+				int totalProcessed = 0;
 
-				if (cancellationToken.IsCancellationRequested) return;
-
-				// Тяжелые операции выполняем в фоновом потоке
-				var sortedItems = await Task.Run(() =>
+				foreach (var test in testsToSearch)
 				{
-					if (cancellationToken.IsCancellationRequested) return new System.Collections.Generic.List<object>();
+					if (cancellationToken.IsCancellationRequested) break;
 
-					// Получаем все элементы из выбранных тестов
-					var allItems = new System.Collections.Generic.List<object>();
-
-					foreach (var test in testsToSearch)
+					// Отдаем управление каждые 50 элементов
+					if (totalProcessed % 50 == 0)
 					{
+						await Dispatcher.Yield(DispatcherPriority.Background);
 						if (cancellationToken.IsCancellationRequested) break;
-
-						// Добавляем группы (оптимизированно)
-						var groupRows = EnumerateAllGroupsWithLevel(test)
-							.Select(x => new CollisionListItem
-							{
-								Name = x.Group.DisplayName ?? string.Empty,
-								Status = ToRuStatus(x.Group.Status),
-								AssignedTo = (x.Group.AssignedTo ?? string.Empty).ToString(),
-								Guid = x.Group.Guid,
-								TestGuid = test.Guid,
-								IsGroup = true,
-								IsSelected = _checkedRowIds.Contains(x.Group.Guid),
-								Level = GetCachedLevelFromGroup(x.Group),
-								GridIntersection = GetCachedGridFromGroup(x.Group),
-								TestName = test.DisplayName ?? string.Empty,
-								Item = x.Group,
-								GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
-							});
-
-						// Добавляем отдельные результаты (оптимизированно)
-						var ungroupedResultRows = test.Children
-							.OfType<ClashResult>()
-							.Select(r => new CollisionListItem
-							{
-								Name = r.DisplayName ?? string.Empty,
-								Status = ToRuStatus(r.Status),
-								AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
-								Guid = r.Guid,
-								TestGuid = test.Guid,
-								IsGroup = false,
-								IsSelected = _checkedRowIds.Contains(r.Guid),
-								Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
-								GridIntersection = GetCachedGridFromResult(r),
-								TestName = test.DisplayName ?? string.Empty,
-								Item = r,
-								GroupClashCount = 0
-							});
-
-						allItems.AddRange(groupRows);
-						allItems.AddRange(ungroupedResultRows);
 					}
 
-					if (cancellationToken.IsCancellationRequested) return new System.Collections.Generic.List<object>();
-
-					// Фильтруем элементы, которые содержат запрос
-					var filteredItems = allItems.Where(item =>
-					{
-						string name = item.GetType().GetProperty("Name")?.GetValue(item)?.ToString() ?? string.Empty;
-						if (_searchByNameMode)
+					// Добавляем группы
+					var groupRows = EnumerateAllGroupsWithLevel(test)
+						.Select(x => new CollisionListItem
 						{
-							return name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
-						}
-						else
-						{
-							Guid guid = (Guid)(item.GetType().GetProperty("Guid")?.GetValue(item) ?? Guid.Empty);
-							return guid.ToString().IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
-						}
-					}).ToList();
+							Name = x.Group.DisplayName ?? string.Empty,
+							Status = ToRuStatus(x.Group.Status),
+							AssignedTo = (x.Group.AssignedTo ?? string.Empty).ToString(),
+							Guid = x.Group.Guid,
+							TestGuid = test.Guid,
+							IsGroup = true,
+							IsSelected = _checkedRowIds.Contains(x.Group.Guid),
+							Level = GetCachedLevelFromGroup(x.Group),
+							GridIntersection = GetCachedGridFromGroup(x.Group),
+							TestName = test.DisplayName ?? string.Empty,
+							Item = x.Group,
+							GroupClashCount = GetAllResultsFromGroup(x.Group).Count()
+						}).ToList();
 
-					if (cancellationToken.IsCancellationRequested) return new System.Collections.Generic.List<object>();
-
-					// Сортируем: сначала элементы, начинающиеся с запроса, потом остальные
-					var sortedItemsList = filteredItems.OrderByDescending(item =>
-					{
-						string name = item.GetType().GetProperty("Name")?.GetValue(item)?.ToString() ?? string.Empty;
-						if (_searchByNameMode)
+					// Добавляем отдельные результаты
+					var ungroupedResultRows = test.Children
+						.OfType<ClashResult>()
+						.Select(r => new CollisionListItem
 						{
-							return name.StartsWith(query, StringComparison.OrdinalIgnoreCase);
-						}
-						else
-						{
-							Guid guid = (Guid)(item.GetType().GetProperty("Guid")?.GetValue(item) ?? Guid.Empty);
-							return guid.ToString().StartsWith(query, StringComparison.OrdinalIgnoreCase);
-						}
-					}).ToList();
+							Name = r.DisplayName ?? string.Empty,
+							Status = ToRuStatus(r.Status),
+							AssignedTo = (r.AssignedTo ?? string.Empty).ToString(),
+							Guid = r.Guid,
+							TestGuid = test.Guid,
+							IsGroup = false,
+							IsSelected = _checkedRowIds.Contains(r.Guid),
+							Level = GetCachedLevelFromItems(r.CompositeItem1, r.CompositeItem2, r),
+							GridIntersection = GetCachedGridFromResult(r),
+							TestName = test.DisplayName ?? string.Empty,
+							Item = r,
+							GroupClashCount = 0
+						}).ToList();
 
-					return sortedItemsList;
-				}, cancellationToken);
+					allItems.AddRange(groupRows);
+					allItems.AddRange(ungroupedResultRows);
+					totalProcessed += groupRows.Count + ungroupedResultRows.Count;
+				}
 
 				if (cancellationToken.IsCancellationRequested) return;
 
-				// Обновляем UI на UI потоке
-				await Dispatcher.InvokeAsync(() =>
+				// Фильтруем элементы (это можно сделать быстро на UI потоке)
+				await Dispatcher.Yield(DispatcherPriority.Background);
+				var filteredItems = allItems.Where(item =>
 				{
-					CollisionsList.ItemsSource = sortedItems;
-					SubscribeToCollisionItemsPropertyChanged(sortedItems);
-					ApplySorting();
-					UpdateCollisionCounters();
-					Log($"ApplySearchFilter: applied {sortedItems.Count} items for query: {query}");
-				}, DispatcherPriority.Normal);
+					string name = item.GetType().GetProperty("Name")?.GetValue(item)?.ToString() ?? string.Empty;
+					if (_searchByNameMode)
+					{
+						return name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+					}
+					else
+					{
+						Guid guid = (Guid)(item.GetType().GetProperty("Guid")?.GetValue(item) ?? Guid.Empty);
+						return guid.ToString().IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
+					}
+				}).ToList();
+
+				if (cancellationToken.IsCancellationRequested) return;
+
+				// Сортируем
+				await Dispatcher.Yield(DispatcherPriority.Background);
+				var sortedItems = filteredItems.OrderByDescending(item =>
+				{
+					string name = item.GetType().GetProperty("Name")?.GetValue(item)?.ToString() ?? string.Empty;
+					if (_searchByNameMode)
+					{
+						return name.StartsWith(query, StringComparison.OrdinalIgnoreCase);
+					}
+					else
+					{
+						Guid guid = (Guid)(item.GetType().GetProperty("Guid")?.GetValue(item) ?? Guid.Empty);
+						return guid.ToString().StartsWith(query, StringComparison.OrdinalIgnoreCase);
+					}
+				}).ToList();
+
+				if (cancellationToken.IsCancellationRequested) return;
+
+				// Обновляем UI
+				CollisionsList.ItemsSource = sortedItems;
+				SubscribeToCollisionItemsPropertyChanged(sortedItems);
+				ApplySorting();
+				UpdateCollisionCounters();
+				Log($"ApplySearchFilter: applied {sortedItems.Count} items for query: {query}");
 			}
 			catch (OperationCanceledException)
 			{
