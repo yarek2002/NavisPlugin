@@ -102,7 +102,7 @@
                     </DockPanel>
                 </StackPanel>
 
-                <ListView x:Name="CollisionsList" Grid.Row="1" SelectionMode="Extended" MouseDoubleClick="CollisionsList_MouseDoubleClick" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.ScrollUnit="Item" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.CacheLength="2,2" VirtualizingPanel.IsContainerVirtualizable="True" ScrollViewer.CanContentScroll="True" ScrollViewer.IsDeferredScrollingEnabled="False">
+                <ListView x:Name="CollisionsList" Grid.Row="1" SelectionMode="Extended" MouseDoubleClick="CollisionsList_MouseDoubleClick" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.CacheLength="1,1" ScrollViewer.CanContentScroll="False" ScrollViewer.IsDeferredScrollingEnabled="True">
                     <ListView.Resources>
                         <ContextMenu x:Key="CopyContextMenu">
                             <MenuItem Header="Копировать" Click="CopyTextMenuItem_Click" />
@@ -139,8 +139,9 @@
                                         <ComboBox ItemsSource="{Binding StatusOptionsInstance}"
                                                     SelectedItem="{Binding Status}"
                                                     SelectionChanged="StatusComboBox_SelectionChanged"
-                                                    Loaded="StatusComboBox_Loaded"
-                                                    Tag="{Binding}" ContextMenu="{StaticResource CopyContextMenu}"/>
+                                                    Tag="{Binding}" 
+                                                    ContextMenu="{StaticResource CopyContextMenu}"
+                                                    VirtualizingPanel.IsVirtualizing="False"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

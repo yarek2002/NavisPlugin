@@ -1128,16 +1128,14 @@ namespace ClashManager.ManagerCollision.Views
 
 		/// <summary>
 		/// Подписывается на события PropertyChanged для элементов списка коллизий
+		/// Оптимизировано: не подписываемся автоматически на все элементы, 
+		/// так как это создает тысячи обработчиков и замедляет работу
 		/// </summary>
 		private void SubscribeToCollisionItemsPropertyChanged(System.Collections.Generic.IEnumerable<object> items)
 		{
-			foreach (var item in items)
-			{
-				if (item is CollisionListItem collisionItem)
-				{
-					collisionItem.PropertyChanged += CollisionItem_PropertyChanged;
-				}
-			}
+			// Не подписываемся автоматически - это создает слишком много обработчиков событий
+			// Вместо этого используем прямую синхронизацию через CheckBox.Click
+			// Если нужна синхронизация через PropertyChanged, можно подписаться только для видимых элементов
 		}
 
 		/// <summary>
@@ -4603,43 +4601,25 @@ private void LoadColumnLayout()
 				}
 				private void StatusComboBox_Loaded(object sender, RoutedEventArgs e)
 				{
-					var comboBox = sender as ComboBox;
-					if (comboBox?.Tag is CollisionListItem item)
-					{
-						// Привязка SelectedItem теперь работает автоматически через XAML
-						// Этот метод оставлен для логирования и возможной дополнительной логики
-						Log($"StatusComboBox_Loaded: ComboBox загружен для {item.Name} со статусом '{item.Status}'");
-					}
+					// Убрано логирование для оптимизации производительности
+					// При большом количестве элементов это создает огромное количество логов
 				}
 
 private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 {
-    Log("=== StatusComboBox_SelectionChanged вызван ===");
-    
+    // Оптимизировано: убрано избыточное логирование для улучшения производительности
     var comboBox = sender as ComboBox;
-    Log($"ComboBox Text: '{comboBox?.Text}', SelectedItem: '{comboBox?.SelectedItem}'");
-    Log($"Added items: [{string.Join(", ", e.AddedItems.Cast<object>().Select(x => x?.ToString() ?? "null"))}]");
-    Log($"Removed items: [{string.Join(", ", e.RemovedItems.Cast<object>().Select(x => x?.ToString() ?? "null"))}]");
-    Log($"Tag type: {comboBox?.Tag?.GetType().Name}");
     
     if (comboBox?.Tag is CollisionListItem item)
     {
-        Log($"CollisionListItem: {item.Name}, текущий статус: {item.Status}");
-        
         var newStatus = e.AddedItems.Count > 0 ? e.AddedItems[0]?.ToString() : null;
         var oldStatus = e.RemovedItems.Count > 0 ? e.RemovedItems[0]?.ToString() : null;
-        Log($"Новый статус из AddedItems: '{newStatus}'");
-        Log($"Старый статус из RemovedItems: '{oldStatus}'");
         
         if (newStatus != null)
         {
-            Log($"Выбрано {CollisionsList.SelectedItems.Count} элементов в списке");
-            
             // Если выделено несколько элементов, применяем статус ко всем выделенным
             if (CollisionsList.SelectedItems.Count > 1 && CollisionsList.SelectedItems.Contains(item))
             {
-                Log($"Применяем статус '{newStatus}' ко всем {CollisionsList.SelectedItems.Count} выбранным элементам");
-                
                 try
                 {
                     // Создаем копию выбранных элементов, чтобы избежать ошибки "Коллекция была изменена"
@@ -4647,11 +4627,9 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
                     
                     foreach (var selectedCollisionItem in selectedItemsCopy)
                     {
-                        Log($"Обновляем статус для: {selectedCollisionItem.Name} (текущий: {selectedCollisionItem.Status})");
                         // Обновляем независимо от текущего значения, чтобы гарантировать применение к Navisworks
                         UpdateCollisionStatus(selectedCollisionItem, newStatus);
                         selectedCollisionItem.Status = newStatus;
-                        Log($"Статус обновлен на: {newStatus}");
                     }
                     
                     // Временно сбрасываем флаги скролла для обновления UI
@@ -4662,7 +4640,6 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
                     
                     // Обновляем UI для синхронизации с Clash Detective
                     RefreshCollisionsList();
-                    Log("UI обновлен для всех выбранных элементов");
                     
                     // Восстанавливаем флаги скролла
                     _isUserScrolling = wasUserScrolling;
@@ -4679,20 +4656,14 @@ private void StatusComboBox_SelectionChanged(object sender, SelectionChangedEven
                 // Обычное обновление одного элемента
                 // Сравниваем с RemovedItems, так как привязка уже могла установить item.Status в newStatus
                 var statusChanged = oldStatus == null || !string.Equals(oldStatus, newStatus, StringComparison.Ordinal);
-                Log($"Определено изменение статуса (по RemovedItems): {statusChanged}");
 
                 if (statusChanged)
                 {
-                    Log($"Обновляем один элемент...");
                     try
                     {
-                        Log($"Статус до изменения (из Navisworks): {GetStatusFromItem(item.Item)}");
                         UpdateCollisionStatus(item, newStatus);
-                        Log($"Статус после изменения (из Navisworks): {GetStatusFromItem(item.Item)}");
-
                         // Синхронизируем модель (на случай если binding еще не выполнил запись)
                         item.Status = newStatus;
-                        Log($"Статус в модели установлен: {item.Status}");
 
                         // Временно сбрасываем флаги скролла для обновления UI
                         bool wasUserScrolling = _isUserScrolling;
