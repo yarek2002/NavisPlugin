@@ -24,14 +24,19 @@
         <!-- Тесты (слева сверху) -->
         <GroupBox Header="Тесты" Grid.Column="0" Grid.Row="0" Margin="8,8,8,8">
             <ListBox x:Name="TestsList"
-					 SelectionMode="Extended"
-					 SelectionChanged="TestsList_SelectionChanged">
+                     SelectionMode="Extended"
+                     SelectionChanged="TestsList_SelectionChanged"
+                     ScrollViewer.CanContentScroll="True"
+                     VirtualizingPanel.IsVirtualizing="True"
+                     VirtualizingPanel.VirtualizationMode="Recycling"
+                     ScrollViewer.ScrollChanged="TestsList_ScrollChanged">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
                             <CheckBox Margin="0,0,6,0"
 									  Tag="{Binding Guid}"
-									  Click="TestCheckBox_Click"/>
+								  Click="TestCheckBox_Click"
+                                  Loaded="TestCheckBox_Loaded"/>
                             <TextBlock Text="{Binding DisplayName}"/>
                         </StackPanel>
                     </DataTemplate>

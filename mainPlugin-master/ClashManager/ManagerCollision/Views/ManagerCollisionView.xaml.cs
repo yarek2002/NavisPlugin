@@ -1139,6 +1139,33 @@ namespace ClashManager.ManagerCollision.Views
 			}
 		}
 
+		private void TestCheckBox_Loaded(object sender, RoutedEventArgs e)
+		{
+			try
+			{
+				var cb = sender as System.Windows.Controls.CheckBox;
+				if (cb == null) return;
+				var tag = cb.Tag;
+				if (tag is Guid g)
+				{
+					cb.IsChecked = _checkedTestIds.Contains(g);
+				}
+			}
+			catch (Exception ex) { LogError("Error in TestCheckBox_Loaded", ex); }
+		}
+
+		private void TestsList_ScrollChanged(object sender, System.Windows.Controls.ScrollChangedEventArgs e)
+		{
+			try
+			{
+				if (e.VerticalChange != 0)
+				{
+					RestoreTestCheckboxStates();
+				}
+			}
+			catch (Exception ex) { LogError("Error in TestsList_ScrollChanged", ex); }
+		}
+
 		private void SetCheckboxStateForListItem(System.Windows.Controls.ItemsControl list, object item, bool isChecked)
 		{
 			try
