@@ -106,7 +106,17 @@
                     </DockPanel>
                 </StackPanel>
 
-                <ListView x:Name="CollisionsList" Grid.Row="1" SelectionMode="Extended" MouseDoubleClick="CollisionsList_MouseDoubleClick" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                <ListView x:Name="CollisionsList" Grid.Row="1" SelectionMode="Extended" MouseDoubleClick="CollisionsList_MouseDoubleClick"
+                          ScrollViewer.CanContentScroll="True"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          VirtualizingPanel.CacheLength="2"
+                          VirtualizingPanel.CacheLengthUnit="Page">
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel/>
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
                     <ListView.Resources>
                         <ContextMenu x:Key="CopyContextMenu">
                             <MenuItem Header="Копировать" Click="CopyTextMenuItem_Click" />
