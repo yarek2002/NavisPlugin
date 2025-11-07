@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
+using ClashManager.AutoNaming;
 
 namespace ClashManager.AutoNaming.Views
 {
@@ -51,9 +52,11 @@ namespace ClashManager.AutoNaming.Views
         private bool _suppressCheckboxHandlers = false;
 
         public List<Guid> SelectedTestGuids { get; private set; }
+        public AutoNamingSettings Settings { get; private set; }
 
-        public TestSelectionView()
+        public TestSelectionView(AutoNamingSettings settings)
         {
+            Settings = settings;
             InitializeComponent();
             _doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
             _documentClash = _doc.GetClash();

@@ -477,8 +477,9 @@ namespace ClashManager.AutoNaming.Views
         /// Получает названия моделей из группы коллизий с дополнительной информацией
         /// </summary>
         /// <param name="group">Группа коллизий</param>
+        /// <param name="settings">Настройки авто-наименования</param>
         /// <returns>Строка с названиями моделей, ID элементов и GUID группы</returns>
-        private string GetModelNamesFromGroup(ClashResultGroup group)
+        private string GetModelNamesFromGroup(ClashResultGroup group, AutoNamingSettings settings = null)
         {
             if (group == null) return "";
 
@@ -685,9 +686,19 @@ namespace ClashManager.AutoNaming.Views
                 // Добавляем GUID группы
                 parts.Add(group.Guid.ToString());
 
-                string finalResult = string.Join(" | ", parts);
+                // Добавляем пользовательские параметры, если они настроены
+                if (settings != null)
+                {
+                    var customParts = GetCustomParametersFromGroup(group, settings);
+                    if (customParts.Count > 0)
+                    {
+                        parts.AddRange(customParts);
+                    }
+                }
+
+                string finalResult = string.Join(settings?.Separator ?? " | ", parts);
                 System.Diagnostics.Debug.WriteLine($"Final result: {finalResult}");
-                
+
                 return finalResult;
             }
             catch (Exception ex)
@@ -696,6 +707,108 @@ namespace ClashManager.AutoNaming.Views
             }
 
             return "";
+        }
+
+        /// <summary>
+        /// Получает пользовательские параметры из группы коллизий
+        /// </summary>
+        /// <param name="group">Группа коллизий</param>
+        /// <param name="settings">Настройки авто-наименования</param>
+        /// <returns>Список найденных пользовательских параметров</returns>
+        private List<string> GetCustomParametersFromGroup(ClashResultGroup group, AutoNamingSettings settings)
+        {
+            var customParts = new List<string>();
+            var allResults = GetAllResultsFromGroup(group);
+
+            if (allResults.Count == 0)
+                return customParts;
+
+            // Берем первый результат для поиска параметров
+            var firstResult = allResults.First();
+
+            // Ищем параметры в первом элементе коллизии
+            foreach (var paramName in settings.GetActiveParameters())
+            {
+                string paramValue = GetCustomParameterValue(firstResult.CompositeItem1, paramName);
+                if (!string.IsNullOrEmpty(paramValue))
+                {
+                    customParts.Add(paramValue);
+                    System.Diagnostics.Debug.WriteLine($"Found custom parameter '{paramName}': '{paramValue}'");
+                }
+                else
+                {
+                    // Если не нашли в первом элементе, попробуем во втором
+                    paramValue = GetCustomParameterValue(firstResult.CompositeItem2, paramName);
+                    if (!string.IsNullOrEmpty(paramValue))
+                    {
+                        customParts.Add(paramValue);
+                        System.Diagnostics.Debug.WriteLine($"Found custom parameter '{paramName}' in second item: '{paramValue}'");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Custom parameter '{paramName}' not found");
+                    }
+                }
+            }
+
+            return customParts;
+        }
+
+        /// <summary>
+        /// Получает значение пользовательского параметра из ModelItem
+        /// </summary>
+        /// <param name="modelItem">Элемент модели</param>
+        /// <param name="paramName">Имя параметра для поиска</param>
+        /// <returns>Значение параметра или null</returns>
+        private string GetCustomParameterValue(ModelItem modelItem, string paramName)
+        {
+            if (modelItem == null || string.IsNullOrEmpty(paramName))
+                return null;
+
+            try
+            {
+                // Ищем параметр по имени во всех категориях и свойствах
+                foreach (var category in modelItem.PropertyCategories)
+                {
+                    foreach (var property in category.Properties)
+                    {
+                        try
+                        {
+                            // Проверяем отображаемое имя свойства
+                            if (property.DisplayName == paramName)
+                            {
+                                string value = property.Value?.ToString();
+                                if (!string.IsNullOrEmpty(value))
+                                    return value;
+                            }
+
+                            // Также проверяем внутреннее имя
+                            if (property.Name == paramName)
+                            {
+                                string value = property.Value?.ToString();
+                                if (!string.IsNullOrEmpty(value))
+                                    return value;
+                            }
+                        }
+                        catch
+                        {
+                            // Игнорируем ошибки чтения конкретного свойства
+                        }
+                    }
+                }
+
+                // Если не нашли, пробуем в родительском элементе
+                if ((NativeHandle)modelItem.Parent != (NativeHandle)null)
+                {
+                    return GetCustomParameterValue(modelItem.Parent, paramName);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error getting custom parameter '{paramName}': {ex.Message}");
+            }
+
+            return null;
         }
 
         /// <summary>

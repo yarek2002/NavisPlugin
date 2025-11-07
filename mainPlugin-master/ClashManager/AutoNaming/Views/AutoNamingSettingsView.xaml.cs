@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using ClashManager.AutoNaming;
 
 namespace ClashManager.AutoNaming.Views
 {
@@ -13,18 +15,46 @@ namespace ClashManager.AutoNaming.Views
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
+            // Создаем объект настроек
+            var settings = new AutoNamingSettings
+            {
+                IncludeParam1 = IncludeParam1CheckBox.IsChecked == true,
+                Param1Name = Param1TextBox.Text?.Trim(),
+
+                IncludeParam2 = IncludeParam2CheckBox.IsChecked == true,
+                Param2Name = Param2TextBox.Text?.Trim(),
+
+                IncludeParam3 = IncludeParam3CheckBox.IsChecked == true,
+                Param3Name = Param3TextBox.Text?.Trim(),
+
+                IncludeParam4 = IncludeParam4CheckBox.IsChecked == true,
+                Param4Name = Param4TextBox.Text?.Trim(),
+
+                IncludeParam5 = IncludeParam5CheckBox.IsChecked == true,
+                Param5Name = Param5TextBox.Text?.Trim(),
+
+                Separator = SeparatorTextBox.Text?.Trim() ?? " | "
+            };
+
             // Показываем окно выбора тестов
-            var testSelectionWindow = new TestSelectionView();
+            var testSelectionWindow = new TestSelectionView(settings);
             testSelectionWindow.Owner = this;
             var result = testSelectionWindow.ShowDialog();
 
             if (result == true)
             {
-                // TODO: Применить настройки к выбранным тестам
-                MessageBox.Show($"Настройки будут применены к {testSelectionWindow.SelectedTestGuids.Count} тестам!", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Применить настройки к выбранным тестам
+                ApplySettingsToTests(settings, testSelectionWindow.SelectedTestGuids);
+                MessageBox.Show($"Настройки применены к {testSelectionWindow.SelectedTestGuids.Count} тестам!", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
                 this.DialogResult = true;
                 this.Close();
             }
+        }
+
+        private void ApplySettingsToTests(AutoNamingSettings settings, List<System.Guid> selectedTestGuids)
+        {
+            // TODO: Реализовать применение настроек к выбранным тестам
+            // Здесь будет логика применения кастомных параметров к выбранным тестам
         }
 
         private void CheckParametersButton_Click(object sender, RoutedEventArgs e)
