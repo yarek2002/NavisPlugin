@@ -399,8 +399,10 @@ namespace ClashManager.AutoNaming.Views
 
         private void NameSettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            // TODO: Реализовать настройки наименования
-            MessageBox.Show("Функция настроек наименования будет реализована в следующих версиях.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+            // Открываем окно настроек
+            var settingsWindow = new AutoNamingSettingsView();
+            settingsWindow.Owner = this;
+            settingsWindow.ShowDialog();
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)

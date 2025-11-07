@@ -1,0 +1,83 @@
+<Window x:Class="ClashManager.AutoNaming.Views.AutoNamingSettingsView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Настройки авто-наименования" Height="400" Width="500" WindowStartupLocation="CenterOwner">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <TextBlock Grid.Row="0" Text="Настройки параметров наименования" FontSize="14" FontWeight="Bold" Margin="10" />
+
+        <!-- Параметры -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="10">
+                <!-- Параметр 1 -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox x:Name="IncludeParam1CheckBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBox x:Name="Param1TextBox" Grid.Column="1" VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- Параметр 2 -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox x:Name="IncludeParam2CheckBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBox x:Name="Param2TextBox" Grid.Column="1" VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- Параметр 3 -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox x:Name="IncludeParam3CheckBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBox x:Name="Param3TextBox" Grid.Column="1" VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- Параметр 4 -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox x:Name="IncludeParam4CheckBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBox x:Name="Param4TextBox" Grid.Column="1" VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- Параметр 5 -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox x:Name="IncludeParam5CheckBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBox x:Name="Param5TextBox" Grid.Column="1" VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- Разделитель -->
+                <TextBox x:Name="SeparatorTextBox" Text=" | " Margin="25,10,0,10" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Кнопки -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
+            <Button x:Name="CheckParametersButton" Content="Проверить параметры" Width="140" Margin="0,0,10,0" Click="CheckParametersButton_Click" />
+            <Button x:Name="ApplyButton" Content="Применить" Width="100" Click="ApplyButton_Click" />
+            <Button x:Name="CancelButton" Content="Отмена" Width="80" Margin="10,0,0,0" Click="CancelButton_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
