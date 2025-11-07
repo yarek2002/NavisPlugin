@@ -13,10 +13,18 @@ namespace ClashManager.AutoNaming.Views
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
-            // TODO: Реализовать применение настроек
-            MessageBox.Show("Настройки применены!", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-            this.DialogResult = true;
-            this.Close();
+            // Показываем окно выбора тестов
+            var testSelectionWindow = new TestSelectionView();
+            testSelectionWindow.Owner = this;
+            var result = testSelectionWindow.ShowDialog();
+
+            if (result == true)
+            {
+                // TODO: Применить настройки к выбранным тестам
+                MessageBox.Show($"Настройки будут применены к {testSelectionWindow.SelectedTestGuids.Count} тестам!", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                this.DialogResult = true;
+                this.Close();
+            }
         }
 
         private void CheckParametersButton_Click(object sender, RoutedEventArgs e)
