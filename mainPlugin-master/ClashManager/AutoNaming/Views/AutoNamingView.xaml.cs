@@ -50,6 +50,7 @@ namespace ClashManager.AutoNaming.Views
         private List<TestItem> _testItems = new List<TestItem>(); // Кэшируем список тестов
         private int _lastTestClickIndex = -1; // Отслеживаем последний клик для Shift-выбора
         private bool _suppressCheckboxHandlers = false; // Предотвращает рекурсивные вызовы обработчиков чекбоксов
+        private AutoNamingSettings _currentSettings; // Текущие настройки авто-наименования
 
         public AutoNamingView()
         {
@@ -212,11 +213,18 @@ namespace ClashManager.AutoNaming.Views
         {
             // Получаем все выбранные элементы из модели
             var checkedIds = _testItems.Where(x => x.IsChecked).Select(x => x.Guid).ToList();
-            
+
             if (checkedIds.Count == 0)
             {
                 MessageBox.Show("Выберите хотя бы один тест!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
+            }
+
+            // Определяем, использовать ли настройки
+            AutoNamingSettings settingsToUse = null;
+            if (EnableSettingsToggle.IsChecked == true && _currentSettings != null)
+            {
+                settingsToUse = _currentSettings;
             }
 
             // Логика авто-наименования групп коллизий
@@ -228,7 +236,7 @@ namespace ClashManager.AutoNaming.Views
                 if (test == null) continue;
 
                 // Переименовываем группы, заканчивающиеся на "_"
-                renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, "");
+                renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, "", settingsToUse);
             }
 
             if (renamedGroupsCount > 0)
@@ -249,7 +257,7 @@ namespace ClashManager.AutoNaming.Views
             return allTests?.FirstOrDefault(t => t.Guid == testGuid);
         }
 
-        private int RenameGroupsEndingWithUnderscore(ClashTest test, string newName)
+        private int RenameGroupsEndingWithUnderscore(ClashTest test, string newName, AutoNamingSettings settings = null)
         {
             int renamedCount = 0;
 
@@ -264,7 +272,7 @@ namespace ClashManager.AutoNaming.Views
                 if (group.DisplayName?.EndsWith("_") == true)
                 {
                     // Получаем названия моделей из группы
-                    string modelNames = GetModelNamesFromGroup(group);
+                    string modelNames = GetModelNamesFromGroup(group, settings);
 
                     // Формируем новое имя: убираем "_" и добавляем "|" + названия моделей
                     string baseName = group.DisplayName.TrimEnd('_');
@@ -402,7 +410,14 @@ namespace ClashManager.AutoNaming.Views
             // Открываем окно настроек
             var settingsWindow = new AutoNamingSettingsView();
             settingsWindow.Owner = this;
-            settingsWindow.ShowDialog();
+            var result = settingsWindow.ShowDialog();
+
+            // Если настройки были применены, сохраняем их для использования в авто-наименовании
+            if (result == true && settingsWindow.AppliedSettings != null)
+            {
+                _currentSettings = settingsWindow.AppliedSettings;
+                System.Diagnostics.Debug.WriteLine($"Settings saved: {string.Join(", ", _currentSettings.GetActiveParameters())}");
+            }
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)

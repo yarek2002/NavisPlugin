@@ -8,6 +8,8 @@ namespace ClashManager.AutoNaming.Views
 {
     public partial class AutoNamingSettingsView : Window
     {
+        public AutoNamingSettings AppliedSettings { get; private set; }
+
         public AutoNamingSettingsView()
         {
             InitializeComponent();
@@ -43,6 +45,9 @@ namespace ClashManager.AutoNaming.Views
 
             if (result == true)
             {
+                // Сохраняем примененные настройки
+                AppliedSettings = settings;
+
                 // Применить настройки к выбранным тестам
                 ApplySettingsToTests(settings, testSelectionWindow.SelectedTestGuids);
                 MessageBox.Show($"Настройки применены к {testSelectionWindow.SelectedTestGuids.Count} тестам!", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
