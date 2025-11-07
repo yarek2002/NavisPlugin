@@ -57,6 +57,10 @@ namespace ClashManager.AutoNaming.Views
             _doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
             _documentClash = _doc.GetClash();
             LoadTests();
+
+            // Инициализация состояния переключателя настроек
+            EnableSettingsToggle.IsChecked = false;
+            Settings.IsEnabled = false;
         }
 
         private void LoadTests()
@@ -379,6 +383,18 @@ namespace ClashManager.AutoNaming.Views
             }
 
             return null;
+        }
+
+        private void EnableSettingsToggle_Checked(object sender, RoutedEventArgs e)
+        {
+            // Включаем настройки
+            Settings.IsEnabled = true;
+        }
+
+        private void EnableSettingsToggle_Unchecked(object sender, RoutedEventArgs e)
+        {
+            // Отключаем настройки
+            Settings.IsEnabled = false;
         }
 
         private void NameSettingsButton_Click(object sender, RoutedEventArgs e)
