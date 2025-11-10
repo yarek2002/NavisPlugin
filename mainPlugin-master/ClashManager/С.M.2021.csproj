@@ -176,9 +176,7 @@
     <Compile Include="AutoNaming\Views\AutoNamingSettingsView.xaml.cs">
       <DependentUpon>AutoNamingSettingsView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="AutoNaming\Views\TestSelectionView.xaml.cs">
-      <DependentUpon>TestSelectionView.xaml</DependentUpon>
-    </Compile>
+
     <Compile Include="ZoneAssignment\Views\ZoneAssignmentView.xaml.cs">
       <DependentUpon>ZoneAssignmentView.xaml</DependentUpon>
     </Compile>
@@ -190,7 +188,6 @@
     <Compile Include="Automation\AutomationSettings.cs" />
     <Compile Include="Externals\ReportAutomationCmd.cs" />
     <Compile Include="AutoNaming\AutoNamingSettings.cs" />
-    <Compile Include="AutoNaming\TestNamingSettings.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="AddinRibbon.xaml">
@@ -229,11 +226,7 @@
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Page>
-    <Page Include="AutoNaming\Views\TestSelectionView.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Page>
+
     <Page Include="ZoneAssignment\Views\ZoneAssignmentView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
