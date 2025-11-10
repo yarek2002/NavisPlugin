@@ -810,7 +810,11 @@ namespace ClashManager.AutoNaming.Views
                             {
                                 string value = property.Value?.ToString();
                                 if (!string.IsNullOrEmpty(value))
+                                {
+                                    // Очищаем значение от возможных префиксов типа "DisplayString: "
+                                    value = CleanParameterValue(value);
                                     return value;
+                                }
                             }
 
                             // Также проверяем внутреннее имя
@@ -818,7 +822,11 @@ namespace ClashManager.AutoNaming.Views
                             {
                                 string value = property.Value?.ToString();
                                 if (!string.IsNullOrEmpty(value))
+                                {
+                                    // Очищаем значение от возможных префиксов типа "DisplayString: "
+                                    value = CleanParameterValue(value);
                                     return value;
+                                }
                             }
                         }
                         catch
@@ -840,6 +848,29 @@ namespace ClashManager.AutoNaming.Views
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Очищает значение параметра от возможных префиксов типа "DisplayString: "
+        /// </summary>
+        /// <param name="value">Исходное значение</param>
+        /// <returns>Очищенное значение</returns>
+        private string CleanParameterValue(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return value;
+
+            // Если значение содержит ":", берем часть после ":"
+            if (value.Contains(":"))
+            {
+                var parts = value.Split(new[] { ':' }, 2);
+                if (parts.Length > 1)
+                {
+                    return parts[1].Trim();
+                }
+            }
+
+            return value;
         }
 
         /// <summary>
