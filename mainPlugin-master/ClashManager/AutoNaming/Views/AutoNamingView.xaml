@@ -63,7 +63,6 @@
 
         <!-- Кнопки -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Left" Margin="10">
-            <ToggleButton x:Name="EnableSettingsToggle" Content="Включить настройки" Width="120" Margin="0,0,10,0" Checked="EnableSettingsToggle_Checked" Unchecked="EnableSettingsToggle_Unchecked" />
             <Button x:Name="Settings" Content="Настройка" Width="80" Click="NameSettingsButton_Click" />
         </StackPanel>
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">

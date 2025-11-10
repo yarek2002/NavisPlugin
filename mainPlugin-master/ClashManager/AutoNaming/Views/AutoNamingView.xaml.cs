@@ -51,19 +51,19 @@ namespace ClashManager.AutoNaming.Views
         private int _lastTestClickIndex = -1; // Отслеживаем последний клик для Shift-выбора
         private bool _suppressCheckboxHandlers = false; // Предотвращает рекурсивные вызовы обработчиков чекбоксов
         private AutoNamingSettings _currentSettings; // Текущие настройки авто-наименования
-        private TestNamingSettings _testNamingSettings; // Настройки имен тестов
 
         public AutoNamingView()
         {
-            _testNamingSettings = TestNamingSettings.LoadFromFile();
             InitializeComponent();
             _doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
             _documentClash = _doc.GetClash();
             LoadTests();
+            LoadSettings();
+        }
 
-            // Инициализация состояния переключателя настроек
-            EnableSettingsToggle.IsChecked = false;
-            Settings.IsEnabled = false;
+        private void LoadSettings()
+        {
+            _currentSettings = AutoNamingSettings.LoadFromFile();
         }
 
         private void LoadTests()
@@ -222,12 +222,8 @@ namespace ClashManager.AutoNaming.Views
                 return;
             }
 
-            // Определяем, использовать ли настройки
-            AutoNamingSettings settingsToUse = null;
-            if (EnableSettingsToggle.IsChecked == true && _currentSettings != null)
-            {
-                settingsToUse = _currentSettings;
-            }
+            // Используем настройки, если они доступны
+            AutoNamingSettings settingsToUse = _currentSettings;
 
             // Логика авто-наименования групп коллизий
             int renamedGroupsCount = 0;
@@ -399,17 +395,7 @@ namespace ClashManager.AutoNaming.Views
             return null;
         }
 
-        private void EnableSettingsToggle_Checked(object sender, RoutedEventArgs e)
-        {
-            // Включаем настройки
-            Settings.IsEnabled = true;
-        }
 
-        private void EnableSettingsToggle_Unchecked(object sender, RoutedEventArgs e)
-        {
-            // Отключаем настройки
-            Settings.IsEnabled = false;
-        }
 
         private void NameSettingsButton_Click(object sender, RoutedEventArgs e)
         {

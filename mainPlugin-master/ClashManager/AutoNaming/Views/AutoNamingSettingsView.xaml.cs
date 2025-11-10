@@ -38,29 +38,16 @@ namespace ClashManager.AutoNaming.Views
                 Separator = SeparatorTextBox.Text?.Trim() ?? " | "
             };
 
-            // Показываем окно выбора тестов
-            var testSelectionWindow = new TestSelectionView(settings);
-            testSelectionWindow.Owner = this;
-            var result = testSelectionWindow.ShowDialog();
+            // Сохраняем примененные настройки
+            AppliedSettings = settings;
+            settings.SaveToFile();
 
-            if (result == true)
-            {
-                // Сохраняем примененные настройки
-                AppliedSettings = settings;
-
-                // Применить настройки к выбранным тестам
-                ApplySettingsToTests(settings, testSelectionWindow.SelectedTestGuids);
-                MessageBox.Show($"Настройки применены к {testSelectionWindow.SelectedTestGuids.Count} тестам!", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-                this.DialogResult = true;
-                this.Close();
-            }
+            MessageBox.Show("Настройки сохранены!", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+            this.DialogResult = true;
+            this.Close();
         }
 
-        private void ApplySettingsToTests(AutoNamingSettings settings, List<System.Guid> selectedTestGuids)
-        {
-            // TODO: Реализовать применение настроек к выбранным тестам
-            // Здесь будет логика применения кастомных параметров к выбранным тестам
-        }
+
 
         private void CheckParametersButton_Click(object sender, RoutedEventArgs e)
         {
