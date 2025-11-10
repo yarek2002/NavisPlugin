@@ -278,16 +278,14 @@ namespace ClashManager.AutoNaming.Views
 
                     // Формируем новое имя: убираем "_" и добавляем "|" + названия моделей
                     string baseName = group.DisplayName.TrimEnd('_');
-                    string finalName = baseName;
+
+                    // Если есть пользовательское имя для теста, используем его вместо базового имени
+                    string nameToUse = !string.IsNullOrEmpty(newName) ? newName : baseName;
+
+                    string finalName = nameToUse;
                     if (!string.IsNullOrEmpty(modelNames))
                     {
-                        finalName = baseName + " | " + modelNames;
-                    }
-
-                    // Если есть пользовательское имя для теста, добавляем его в начало
-                    if (!string.IsNullOrEmpty(newName))
-                    {
-                        finalName = newName + " | " + finalName;
+                        finalName = nameToUse + " | " + modelNames;
                     }
 
                     groupsToRename[group.Guid] = finalName;

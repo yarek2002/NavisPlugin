@@ -19,7 +19,20 @@ namespace ClashManager.AutoNaming
         public bool IncludeParam5 { get; set; }
         public string Param5Name { get; set; }
 
-        public string Separator { get; set; }
+        private string _separator;
+        public string Separator
+        {
+            get => _separator;
+            set
+            {
+                _separator = value;
+                // Ensure separator has spaces around |
+                if (!string.IsNullOrEmpty(_separator) && _separator.Contains("|") && !_separator.Contains(" | "))
+                {
+                    _separator = " | ";
+                }
+            }
+        }
 
         public AutoNamingSettings()
         {
