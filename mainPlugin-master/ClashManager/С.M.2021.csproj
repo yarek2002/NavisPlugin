@@ -190,6 +190,7 @@
     <Compile Include="Automation\AutomationSettings.cs" />
     <Compile Include="Externals\ReportAutomationCmd.cs" />
     <Compile Include="AutoNaming\AutoNamingSettings.cs" />
+    <Compile Include="AutoNaming\TestNamingSettings.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="AddinRibbon.xaml">
