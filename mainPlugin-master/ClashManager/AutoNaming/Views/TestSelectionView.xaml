@@ -32,12 +32,21 @@
                 </ListBox.Template>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
-                            <CheckBox Margin="0,0,6,0"
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="200" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Grid.Column="0" Margin="0,0,6,0"
                                       IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                      Click="TestCheckBox_Click"/>
-                            <TextBlock Text="{Binding DisplayName}"/>
-                        </StackPanel>
+                                      Click="TestCheckBox_Click"
+                                      VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="2" Text="{Binding CustomName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Margin="6,2,0,2" VerticalAlignment="Center"
+                                     ToolTip="Введите пользовательское имя для теста"/>
+                        </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>

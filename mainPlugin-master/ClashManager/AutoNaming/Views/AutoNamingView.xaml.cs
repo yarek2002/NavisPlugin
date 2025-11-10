@@ -211,15 +211,6 @@ namespace ClashManager.AutoNaming.Views
 
         private void AssignNameButton_Click(object sender, RoutedEventArgs e)
         {
-            // Получаем все выбранные элементы из модели
-            var checkedIds = _testItems.Where(x => x.IsChecked).Select(x => x.Guid).ToList();
-
-            if (checkedIds.Count == 0)
-            {
-                MessageBox.Show("Выберите хотя бы один тест!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
             // Определяем, использовать ли настройки
             AutoNamingSettings settingsToUse = null;
             if (EnableSettingsToggle.IsChecked == true && _currentSettings != null)
@@ -227,28 +218,39 @@ namespace ClashManager.AutoNaming.Views
                 settingsToUse = _currentSettings;
             }
 
-            // Логика авто-наименования групп коллизий
-            int renamedGroupsCount = 0;
+            // Открываем окно выбора тестов
+            var testSelectionWindow = new TestSelectionView(settingsToUse);
+            testSelectionWindow.Owner = this;
+            var result = testSelectionWindow.ShowDialog();
 
-            foreach (var testGuid in checkedIds)
+            if (result == true && testSelectionWindow.SelectedTestGuids.Count > 0)
             {
-                var test = FindTestByGuid(testGuid);
-                if (test == null) continue;
+                // Логика авто-наименования групп коллизий
+                int renamedGroupsCount = 0;
 
-                // Переименовываем группы, заканчивающиеся на "_"
-                renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, "", settingsToUse);
-            }
+                foreach (var testGuid in testSelectionWindow.SelectedTestGuids)
+                {
+                    var test = FindTestByGuid(testGuid);
+                    if (test == null) continue;
 
-            if (renamedGroupsCount > 0)
-            {
-                MessageBox.Show($"Авто-наименование выполнено! Переименовано {renamedGroupsCount} групп коллизий.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show("Не найдено групп коллизий, заканчивающихся на '_'", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
+                    // Получаем пользовательское имя для теста
+                    string customName = testSelectionWindow.TestNamingSettings.GetCustomName(testGuid);
 
-            this.Close();
+                    // Переименовываем группы, заканчивающиеся на "_"
+                    renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, customName, settingsToUse);
+                }
+
+                if (renamedGroupsCount > 0)
+                {
+                    MessageBox.Show($"Авто-наименование выполнено! Переименовано {renamedGroupsCount} групп коллизий.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Не найдено групп коллизий, заканчивающихся на '_'", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+
+                this.Close();
+            }
         }
 
         private ClashTest FindTestByGuid(Guid testGuid)
@@ -280,6 +282,12 @@ namespace ClashManager.AutoNaming.Views
                     if (!string.IsNullOrEmpty(modelNames))
                     {
                         finalName = baseName + " | " + modelNames;
+                    }
+
+                    // Если есть пользовательское имя для теста, добавляем его в начало
+                    if (!string.IsNullOrEmpty(newName))
+                    {
+                        finalName = newName + " | " + finalName;
                     }
 
                     groupsToRename[group.Guid] = finalName;

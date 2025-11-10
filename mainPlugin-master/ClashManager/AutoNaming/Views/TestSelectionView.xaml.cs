@@ -17,6 +17,7 @@ namespace ClashManager.AutoNaming.Views
     public class TestSelectionItem : INotifyPropertyChanged
     {
         private bool _isSelected;
+        private string _customName;
 
         public ClashTest Test { get; set; }
         public string DisplayName { get; set; }
@@ -30,6 +31,19 @@ namespace ClashManager.AutoNaming.Views
                 if (_isSelected != value)
                 {
                     _isSelected = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string CustomName
+        {
+            get => _customName;
+            set
+            {
+                if (_customName != value)
+                {
+                    _customName = value;
                     OnPropertyChanged();
                 }
             }
@@ -53,10 +67,14 @@ namespace ClashManager.AutoNaming.Views
 
         public List<Guid> SelectedTestGuids { get; private set; }
         public AutoNamingSettings Settings { get; private set; }
+        public TestNamingSettings TestNamingSettings => _testNamingSettings;
+
+        private TestNamingSettings _testNamingSettings;
 
         public TestSelectionView(AutoNamingSettings settings)
         {
             Settings = settings;
+            _testNamingSettings = TestNamingSettings.LoadFromFile();
             InitializeComponent();
             _doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
             _documentClash = _doc.GetClash();
@@ -73,7 +91,8 @@ namespace ClashManager.AutoNaming.Views
                 Test = t,
                 DisplayName = t.DisplayName,
                 Guid = t.Guid,
-                IsSelected = false // По умолчанию ничего не выбрано
+                IsSelected = false, // По умолчанию ничего не выбрано
+                CustomName = _testNamingSettings.GetCustomName(t.Guid)
             }).ToList();
 
             // Подписываемся на изменения состояния каждого элемента
@@ -91,6 +110,14 @@ namespace ClashManager.AutoNaming.Views
             {
                 // Обновляем список выбранных GUID
                 UpdateSelectedGuids();
+            }
+            else if (e.PropertyName == nameof(TestSelectionItem.CustomName))
+            {
+                // Обновляем настройки при изменении пользовательского имени
+                if (sender is TestSelectionItem testItem)
+                {
+                    _testNamingSettings.SetCustomName(testItem.Guid, testItem.CustomName);
+                }
             }
         }
 
@@ -212,6 +239,9 @@ namespace ClashManager.AutoNaming.Views
                 MessageBox.Show("Выберите хотя бы один тест!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
+            // Сохраняем настройки в файл
+            _testNamingSettings.SaveToFile();
 
             this.DialogResult = true;
             this.Close();
