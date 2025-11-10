@@ -17,13 +17,14 @@ namespace ClashManager.AutoNaming.Views
     public class TestItem : INotifyPropertyChanged
     {
         private bool _isChecked;
-        
+        private string _customName;
+
         public ClashTest Test { get; set; }
         public string DisplayName { get; set; }
         public Guid Guid { get; set; }
-        
-        public bool IsChecked 
-        { 
+
+        public bool IsChecked
+        {
             get => _isChecked;
             set
             {
@@ -35,8 +36,21 @@ namespace ClashManager.AutoNaming.Views
             }
         }
 
+        public string CustomName
+        {
+            get => _customName;
+            set
+            {
+                if (_customName != value)
+                {
+                    _customName = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
-        
+
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -51,9 +65,11 @@ namespace ClashManager.AutoNaming.Views
         private int _lastTestClickIndex = -1; // Отслеживаем последний клик для Shift-выбора
         private bool _suppressCheckboxHandlers = false; // Предотвращает рекурсивные вызовы обработчиков чекбоксов
         private AutoNamingSettings _currentSettings; // Текущие настройки авто-наименования
+        private TestNamingSettings _testNamingSettings; // Настройки имен тестов
 
         public AutoNamingView()
         {
+            _testNamingSettings = TestNamingSettings.LoadFromFile();
             InitializeComponent();
             _doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
             _documentClash = _doc.GetClash();
@@ -67,22 +83,23 @@ namespace ClashManager.AutoNaming.Views
         private void LoadTests()
         {
             var tests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? Enumerable.Empty<ClashTest>().ToList();
-            
+
             // Создаем объекты TestItem только один раз
             _testItems = tests.Select(t => new TestItem
-            { 
-                Test = t, 
-                DisplayName = t.DisplayName, 
-                IsChecked = _checkedTestIds.Contains(t.Guid), 
-                Guid = t.Guid 
+            {
+                Test = t,
+                DisplayName = t.DisplayName,
+                IsChecked = _checkedTestIds.Contains(t.Guid),
+                Guid = t.Guid,
+                CustomName = _testNamingSettings.GetCustomName(t.Guid)
             }).ToList();
-            
+
             // Подписываемся на изменения состояния каждого элемента
             foreach (var testItem in _testItems)
             {
                 testItem.PropertyChanged += TestItem_PropertyChanged;
             }
-            
+
             TestsListBox.ItemsSource = _testItems;
         }
 
@@ -91,17 +108,23 @@ namespace ClashManager.AutoNaming.Views
         /// </summary>
         private void TestItem_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(TestItem.IsChecked) && sender is TestItem testItem)
+            if (e.PropertyName == nameof(TestItem.IsChecked) && sender is TestItem checkedItem)
             {
                 // Синхронизируем с HashSet
-                if (testItem.IsChecked)
+                if (checkedItem.IsChecked)
                 {
-                    _checkedTestIds.Add(testItem.Guid);
+                    _checkedTestIds.Add(checkedItem.Guid);
                 }
                 else
                 {
-                    _checkedTestIds.Remove(testItem.Guid);
+                    _checkedTestIds.Remove(checkedItem.Guid);
                 }
+            }
+            else if (e.PropertyName == nameof(TestItem.CustomName) && sender is TestItem nameItem)
+            {
+                // Сохраняем пользовательское имя в настройки
+                _testNamingSettings.SetCustomName(nameItem.Guid, nameItem.CustomName);
+                _testNamingSettings.SaveToFile();
             }
         }
 
@@ -211,6 +234,15 @@ namespace ClashManager.AutoNaming.Views
 
         private void AssignNameButton_Click(object sender, RoutedEventArgs e)
         {
+            // Получаем выбранные тесты
+            var selectedTestItems = _testItems.Where(t => t.IsChecked).ToList();
+
+            if (selectedTestItems.Count == 0)
+            {
+                MessageBox.Show("Выберите хотя бы один тест!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             // Определяем, использовать ли настройки
             AutoNamingSettings settingsToUse = null;
             if (EnableSettingsToggle.IsChecked == true && _currentSettings != null)
@@ -218,39 +250,31 @@ namespace ClashManager.AutoNaming.Views
                 settingsToUse = _currentSettings;
             }
 
-            // Открываем окно выбора тестов
-            var testSelectionWindow = new TestSelectionView(settingsToUse);
-            testSelectionWindow.Owner = this;
-            var result = testSelectionWindow.ShowDialog();
+            // Логика авто-наименования групп коллизий
+            int renamedGroupsCount = 0;
 
-            if (result == true && testSelectionWindow.SelectedTestGuids.Count > 0)
+            foreach (var testItem in selectedTestItems)
             {
-                // Логика авто-наименования групп коллизий
-                int renamedGroupsCount = 0;
+                var test = testItem.Test;
+                if (test == null) continue;
 
-                foreach (var testGuid in testSelectionWindow.SelectedTestGuids)
-                {
-                    var test = FindTestByGuid(testGuid);
-                    if (test == null) continue;
+                // Используем пользовательское имя для теста
+                string customName = testItem.CustomName;
 
-                    // Получаем пользовательское имя для теста
-                    string customName = testSelectionWindow.TestNamingSettings.GetCustomName(testGuid);
-
-                    // Переименовываем группы, заканчивающиеся на "_"
-                    renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, customName, settingsToUse);
-                }
-
-                if (renamedGroupsCount > 0)
-                {
-                    MessageBox.Show($"Авто-наименование выполнено! Переименовано {renamedGroupsCount} групп коллизий.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Не найдено групп коллизий, заканчивающихся на '_'", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-
-                this.Close();
+                // Переименовываем группы, заканчивающиеся на "_"
+                renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, customName, settingsToUse);
             }
+
+            if (renamedGroupsCount > 0)
+            {
+                MessageBox.Show($"Авто-наименование выполнено! Переименовано {renamedGroupsCount} групп коллизий.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Не найдено групп коллизий, заканчивающихся на '_'", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+
+            this.Close();
         }
 
         private ClashTest FindTestByGuid(Guid testGuid)
