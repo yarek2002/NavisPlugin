@@ -17,7 +17,6 @@ namespace ClashManager.AutoNaming.Views
     public class TestItem : INotifyPropertyChanged
     {
         private bool _isChecked;
-        private string _customName;
 
         public ClashTest Test { get; set; }
         public string DisplayName { get; set; }
@@ -31,19 +30,6 @@ namespace ClashManager.AutoNaming.Views
                 if (_isChecked != value)
                 {
                     _isChecked = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public string CustomName
-        {
-            get => _customName;
-            set
-            {
-                if (_customName != value)
-                {
-                    _customName = value;
                     OnPropertyChanged();
                 }
             }
@@ -90,8 +76,7 @@ namespace ClashManager.AutoNaming.Views
                 Test = t,
                 DisplayName = t.DisplayName,
                 IsChecked = _checkedTestIds.Contains(t.Guid),
-                Guid = t.Guid,
-                CustomName = _testNamingSettings.GetCustomName(t.Guid)
+                Guid = t.Guid
             }).ToList();
 
             // Подписываемся на изменения состояния каждого элемента
@@ -119,12 +104,6 @@ namespace ClashManager.AutoNaming.Views
                 {
                     _checkedTestIds.Remove(checkedItem.Guid);
                 }
-            }
-            else if (e.PropertyName == nameof(TestItem.CustomName) && sender is TestItem nameItem)
-            {
-                // Сохраняем пользовательское имя в настройки
-                _testNamingSettings.SetCustomName(nameItem.Guid, nameItem.CustomName);
-                _testNamingSettings.SaveToFile();
             }
         }
 
@@ -258,11 +237,8 @@ namespace ClashManager.AutoNaming.Views
                 var test = testItem.Test;
                 if (test == null) continue;
 
-                // Используем пользовательское имя для теста
-                string customName = testItem.CustomName;
-
                 // Переименовываем группы, заканчивающиеся на "_"
-                renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, customName, settingsToUse);
+                renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, null, settingsToUse);
             }
 
             if (renamedGroupsCount > 0)
