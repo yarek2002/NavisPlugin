@@ -5,7 +5,10 @@ using Autodesk.Navisworks.Api;
 
 namespace ClashManager.AutoNaming
 {
-    public class AutoNamingSettings
+    /// <summary>
+    /// Настройки авто-наименования для конкретного теста
+    /// </summary>
+    public class TestAutoNamingSettings
     {
         public bool IncludeParam1 { get; set; }
         public string Param1Name { get; set; }
@@ -37,7 +40,7 @@ namespace ClashManager.AutoNaming
             }
         }
 
-        public AutoNamingSettings()
+        public TestAutoNamingSettings()
         {
             Separator = " | ";
         }
@@ -63,6 +66,48 @@ namespace ClashManager.AutoNaming
 
             return parameters;
         }
+    }
+
+    /// <summary>
+    /// Контейнер настроек авто-наименования для всех тестов
+    /// </summary>
+    public class AutoNamingSettings
+    {
+        public Dictionary<Guid, TestAutoNamingSettings> TestSettings { get; set; } = new Dictionary<Guid, TestAutoNamingSettings>();
+
+        /// <summary>
+        /// Получает настройки для конкретного теста
+        /// </summary>
+        public TestAutoNamingSettings GetTestSettings(Guid testGuid)
+        {
+            return TestSettings.ContainsKey(testGuid) ? TestSettings[testGuid] : null;
+        }
+
+        /// <summary>
+        /// Устанавливает настройки для конкретного теста
+        /// </summary>
+        public void SetTestSettings(Guid testGuid, TestAutoNamingSettings settings)
+        {
+            if (settings == null)
+            {
+                TestSettings.Remove(testGuid);
+            }
+            else
+            {
+                TestSettings[testGuid] = settings;
+            }
+        }
+
+        /// <summary>
+        /// Устанавливает настройки для нескольких тестов
+        /// </summary>
+        public void SetTestSettings(List<Guid> testGuids, TestAutoNamingSettings settings)
+        {
+            foreach (var testGuid in testGuids)
+            {
+                SetTestSettings(testGuid, settings);
+            }
+        }
 
         /// <summary>
         /// Сохраняет настройки в JSON файл рядом с текущим NWF проектом
@@ -76,17 +121,26 @@ namespace ClashManager.AutoNaming
                     return;
 
                 var lines = new List<string>();
-                lines.Add($"IncludeParam1={IncludeParam1}");
-                lines.Add($"Param1Name={Param1Name ?? string.Empty}");
-                lines.Add($"IncludeParam2={IncludeParam2}");
-                lines.Add($"Param2Name={Param2Name ?? string.Empty}");
-                lines.Add($"IncludeParam3={IncludeParam3}");
-                lines.Add($"Param3Name={Param3Name ?? string.Empty}");
-                lines.Add($"IncludeParam4={IncludeParam4}");
-                lines.Add($"Param4Name={Param4Name ?? string.Empty}");
-                lines.Add($"IncludeParam5={IncludeParam5}");
-                lines.Add($"Param5Name={Param5Name ?? string.Empty}");
-                lines.Add($"Separator={Separator ?? " | "}");
+
+                foreach (var kvp in TestSettings)
+                {
+                    var testGuid = kvp.Key;
+                    var settings = kvp.Value;
+
+                    lines.Add($"[{testGuid}]");
+                    lines.Add($"IncludeParam1={settings.IncludeParam1}");
+                    lines.Add($"Param1Name={settings.Param1Name ?? string.Empty}");
+                    lines.Add($"IncludeParam2={settings.IncludeParam2}");
+                    lines.Add($"Param2Name={settings.Param2Name ?? string.Empty}");
+                    lines.Add($"IncludeParam3={settings.IncludeParam3}");
+                    lines.Add($"Param3Name={settings.Param3Name ?? string.Empty}");
+                    lines.Add($"IncludeParam4={settings.IncludeParam4}");
+                    lines.Add($"Param4Name={settings.Param4Name ?? string.Empty}");
+                    lines.Add($"IncludeParam5={settings.IncludeParam5}");
+                    lines.Add($"Param5Name={settings.Param5Name ?? string.Empty}");
+                    lines.Add($"Separator={settings.Separator ?? " | "}");
+                    lines.Add(""); // Empty line between tests
+                }
 
                 File.WriteAllLines(filePath, lines);
             }
@@ -110,59 +164,94 @@ namespace ClashManager.AutoNaming
                     return settings;
 
                 var lines = File.ReadAllLines(filePath);
+                Guid currentTestGuid = Guid.Empty;
+                TestAutoNamingSettings currentTestSettings = null;
+
                 foreach (var line in lines)
                 {
-                    if (string.IsNullOrWhiteSpace(line) || !line.Contains("="))
-                        continue;
+                    var trimmedLine = line.Trim();
 
-                    var parts = line.Split(new[] { '=' }, 2);
-                    if (parts.Length != 2)
-                        continue;
-
-                    var key = parts[0].Trim();
-                    var value = parts[1].Trim();
-
-                    switch (key)
+                    // Check if this is a test GUID header
+                    if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
                     {
-                        case "IncludeParam1":
-                            bool.TryParse(value, out bool include1);
-                            settings.IncludeParam1 = include1;
-                            break;
-                        case "Param1Name":
-                            settings.Param1Name = value;
-                            break;
-                        case "IncludeParam2":
-                            bool.TryParse(value, out bool include2);
-                            settings.IncludeParam2 = include2;
-                            break;
-                        case "Param2Name":
-                            settings.Param2Name = value;
-                            break;
-                        case "IncludeParam3":
-                            bool.TryParse(value, out bool include3);
-                            settings.IncludeParam3 = include3;
-                            break;
-                        case "Param3Name":
-                            settings.Param3Name = value;
-                            break;
-                        case "IncludeParam4":
-                            bool.TryParse(value, out bool include4);
-                            settings.IncludeParam4 = include4;
-                            break;
-                        case "Param4Name":
-                            settings.Param4Name = value;
-                            break;
-                        case "IncludeParam5":
-                            bool.TryParse(value, out bool include5);
-                            settings.IncludeParam5 = include5;
-                            break;
-                        case "Param5Name":
-                            settings.Param5Name = value;
-                            break;
-                        case "Separator":
-                            settings.Separator = value;
-                            break;
+                        var guidString = trimmedLine.Trim('[', ']');
+                        if (Guid.TryParse(guidString, out Guid testGuid))
+                        {
+                            // Save previous test settings if any
+                            if (currentTestSettings != null && currentTestGuid != Guid.Empty)
+                            {
+                                settings.TestSettings[currentTestGuid] = currentTestSettings;
+                            }
+
+                            // Start new test settings
+                            currentTestGuid = testGuid;
+                            currentTestSettings = new TestAutoNamingSettings();
+                        }
+                        continue;
                     }
+
+                    // Skip empty lines
+                    if (string.IsNullOrWhiteSpace(trimmedLine))
+                        continue;
+
+                    // Parse key-value pairs
+                    if (trimmedLine.Contains("=") && currentTestSettings != null)
+                    {
+                        var parts = trimmedLine.Split(new[] { '=' }, 2);
+                        if (parts.Length == 2)
+                        {
+                            var key = parts[0].Trim();
+                            var value = parts[1].Trim();
+
+                            switch (key)
+                            {
+                                case "IncludeParam1":
+                                    bool.TryParse(value, out bool include1);
+                                    currentTestSettings.IncludeParam1 = include1;
+                                    break;
+                                case "Param1Name":
+                                    currentTestSettings.Param1Name = value;
+                                    break;
+                                case "IncludeParam2":
+                                    bool.TryParse(value, out bool include2);
+                                    currentTestSettings.IncludeParam2 = include2;
+                                    break;
+                                case "Param2Name":
+                                    currentTestSettings.Param2Name = value;
+                                    break;
+                                case "IncludeParam3":
+                                    bool.TryParse(value, out bool include3);
+                                    currentTestSettings.IncludeParam3 = include3;
+                                    break;
+                                case "Param3Name":
+                                    currentTestSettings.Param3Name = value;
+                                    break;
+                                case "IncludeParam4":
+                                    bool.TryParse(value, out bool include4);
+                                    currentTestSettings.IncludeParam4 = include4;
+                                    break;
+                                case "Param4Name":
+                                    currentTestSettings.Param4Name = value;
+                                    break;
+                                case "IncludeParam5":
+                                    bool.TryParse(value, out bool include5);
+                                    currentTestSettings.IncludeParam5 = include5;
+                                    break;
+                                case "Param5Name":
+                                    currentTestSettings.Param5Name = value;
+                                    break;
+                                case "Separator":
+                                    currentTestSettings.Separator = value;
+                                    break;
+                            }
+                        }
+                    }
+                }
+
+                // Save the last test settings
+                if (currentTestSettings != null && currentTestGuid != Guid.Empty)
+                {
+                    settings.TestSettings[currentTestGuid] = currentTestSettings;
                 }
             }
             catch (Exception ex)

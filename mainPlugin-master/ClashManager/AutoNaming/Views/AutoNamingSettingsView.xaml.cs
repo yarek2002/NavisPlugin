@@ -8,7 +8,8 @@ namespace ClashManager.AutoNaming.Views
 {
     public partial class AutoNamingSettingsView : Window
     {
-        public AutoNamingSettings AppliedSettings { get; private set; }
+        public TestAutoNamingSettings AppliedSettings { get; private set; }
+        public List<System.Guid> SelectedTestGuids { get; set; } = new List<System.Guid>();
 
         public AutoNamingSettingsView()
         {
@@ -17,8 +18,8 @@ namespace ClashManager.AutoNaming.Views
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
-            // Создаем объект настроек
-            var settings = new AutoNamingSettings
+            // Создаем объект настроек для теста
+            var settings = new TestAutoNamingSettings
             {
                 IncludeParam1 = IncludeParam1CheckBox.IsChecked == true,
                 Param1Name = Param1TextBox.Text?.Trim(),
@@ -40,9 +41,13 @@ namespace ClashManager.AutoNaming.Views
 
             // Сохраняем примененные настройки
             AppliedSettings = settings;
-            settings.SaveToFile();
 
-            MessageBox.Show("Настройки сохранены!", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+            // Загружаем существующие настройки и добавляем/обновляем настройки для выбранных тестов
+            var allSettings = AutoNamingSettings.LoadFromFile();
+            allSettings.SetTestSettings(SelectedTestGuids, settings);
+            allSettings.SaveToFile();
+
+            MessageBox.Show($"Настройки сохранены для {SelectedTestGuids.Count} тестов!", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
             this.DialogResult = true;
             this.Close();
         }

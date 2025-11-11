@@ -50,7 +50,7 @@ namespace ClashManager.AutoNaming.Views
         private List<TestItem> _testItems = new List<TestItem>(); // Кэшируем список тестов
         private int _lastTestClickIndex = -1; // Отслеживаем последний клик для Shift-выбора
         private bool _suppressCheckboxHandlers = false; // Предотвращает рекурсивные вызовы обработчиков чекбоксов
-        private AutoNamingSettings _currentSettings; // Текущие настройки авто-наименования
+        private AutoNamingSettings _allSettings; // Все настройки авто-наименования
 
         public AutoNamingView()
         {
@@ -63,7 +63,7 @@ namespace ClashManager.AutoNaming.Views
 
         private void LoadSettings()
         {
-            _currentSettings = AutoNamingSettings.LoadFromFile();
+            _allSettings = AutoNamingSettings.LoadFromFile();
         }
 
         private void LoadTests()
@@ -222,9 +222,6 @@ namespace ClashManager.AutoNaming.Views
                 return;
             }
 
-            // Используем настройки, если они доступны
-            AutoNamingSettings settingsToUse = _currentSettings;
-
             // Логика авто-наименования групп коллизий
             int renamedGroupsCount = 0;
 
@@ -233,8 +230,11 @@ namespace ClashManager.AutoNaming.Views
                 var test = testItem.Test;
                 if (test == null) continue;
 
+                // Получаем настройки для этого конкретного теста
+                var testSettings = _allSettings?.GetTestSettings(testItem.Guid);
+
                 // Переименовываем группы, заканчивающиеся на "_"
-                renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, null, settingsToUse);
+                renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, null, testSettings);
             }
 
             if (renamedGroupsCount > 0)
@@ -255,7 +255,7 @@ namespace ClashManager.AutoNaming.Views
             return allTests?.FirstOrDefault(t => t.Guid == testGuid);
         }
 
-        private int RenameGroupsEndingWithUnderscore(ClashTest test, string newName, AutoNamingSettings settings = null)
+        private int RenameGroupsEndingWithUnderscore(ClashTest test, string newName, TestAutoNamingSettings settings = null)
         {
             int renamedCount = 0;
 
@@ -399,16 +399,26 @@ namespace ClashManager.AutoNaming.Views
 
         private void NameSettingsButton_Click(object sender, RoutedEventArgs e)
         {
+            // Получаем выбранные тесты
+            var selectedTestGuids = _testItems.Where(t => t.IsChecked).Select(t => t.Guid).ToList();
+
+            if (selectedTestGuids.Count == 0)
+            {
+                MessageBox.Show("Выберите хотя бы один тест для настройки!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             // Открываем окно настроек
             var settingsWindow = new AutoNamingSettingsView();
             settingsWindow.Owner = this;
+            settingsWindow.SelectedTestGuids = selectedTestGuids;
             var result = settingsWindow.ShowDialog();
 
-            // Если настройки были применены, сохраняем их для использования в авто-наименовании
-            if (result == true && settingsWindow.AppliedSettings != null)
+            // Если настройки были применены, перезагружаем настройки
+            if (result == true)
             {
-                _currentSettings = settingsWindow.AppliedSettings;
-                System.Diagnostics.Debug.WriteLine($"Settings saved: {string.Join(", ", _currentSettings.GetActiveParameters())}");
+                LoadSettings(); // Перезагружаем настройки после сохранения
+                System.Diagnostics.Debug.WriteLine($"Settings updated for {selectedTestGuids.Count} tests");
             }
         }
 
@@ -486,7 +496,7 @@ namespace ClashManager.AutoNaming.Views
         /// <param name="group">Группа коллизий</param>
         /// <param name="settings">Настройки авто-наименования</param>
         /// <returns>Строка с названиями моделей, ID элементов и GUID группы</returns>
-        private string GetModelNamesFromGroup(ClashResultGroup group, AutoNamingSettings settings = null)
+        private string GetModelNamesFromGroup(ClashResultGroup group, TestAutoNamingSettings settings = null)
         {
             if (group == null) return "";
 
@@ -722,7 +732,7 @@ namespace ClashManager.AutoNaming.Views
         /// <param name="group">Группа коллизий</param>
         /// <param name="settings">Настройки авто-наименования</param>
         /// <returns>Список найденных пользовательских параметров</returns>
-        private List<string> GetCustomParametersFromGroup(ClashResultGroup group, AutoNamingSettings settings)
+        private List<string> GetCustomParametersFromGroup(ClashResultGroup group, TestAutoNamingSettings settings)
         {
             var customParts = new List<string>();
             var allResults = GetAllResultsFromGroup(group);
