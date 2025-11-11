@@ -62,22 +62,8 @@ namespace ClashManager.AutoNaming.Views
 
         private void AddParameterButton_Click(object sender, RoutedEventArgs e)
         {
-            // Show dialog to enter parameter name
-            var dialog = new ParameterNameDialog();
-            dialog.Owner = this;
-
-            if (dialog.ShowDialog() == true)
-            {
-                string parameterName = dialog.ParameterName?.Trim();
-                if (!string.IsNullOrEmpty(parameterName))
-                {
-                    Parameters.Add(new ParameterItem(false, parameterName));
-                }
-                else
-                {
-                    Parameters.Add(new ParameterItem());
-                }
-            }
+            // Add a new parameter directly to the list
+            Parameters.Add(new ParameterItem(false, string.Empty));
         }
 
         private void RemoveParameterButton_Click(object sender, RoutedEventArgs e)
@@ -154,92 +140,5 @@ namespace ClashManager.AutoNaming.Views
         }
     }
 
-    /// <summary>
-    /// Диалог для ввода имени параметра
-    /// </summary>
-    public class ParameterNameDialog : Window
-    {
-        public string ParameterName { get; private set; }
 
-        private TextBox _parameterNameTextBox;
-
-        public ParameterNameDialog()
-        {
-            Title = "Введите имя параметра";
-            Width = 300;
-            Height = 150;
-            WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            ResizeMode = ResizeMode.NoResize;
-
-            var grid = new Grid();
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            grid.Margin = new Thickness(10);
-
-            // Label
-            var label = new TextBlock
-            {
-                Text = "Имя параметра:",
-                Margin = new Thickness(0, 0, 0, 5)
-            };
-            Grid.SetRow(label, 0);
-            grid.Children.Add(label);
-
-            // TextBox
-            _parameterNameTextBox = new TextBox
-            {
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-            Grid.SetRow(_parameterNameTextBox, 1);
-            grid.Children.Add(_parameterNameTextBox);
-
-            // Buttons
-            var buttonPanel = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Right
-            };
-            Grid.SetRow(buttonPanel, 2);
-
-            var okButton = new Button
-            {
-                Content = "OK",
-                Width = 60,
-                Margin = new Thickness(0, 0, 5, 0),
-                IsDefault = true
-            };
-            okButton.Click += OkButton_Click;
-
-            var cancelButton = new Button
-            {
-                Content = "Отмена",
-                Width = 60,
-                IsCancel = true
-            };
-            cancelButton.Click += CancelButton_Click;
-
-            buttonPanel.Children.Add(okButton);
-            buttonPanel.Children.Add(cancelButton);
-            grid.Children.Add(buttonPanel);
-
-            Content = grid;
-
-            // Set focus to textbox
-            Loaded += (s, e) => _parameterNameTextBox.Focus();
-        }
-
-        private void OkButton_Click(object sender, RoutedEventArgs e)
-        {
-            ParameterName = _parameterNameTextBox.Text?.Trim();
-            DialogResult = true;
-            Close();
-        }
-
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
-        {
-            DialogResult = false;
-            Close();
-        }
-    }
 }
