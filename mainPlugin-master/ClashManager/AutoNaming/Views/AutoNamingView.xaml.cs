@@ -227,14 +227,22 @@ namespace ClashManager.AutoNaming.Views
 
             foreach (var testItem in selectedTestItems)
             {
-                var test = testItem.Test;
-                if (test == null) continue;
+                try
+                {
+                    var test = testItem.Test;
+                    if (test == null) continue;
 
-                // Получаем настройки для этого конкретного теста
-                var testSettings = _allSettings?.GetTestSettings(testItem.Guid);
+                    // Получаем настройки для этого конкретного теста
+                    var testSettings = _allSettings?.GetTestSettings(testItem.Guid);
 
-                // Переименовываем группы, заканчивающиеся на "_"
-                renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, null, testSettings);
+                    // Переименовываем группы, заканчивающиеся на "_"
+                    renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, null, testSettings);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error processing test '{testItem.DisplayName}': {ex.Message}");
+                    // Continue with other tests instead of crashing
+                }
             }
 
             if (renamedGroupsCount > 0)
@@ -259,8 +267,10 @@ namespace ClashManager.AutoNaming.Views
         {
             int renamedCount = 0;
 
-            // Получаем все группы из теста (включая вложенные)
-            var allGroups = GetAllGroupsFromTest(test);
+            try
+            {
+                // Получаем все группы из теста (включая вложенные)
+                var allGroups = GetAllGroupsFromTest(test);
 
             // Собираем все группы, которые нужно переименовать
             var groupsToRename = new Dictionary<Guid, string>();
@@ -313,6 +323,12 @@ namespace ClashManager.AutoNaming.Views
             }
 
             return renamedCount;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in RenameGroupsEndingWithUnderscore for test '{test?.DisplayName ?? "Unknown"}': {ex.Message}");
+                return 0; // Return 0 on error
+            }
         }
 
         private System.Collections.Generic.List<ClashResultGroup> GetAllGroupsFromTest(ClashTest test)
@@ -496,7 +512,7 @@ namespace ClashManager.AutoNaming.Views
         /// <param name="group">Группа коллизий</param>
         /// <param name="settings">Настройки авто-наименования</param>
         /// <returns>Строка с названиями моделей, ID элементов и GUID группы</returns>
-        private string GetModelNamesFromGroup(ClashResultGroup group, TestAutoNamingSettings settings = null)
+        private string GetModelNamesFromGroup(ClashResultGroup group, TestAutoNamingSettings settings)
         {
             if (group == null) return "";
 
@@ -735,6 +751,11 @@ namespace ClashManager.AutoNaming.Views
         private List<string> GetCustomParametersFromGroup(ClashResultGroup group, TestAutoNamingSettings settings)
         {
             var customParts = new List<string>();
+
+            // If no settings, return empty list
+            if (settings == null)
+                return customParts;
+
             var allResults = GetAllResultsFromGroup(group);
 
             if (allResults.Count == 0)
