@@ -1,29 +1,73 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using Autodesk.Navisworks.Api;
 
 namespace ClashManager.AutoNaming
 {
     /// <summary>
+    /// Элемент параметра для динамического списка
+    /// </summary>
+    public class ParameterItem : INotifyPropertyChanged
+    {
+        private bool _isEnabled;
+        private string _parameterName;
+
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            set
+            {
+                if (_isEnabled != value)
+                {
+                    _isEnabled = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string ParameterName
+        {
+            get => _parameterName;
+            set
+            {
+                if (_parameterName != value)
+                {
+                    _parameterName = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public ParameterItem()
+        {
+            IsEnabled = false;
+            ParameterName = string.Empty;
+        }
+
+        public ParameterItem(bool isEnabled, string parameterName)
+        {
+            IsEnabled = isEnabled;
+            ParameterName = parameterName ?? string.Empty;
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    /// <summary>
     /// Настройки авто-наименования для конкретного теста
     /// </summary>
     public class TestAutoNamingSettings
     {
-        public bool IncludeParam1 { get; set; }
-        public string Param1Name { get; set; }
-
-        public bool IncludeParam2 { get; set; }
-        public string Param2Name { get; set; }
-
-        public bool IncludeParam3 { get; set; }
-        public string Param3Name { get; set; }
-
-        public bool IncludeParam4 { get; set; }
-        public string Param4Name { get; set; }
-
-        public bool IncludeParam5 { get; set; }
-        public string Param5Name { get; set; }
+        public List<ParameterItem> Parameters { get; set; } = new List<ParameterItem>();
 
         private string _separator;
         public string Separator
@@ -43,28 +87,42 @@ namespace ClashManager.AutoNaming
         public TestAutoNamingSettings()
         {
             Separator = " | ";
+            // Initialize with one empty parameter
+            Parameters.Add(new ParameterItem());
         }
 
         public List<string> GetActiveParameters()
         {
             var parameters = new List<string>();
 
-            if (IncludeParam1 && !string.IsNullOrWhiteSpace(Param1Name))
-                parameters.Add(Param1Name);
-
-            if (IncludeParam2 && !string.IsNullOrWhiteSpace(Param2Name))
-                parameters.Add(Param2Name);
-
-            if (IncludeParam3 && !string.IsNullOrWhiteSpace(Param3Name))
-                parameters.Add(Param3Name);
-
-            if (IncludeParam4 && !string.IsNullOrWhiteSpace(Param4Name))
-                parameters.Add(Param4Name);
-
-            if (IncludeParam5 && !string.IsNullOrWhiteSpace(Param5Name))
-                parameters.Add(Param5Name);
+            foreach (var param in Parameters)
+            {
+                if (param.IsEnabled && !string.IsNullOrWhiteSpace(param.ParameterName))
+                {
+                    parameters.Add(param.ParameterName);
+                }
+            }
 
             return parameters;
+        }
+
+        /// <summary>
+        /// Добавляет новый параметр
+        /// </summary>
+        public void AddParameter(string parameterName = null)
+        {
+            Parameters.Add(new ParameterItem(false, parameterName ?? string.Empty));
+        }
+
+        /// <summary>
+        /// Удаляет параметр по индексу
+        /// </summary>
+        public void RemoveParameter(int index)
+        {
+            if (index >= 0 && index < Parameters.Count)
+            {
+                Parameters.RemoveAt(index);
+            }
         }
     }
 
@@ -110,7 +168,7 @@ namespace ClashManager.AutoNaming
         }
 
         /// <summary>
-        /// Сохраняет настройки в JSON файл рядом с текущим NWF проектом
+        /// Сохраняет настройки в файл рядом с текущим NWF проектом
         /// </summary>
         public void SaveToFile()
         {
@@ -128,16 +186,15 @@ namespace ClashManager.AutoNaming
                     var settings = kvp.Value;
 
                     lines.Add($"[{testGuid}]");
-                    lines.Add($"IncludeParam1={settings.IncludeParam1}");
-                    lines.Add($"Param1Name={settings.Param1Name ?? string.Empty}");
-                    lines.Add($"IncludeParam2={settings.IncludeParam2}");
-                    lines.Add($"Param2Name={settings.Param2Name ?? string.Empty}");
-                    lines.Add($"IncludeParam3={settings.IncludeParam3}");
-                    lines.Add($"Param3Name={settings.Param3Name ?? string.Empty}");
-                    lines.Add($"IncludeParam4={settings.IncludeParam4}");
-                    lines.Add($"Param4Name={settings.Param4Name ?? string.Empty}");
-                    lines.Add($"IncludeParam5={settings.IncludeParam5}");
-                    lines.Add($"Param5Name={settings.Param5Name ?? string.Empty}");
+
+                    // Save parameters
+                    for (int i = 0; i < settings.Parameters.Count; i++)
+                    {
+                        var param = settings.Parameters[i];
+                        lines.Add($"Param{i}Enabled={param.IsEnabled}");
+                        lines.Add($"Param{i}Name={param.ParameterName ?? string.Empty}");
+                    }
+
                     lines.Add($"Separator={settings.Separator ?? " | "}");
                     lines.Add(""); // Empty line between tests
                 }
@@ -151,7 +208,7 @@ namespace ClashManager.AutoNaming
         }
 
         /// <summary>
-        /// Загружает настройки из JSON файла рядом с текущим NWF проектом
+        /// Загружает настройки из файла рядом с текущим NWF проектом
         /// </summary>
         public static AutoNamingSettings LoadFromFile()
         {
@@ -166,6 +223,7 @@ namespace ClashManager.AutoNaming
                 var lines = File.ReadAllLines(filePath);
                 Guid currentTestGuid = Guid.Empty;
                 TestAutoNamingSettings currentTestSettings = null;
+                var parameterBuffer = new Dictionary<int, ParameterItem>();
 
                 foreach (var line in lines)
                 {
@@ -180,12 +238,19 @@ namespace ClashManager.AutoNaming
                             // Save previous test settings if any
                             if (currentTestSettings != null && currentTestGuid != Guid.Empty)
                             {
+                                // Apply buffered parameters
+                                foreach (var kvp in parameterBuffer.OrderBy(k => k.Key))
+                                {
+                                    currentTestSettings.Parameters.Add(kvp.Value);
+                                }
                                 settings.TestSettings[currentTestGuid] = currentTestSettings;
+                                parameterBuffer.Clear();
                             }
 
                             // Start new test settings
                             currentTestGuid = testGuid;
                             currentTestSettings = new TestAutoNamingSettings();
+                            currentTestSettings.Parameters.Clear(); // Clear the default parameter
                         }
                         continue;
                     }
@@ -203,46 +268,35 @@ namespace ClashManager.AutoNaming
                             var key = parts[0].Trim();
                             var value = parts[1].Trim();
 
-                            switch (key)
+                            // Check if this is a parameter setting
+                            if (key.StartsWith("Param") && key.Contains("Enabled"))
                             {
-                                case "IncludeParam1":
-                                    bool.TryParse(value, out bool include1);
-                                    currentTestSettings.IncludeParam1 = include1;
-                                    break;
-                                case "Param1Name":
-                                    currentTestSettings.Param1Name = value;
-                                    break;
-                                case "IncludeParam2":
-                                    bool.TryParse(value, out bool include2);
-                                    currentTestSettings.IncludeParam2 = include2;
-                                    break;
-                                case "Param2Name":
-                                    currentTestSettings.Param2Name = value;
-                                    break;
-                                case "IncludeParam3":
-                                    bool.TryParse(value, out bool include3);
-                                    currentTestSettings.IncludeParam3 = include3;
-                                    break;
-                                case "Param3Name":
-                                    currentTestSettings.Param3Name = value;
-                                    break;
-                                case "IncludeParam4":
-                                    bool.TryParse(value, out bool include4);
-                                    currentTestSettings.IncludeParam4 = include4;
-                                    break;
-                                case "Param4Name":
-                                    currentTestSettings.Param4Name = value;
-                                    break;
-                                case "IncludeParam5":
-                                    bool.TryParse(value, out bool include5);
-                                    currentTestSettings.IncludeParam5 = include5;
-                                    break;
-                                case "Param5Name":
-                                    currentTestSettings.Param5Name = value;
-                                    break;
-                                case "Separator":
-                                    currentTestSettings.Separator = value;
-                                    break;
+                                var paramIndexStr = key.Replace("Param", "").Replace("Enabled", "");
+                                if (int.TryParse(paramIndexStr, out int paramIndex))
+                                {
+                                    if (!parameterBuffer.ContainsKey(paramIndex))
+                                    {
+                                        parameterBuffer[paramIndex] = new ParameterItem();
+                                    }
+                                    bool.TryParse(value, out bool isEnabled);
+                                    parameterBuffer[paramIndex].IsEnabled = isEnabled;
+                                }
+                            }
+                            else if (key.StartsWith("Param") && key.Contains("Name"))
+                            {
+                                var paramIndexStr = key.Replace("Param", "").Replace("Name", "");
+                                if (int.TryParse(paramIndexStr, out int paramIndex))
+                                {
+                                    if (!parameterBuffer.ContainsKey(paramIndex))
+                                    {
+                                        parameterBuffer[paramIndex] = new ParameterItem();
+                                    }
+                                    parameterBuffer[paramIndex].ParameterName = value;
+                                }
+                            }
+                            else if (key == "Separator")
+                            {
+                                currentTestSettings.Separator = value;
                             }
                         }
                     }
@@ -251,6 +305,11 @@ namespace ClashManager.AutoNaming
                 // Save the last test settings
                 if (currentTestSettings != null && currentTestGuid != Guid.Empty)
                 {
+                    // Apply buffered parameters
+                    foreach (var kvp in parameterBuffer.OrderBy(k => k.Key))
+                    {
+                        currentTestSettings.Parameters.Add(kvp.Value);
+                    }
                     settings.TestSettings[currentTestGuid] = currentTestSettings;
                 }
             }

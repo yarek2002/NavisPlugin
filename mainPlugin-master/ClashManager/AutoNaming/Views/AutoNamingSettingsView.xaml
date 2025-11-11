@@ -18,55 +18,26 @@
         <!-- Параметры -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="10">
-                <!-- Параметр 1 -->
-                <Grid Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <CheckBox x:Name="IncludeParam1CheckBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0" />
-                    <TextBox x:Name="Param1TextBox" Grid.Column="1" VerticalAlignment="Center" />
-                </Grid>
+                <!-- Динамический список параметров -->
+                <ItemsControl x:Name="ParametersItemsControl" Margin="0,0,0,10">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBox Grid.Column="1" Text="{Binding ParameterName}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <Button Grid.Column="2" Content="Удалить" Click="RemoveParameterButton_Click" Tag="{Binding}" Width="60" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
-                <!-- Параметр 2 -->
-                <Grid Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <CheckBox x:Name="IncludeParam2CheckBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0" />
-                    <TextBox x:Name="Param2TextBox" Grid.Column="1" VerticalAlignment="Center" />
-                </Grid>
-
-                <!-- Параметр 3 -->
-                <Grid Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <CheckBox x:Name="IncludeParam3CheckBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0" />
-                    <TextBox x:Name="Param3TextBox" Grid.Column="1" VerticalAlignment="Center" />
-                </Grid>
-
-                <!-- Параметр 4 -->
-                <Grid Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <CheckBox x:Name="IncludeParam4CheckBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0" />
-                    <TextBox x:Name="Param4TextBox" Grid.Column="1" VerticalAlignment="Center" />
-                </Grid>
-
-                <!-- Параметр 5 -->
-                <Grid Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <CheckBox x:Name="IncludeParam5CheckBox" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0" />
-                    <TextBox x:Name="Param5TextBox" Grid.Column="1" VerticalAlignment="Center" />
-                </Grid>
+                <!-- Кнопка добавления параметра -->
+                <Button x:Name="AddParameterButton" Content="Добавить параметр" HorizontalAlignment="Left" Margin="25,0,0,10" Click="AddParameterButton_Click" />
 
                 <!-- Разделитель -->
                 <TextBox x:Name="SeparatorTextBox" Text=" | " Margin="25,10,0,10" />
