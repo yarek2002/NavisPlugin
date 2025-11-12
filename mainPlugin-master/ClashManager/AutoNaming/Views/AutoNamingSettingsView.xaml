@@ -40,7 +40,7 @@
                 <Button x:Name="AddParameterButton" Content="Добавить параметр" HorizontalAlignment="Left" Margin="25,0,0,10" Click="AddParameterButton_Click" />
 
                 <!-- Разделитель -->
-                <TextBox x:Name="SeparatorTextBox" Text=" | " Margin="25,10,0,10" />
+                <TextBox Text="{Binding SeparatorText, UpdateSourceTrigger=PropertyChanged}" Margin="25,10,0,10" />
             </StackPanel>
         </ScrollViewer>
 

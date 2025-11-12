@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using ClashManager.AutoNaming;
@@ -16,9 +18,15 @@ namespace ClashManager.AutoNaming.Views
         // Observable collection for dynamic parameters
         public ObservableCollection<ParameterItem> Parameters { get; set; } = new ObservableCollection<ParameterItem>();
 
+        // Separator value for binding
+        public string SeparatorText { get; set; } = " | ";
+
         public AutoNamingSettingsView()
         {
             InitializeComponent();
+
+            // Set DataContext for binding
+            DataContext = this;
 
             // Load existing settings if available
             LoadExistingSettings();
@@ -29,11 +37,19 @@ namespace ClashManager.AutoNaming.Views
 
         private void LoadExistingSettings()
         {
-            // Try to load settings for the first selected test (if any)
+            // Try to load settings for selected tests
             if (SelectedTestGuids.Count > 0)
             {
                 var allSettings = AutoNamingSettings.LoadFromFile();
-                var testSettings = allSettings.GetTestSettings(SelectedTestGuids[0]);
+
+                // Try to find settings from any of the selected tests
+                TestAutoNamingSettings testSettings = null;
+                foreach (var testGuid in SelectedTestGuids)
+                {
+                    testSettings = allSettings.GetTestSettings(testGuid);
+                    if (testSettings != null)
+                        break; // Use the first test that has settings
+                }
 
                 if (testSettings != null)
                 {
@@ -45,11 +61,11 @@ namespace ClashManager.AutoNaming.Views
                     }
 
                     // Set separator
-                    SeparatorTextBox.Text = testSettings.Separator ?? " | ";
+                    SeparatorText = testSettings.Separator ?? " | ";
                 }
                 else
                 {
-                    // No existing settings, start with one empty parameter
+                    // No existing settings found for any selected test, start with one empty parameter
                     Parameters.Add(new ParameterItem());
                 }
             }
@@ -90,7 +106,7 @@ namespace ClashManager.AutoNaming.Views
             var settings = new TestAutoNamingSettings
             {
                 Parameters = new List<ParameterItem>(Parameters),
-                Separator = SeparatorTextBox.Text?.Trim() ?? " | "
+                Separator = SeparatorText?.Trim() ?? " | "
             };
 
             // Сохраняем примененные настройки
@@ -128,7 +144,7 @@ namespace ClashManager.AutoNaming.Views
                 paramIndex++;
             }
 
-            message += $"Разделитель: '{SeparatorTextBox.Text}'";
+            message += $"Разделитель: '{SeparatorText}'";
 
             MessageBox.Show(message, "Проверка параметров", MessageBoxButton.OK, MessageBoxImage.Information);
         }
