@@ -2,12 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using ClashManager.AutoNaming;
 
 namespace ClashManager.AutoNaming.Views
@@ -211,27 +209,5 @@ namespace ClashManager.AutoNaming.Views
         }
     }
 
-    /// <summary>
-    /// Конвертер для инвертирования булевого значения
-    /// </summary>
-    public class BooleanToInverseBooleanConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return !boolValue;
-            }
-            return false;
-        }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return !boolValue;
-            }
-            return false;
-        }
-    }
 }
