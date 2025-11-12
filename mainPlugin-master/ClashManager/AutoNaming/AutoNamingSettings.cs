@@ -15,8 +15,6 @@ namespace ClashManager.AutoNaming
     {
         private bool _isEnabled;
         private string _parameterName;
-        private bool _dontRepeatParameter;
-        private bool _parameterForEachCollisionElement;
 
         public bool IsEnabled
         {
@@ -45,38 +43,6 @@ namespace ClashManager.AutoNaming
         }
 
         /// <summary>
-        /// Не повторять параметр
-        /// </summary>
-        public bool DontRepeatParameter
-        {
-            get => _dontRepeatParameter;
-            set
-            {
-                if (_dontRepeatParameter != value)
-                {
-                    _dontRepeatParameter = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Параметр для каждого элемента коллизии
-        /// </summary>
-        public bool ParameterForEachCollisionElement
-        {
-            get => _parameterForEachCollisionElement;
-            set
-            {
-                if (_parameterForEachCollisionElement != value)
-                {
-                    _parameterForEachCollisionElement = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        /// <summary>
         /// Разделитель внутри параметра
         /// </summary>
         public string ParameterSeparator
@@ -97,8 +63,6 @@ namespace ClashManager.AutoNaming
         {
             IsEnabled = false;
             ParameterName = string.Empty;
-            DontRepeatParameter = false;
-            ParameterForEachCollisionElement = false;
             ParameterSeparator = ",";
         }
 
@@ -106,8 +70,6 @@ namespace ClashManager.AutoNaming
         {
             IsEnabled = isEnabled;
             ParameterName = parameterName ?? string.Empty;
-            DontRepeatParameter = false;
-            ParameterForEachCollisionElement = false;
             ParameterSeparator = ",";
         }
 
@@ -250,8 +212,6 @@ namespace ClashManager.AutoNaming
                         var param = settings.Parameters[i];
                         lines.Add($"Param{i}Enabled={param.IsEnabled}");
                         lines.Add($"Param{i}Name={param.ParameterName ?? string.Empty}");
-                        lines.Add($"Param{i}DontRepeat={param.DontRepeatParameter}");
-                        lines.Add($"Param{i}ForEachElement={param.ParameterForEachCollisionElement}");
                         lines.Add($"Param{i}Separator={param.ParameterSeparator ?? ","}");
                     }
 
@@ -352,32 +312,6 @@ namespace ClashManager.AutoNaming
                                         parameterBuffer[paramIndex] = new ParameterItem();
                                     }
                                     parameterBuffer[paramIndex].ParameterName = value;
-                                }
-                            }
-                            else if (key.StartsWith("Param") && key.Contains("DontRepeat"))
-                            {
-                                var paramIndexStr = key.Replace("Param", "").Replace("DontRepeat", "");
-                                if (int.TryParse(paramIndexStr, out int paramIndex))
-                                {
-                                    if (!parameterBuffer.ContainsKey(paramIndex))
-                                    {
-                                        parameterBuffer[paramIndex] = new ParameterItem();
-                                    }
-                                    bool.TryParse(value, out bool dontRepeat);
-                                    parameterBuffer[paramIndex].DontRepeatParameter = dontRepeat;
-                                }
-                            }
-                            else if (key.StartsWith("Param") && key.Contains("ForEachElement"))
-                            {
-                                var paramIndexStr = key.Replace("Param", "").Replace("ForEachElement", "");
-                                if (int.TryParse(paramIndexStr, out int paramIndex))
-                                {
-                                    if (!parameterBuffer.ContainsKey(paramIndex))
-                                    {
-                                        parameterBuffer[paramIndex] = new ParameterItem();
-                                    }
-                                    bool.TryParse(value, out bool forEachElement);
-                                    parameterBuffer[paramIndex].ParameterForEachCollisionElement = forEachElement;
                                 }
                             }
                             else if (key.StartsWith("Param") && key.Contains("Separator"))

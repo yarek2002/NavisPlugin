@@ -4,8 +4,6 @@ namespace ClashManager.AutoNaming.Views
 {
     public partial class ParameterSettingsDialog : Window
     {
-        public bool DontRepeatParameter { get; private set; }
-        public bool ParameterForEachCollisionElement { get; private set; }
         public string ParameterSeparator { get; private set; }
 
         public ParameterSettingsDialog()
@@ -13,25 +11,17 @@ namespace ClashManager.AutoNaming.Views
             InitializeComponent();
         }
 
-        public ParameterSettingsDialog(bool dontRepeatParameter, bool parameterForEachCollisionElement, string parameterSeparator = ",")
+        public ParameterSettingsDialog(string parameterSeparator = ",")
         {
             InitializeComponent();
 
-            DontRepeatParameter = dontRepeatParameter;
-            ParameterForEachCollisionElement = parameterForEachCollisionElement;
             ParameterSeparator = parameterSeparator ?? ",";
-
-            // Set initial values
-            DontRepeatParameterCheckBox.IsChecked = dontRepeatParameter;
-            ParameterForEachElementCheckBox.IsChecked = parameterForEachCollisionElement;
             ParameterSeparatorTextBox.Text = ParameterSeparator;
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            // Save the settings
-            DontRepeatParameter = DontRepeatParameterCheckBox.IsChecked == true;
-            ParameterForEachCollisionElement = ParameterForEachElementCheckBox.IsChecked == true;
+            // Save the separator setting
             ParameterSeparator = ParameterSeparatorTextBox.Text?.Trim() ?? ",";
 
             DialogResult = true;
