@@ -176,6 +176,9 @@
     <Compile Include="AutoNaming\Views\AutoNamingSettingsView.xaml.cs">
       <DependentUpon>AutoNamingSettingsView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="AutoNaming\Views\ParameterSettingsDialog.xaml.cs">
+      <DependentUpon>ParameterSettingsDialog.xaml</DependentUpon>
+    </Compile>
 
     <Compile Include="ZoneAssignment\Views\ZoneAssignmentView.xaml.cs">
       <DependentUpon>ZoneAssignmentView.xaml</DependentUpon>
@@ -222,6 +225,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Page>
     <Page Include="AutoNaming\Views\AutoNamingSettingsView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Page>
+    <Page Include="AutoNaming\Views\ParameterSettingsDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
