@@ -761,41 +761,41 @@ namespace ClashManager.AutoNaming.Views
             if (allResults.Count == 0)
                 return customParts;
 
-            // Берем первый результат для поиска параметров
-            var firstResult = allResults.First();
+            // Собираем все уникальные элементы из всех результатов коллизий
+            var allUniqueElements = new HashSet<ModelItem>();
+            foreach (var result in allResults)
+            {
+                allUniqueElements.Add(result.CompositeItem1);
+                allUniqueElements.Add(result.CompositeItem2);
+            }
 
-            // Ищем параметры в обоих элементах коллизии
-            foreach (var paramName in settings.GetActiveParameters())
+            // Ищем параметры в каждом включенном ParameterItem
+            foreach (var paramItem in settings.Parameters.Where(p => p.IsEnabled && !string.IsNullOrWhiteSpace(p.ParameterName)))
             {
                 var paramValues = new List<string>();
 
-                // Ищем параметр в первом элементе
-                string paramValue1 = GetCustomParameterValue(firstResult.CompositeItem1, paramName);
-                if (!string.IsNullOrEmpty(paramValue1))
+                // Ищем параметр во всех уникальных элементах коллизии
+                foreach (var element in allUniqueElements)
                 {
-                    paramValues.Add(paramValue1);
-                    System.Diagnostics.Debug.WriteLine($"Found custom parameter '{paramName}' in first item: '{paramValue1}'");
-                }
-
-                // Ищем параметр во втором элементе
-                string paramValue2 = GetCustomParameterValue(firstResult.CompositeItem2, paramName);
-                if (!string.IsNullOrEmpty(paramValue2))
-                {
-                    paramValues.Add(paramValue2);
-                    System.Diagnostics.Debug.WriteLine($"Found custom parameter '{paramName}' in second item: '{paramValue2}'");
+                    string paramValue = GetCustomParameterValue(element, paramItem.ParameterName);
+                    if (!string.IsNullOrEmpty(paramValue))
+                    {
+                        paramValues.Add(paramValue);
+                        System.Diagnostics.Debug.WriteLine($"Found custom parameter '{paramItem.ParameterName}' in element: '{paramValue}'");
+                    }
                 }
 
                 // Если нашли значения параметров, добавляем их
                 if (paramValues.Count > 0)
                 {
-                    // Объединяем значения через разделитель настроек
-                    string combinedValue = string.Join(settings.Separator, paramValues);
+                    // Объединяем значения через разделитель параметра (не основной разделитель!)
+                    string combinedValue = string.Join(paramItem.ParameterSeparator ?? ",", paramValues);
                     customParts.Add(combinedValue);
-                    System.Diagnostics.Debug.WriteLine($"Combined parameter '{paramName}': '{combinedValue}'");
+                    System.Diagnostics.Debug.WriteLine($"Combined parameter '{paramItem.ParameterName}' with separator '{paramItem.ParameterSeparator ?? ","}': '{combinedValue}'");
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"Custom parameter '{paramName}' not found in either item");
+                    System.Diagnostics.Debug.WriteLine($"Custom parameter '{paramItem.ParameterName}' not found in any elements");
                 }
             }
 
