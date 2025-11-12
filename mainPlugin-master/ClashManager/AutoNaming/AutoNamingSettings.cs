@@ -103,9 +103,15 @@ namespace ClashManager.AutoNaming
             }
         }
 
+        /// <summary>
+        /// Режим полного наименования (параметры составляют полное имя вместо добавления к базовому)
+        /// </summary>
+        public bool UseCompleteCustomNaming { get; set; }
+
         public TestAutoNamingSettings()
         {
             Separator = " | ";
+            UseCompleteCustomNaming = false;
             // Initialize with one empty parameter
             Parameters.Add(new ParameterItem());
         }
@@ -216,6 +222,7 @@ namespace ClashManager.AutoNaming
                     }
 
                     lines.Add($"Separator={settings.Separator ?? " | "}");
+                    lines.Add($"UseCompleteCustomNaming={settings.UseCompleteCustomNaming}");
                     lines.Add(""); // Empty line between tests
                 }
 
@@ -329,6 +336,11 @@ namespace ClashManager.AutoNaming
                             else if (key == "Separator")
                             {
                                 currentTestSettings.Separator = value;
+                            }
+                            else if (key == "UseCompleteCustomNaming")
+                            {
+                                bool.TryParse(value, out bool useCompleteCustomNaming);
+                                currentTestSettings.UseCompleteCustomNaming = useCompleteCustomNaming;
                             }
                         }
                     }

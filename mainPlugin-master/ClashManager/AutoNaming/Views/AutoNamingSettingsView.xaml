@@ -4,7 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Настройки авто-наименования" Height="400" Width="500" WindowStartupLocation="CenterOwner">
+        Title="Настройки авто-наименования" Height="450" Width="500" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <local:BooleanToInverseBooleanConverter x:Key="BooleanToInverseBooleanConverter" />
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -42,7 +45,15 @@
                 <Button x:Name="AddParameterButton" Content="Добавить параметр" HorizontalAlignment="Left" Margin="25,0,0,10" Click="AddParameterButton_Click" />
 
                 <!-- Разделитель -->
-                <TextBox x:Name="SeparatorTextBox" Text=" | " Margin="25,10,0,10" />
+                <TextBlock Text="Разделитель параметров" FontSize="10" FontWeight="Bold" Margin="10" />
+                <TextBox x:Name="SeparatorTextBox" Text="{Binding SeparatorText, UpdateSourceTrigger=PropertyChanged}" Margin="25,10,0,10" />
+
+                <!-- Режим полного наименования -->
+                <TextBlock Text="Режим наименования" FontSize="10" FontWeight="Bold" Margin="10" />
+                <StackPanel Margin="25,10,0,10">
+                    <RadioButton x:Name="DefaultNamingRadioButton" Content="Доп. настройка (добавление к базовому имени)" IsChecked="{Binding UseCompleteCustomNaming, Converter={StaticResource BooleanToInverseBooleanConverter}}" GroupName="NamingMode" />
+                    <RadioButton x:Name="CompleteCustomNamingRadioButton" Content="Настроить целиком (параметры составляют полное имя)" IsChecked="{Binding UseCompleteCustomNaming}" GroupName="NamingMode" />
+                </StackPanel>
             </StackPanel>
         </ScrollViewer>
 

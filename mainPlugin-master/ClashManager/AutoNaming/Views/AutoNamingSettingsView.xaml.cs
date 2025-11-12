@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using ClashManager.AutoNaming;
 
 namespace ClashManager.AutoNaming.Views
@@ -28,6 +30,21 @@ namespace ClashManager.AutoNaming.Views
                 if (_separatorText != value)
                 {
                     _separatorText = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // Complete custom naming mode
+        private bool _useCompleteCustomNaming;
+        public bool UseCompleteCustomNaming
+        {
+            get => _useCompleteCustomNaming;
+            set
+            {
+                if (_useCompleteCustomNaming != value)
+                {
+                    _useCompleteCustomNaming = value;
                     OnPropertyChanged();
                 }
             }
@@ -79,8 +96,9 @@ namespace ClashManager.AutoNaming.Views
                         });
                     }
 
-                    // Set separator
+                    // Set separator and complete custom naming mode
                     SeparatorText = testSettings.Separator ?? " | ";
+                    UseCompleteCustomNaming = testSettings.UseCompleteCustomNaming;
                 }
                 else
                 {
@@ -142,7 +160,8 @@ namespace ClashManager.AutoNaming.Views
             var settings = new TestAutoNamingSettings
             {
                 Parameters = new List<ParameterItem>(Parameters),
-                Separator = SeparatorText?.Trim() ?? " | "
+                Separator = SeparatorText?.Trim() ?? " | ",
+                UseCompleteCustomNaming = UseCompleteCustomNaming
             };
 
             // Сохраняем примененные настройки
@@ -192,5 +211,27 @@ namespace ClashManager.AutoNaming.Views
         }
     }
 
+    /// <summary>
+    /// Конвертер для инвертирования булевого значения
+    /// </summary>
+    public class BooleanToInverseBooleanConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool boolValue)
+            {
+                return !boolValue;
+            }
+            return false;
+        }
 
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool boolValue)
+            {
+                return !boolValue;
+            }
+            return false;
+        }
+    }
 }

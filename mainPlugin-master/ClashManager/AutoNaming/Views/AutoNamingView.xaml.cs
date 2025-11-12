@@ -282,16 +282,26 @@ namespace ClashManager.AutoNaming.Views
                     // Получаем названия моделей из группы
                     string modelNames = GetModelNamesFromGroup(group, settings);
 
-                    // Формируем новое имя: убираем "_" и добавляем "|" + названия моделей
+                    // Формируем новое имя
                     string baseName = group.DisplayName.TrimEnd('_');
 
                     // Если есть пользовательское имя для теста, используем его вместо базового имени
                     string nameToUse = !string.IsNullOrEmpty(newName) ? newName : baseName;
 
-                    string finalName = nameToUse;
-                    if (!string.IsNullOrEmpty(modelNames))
+                    string finalName;
+                    if (settings.UseCompleteCustomNaming)
                     {
-                        finalName = nameToUse + " | " + modelNames;
+                        // Режим полного наименования: используем только пользовательские параметры
+                        finalName = modelNames ?? nameToUse;
+                    }
+                    else
+                    {
+                        // Обычный режим: добавляем пользовательские параметры к базовому имени
+                        finalName = nameToUse;
+                        if (!string.IsNullOrEmpty(modelNames))
+                        {
+                            finalName = nameToUse + " | " + modelNames;
+                        }
                     }
 
                     groupsToRename[group.Guid] = finalName;
