@@ -832,26 +832,28 @@ namespace ClashManager.AutoNaming.Views
                     {
                         try
                         {
-                            // Проверяем отображаемое имя свойства
-                            if (property.DisplayName == paramName)
+                            // Проверяем отображаемое имя свойства (без учета регистра)
+                            if (string.Equals(property.DisplayName, paramName, StringComparison.OrdinalIgnoreCase))
                             {
                                 string value = property.Value?.ToString();
                                 if (!string.IsNullOrEmpty(value))
                                 {
                                     // Очищаем значение от возможных префиксов типа "DisplayString: "
                                     value = CleanParameterValue(value);
+                                    System.Diagnostics.Debug.WriteLine($"Found parameter '{paramName}' by DisplayName '{property.DisplayName}' in category '{category.DisplayName}': '{value}'");
                                     return value;
                                 }
                             }
 
-                            // Также проверяем внутреннее имя
-                            if (property.Name == paramName)
+                            // Также проверяем внутреннее имя (без учета регистра)
+                            if (string.Equals(property.Name, paramName, StringComparison.OrdinalIgnoreCase))
                             {
                                 string value = property.Value?.ToString();
                                 if (!string.IsNullOrEmpty(value))
                                 {
                                     // Очищаем значение от возможных префиксов типа "DisplayString: "
                                     value = CleanParameterValue(value);
+                                    System.Diagnostics.Debug.WriteLine($"Found parameter '{paramName}' by Name '{property.Name}' in category '{category.DisplayName}': '{value}'");
                                     return value;
                                 }
                             }
@@ -874,6 +876,7 @@ namespace ClashManager.AutoNaming.Views
                 System.Diagnostics.Debug.WriteLine($"Error getting custom parameter '{paramName}': {ex.Message}");
             }
 
+            System.Diagnostics.Debug.WriteLine($"Parameter '{paramName}' not found in element '{modelItem?.DisplayName ?? "Unknown"}'");
             return null;
         }
 
