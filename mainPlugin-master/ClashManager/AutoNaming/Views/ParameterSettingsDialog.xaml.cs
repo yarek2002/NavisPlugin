@@ -6,22 +6,25 @@ namespace ClashManager.AutoNaming.Views
     {
         public bool DontRepeatParameter { get; private set; }
         public bool ParameterForEachCollisionElement { get; private set; }
+        public string ParameterSeparator { get; private set; }
 
         public ParameterSettingsDialog()
         {
             InitializeComponent();
         }
 
-        public ParameterSettingsDialog(bool dontRepeatParameter, bool parameterForEachCollisionElement)
+        public ParameterSettingsDialog(bool dontRepeatParameter, bool parameterForEachCollisionElement, string parameterSeparator = ",")
         {
             InitializeComponent();
 
             DontRepeatParameter = dontRepeatParameter;
             ParameterForEachCollisionElement = parameterForEachCollisionElement;
+            ParameterSeparator = parameterSeparator ?? ",";
 
             // Set initial values
             DontRepeatParameterCheckBox.IsChecked = dontRepeatParameter;
             ParameterForEachElementCheckBox.IsChecked = parameterForEachCollisionElement;
+            ParameterSeparatorTextBox.Text = ParameterSeparator;
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
@@ -29,6 +32,7 @@ namespace ClashManager.AutoNaming.Views
             // Save the settings
             DontRepeatParameter = DontRepeatParameterCheckBox.IsChecked == true;
             ParameterForEachCollisionElement = ParameterForEachElementCheckBox.IsChecked == true;
+            ParameterSeparator = ParameterSeparatorTextBox.Text?.Trim() ?? ",";
 
             DialogResult = true;
             Close();

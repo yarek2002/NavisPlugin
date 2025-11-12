@@ -76,6 +76,23 @@ namespace ClashManager.AutoNaming
             }
         }
 
+        /// <summary>
+        /// Разделитель внутри параметра
+        /// </summary>
+        public string ParameterSeparator
+        {
+            get => _parameterSeparator;
+            set
+            {
+                if (_parameterSeparator != value)
+                {
+                    _parameterSeparator = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        private string _parameterSeparator;
+
         public ParameterItem()
         {
             IsEnabled = false;

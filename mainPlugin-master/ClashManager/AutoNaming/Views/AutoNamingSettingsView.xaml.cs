@@ -76,7 +76,8 @@ namespace ClashManager.AutoNaming.Views
                         Parameters.Add(new ParameterItem(param.IsEnabled, param.ParameterName)
                         {
                             DontRepeatParameter = param.DontRepeatParameter,
-                            ParameterForEachCollisionElement = param.ParameterForEachCollisionElement
+                            ParameterForEachCollisionElement = param.ParameterForEachCollisionElement,
+                            ParameterSeparator = param.ParameterSeparator ?? ","
                         });
                     }
 
@@ -108,7 +109,7 @@ namespace ClashManager.AutoNaming.Views
             if (button != null && button.Tag is ParameterItem parameterItem)
             {
                 // Open parameter settings dialog
-                var dialog = new ParameterSettingsDialog(parameterItem.DontRepeatParameter, parameterItem.ParameterForEachCollisionElement);
+                var dialog = new ParameterSettingsDialog(parameterItem.DontRepeatParameter, parameterItem.ParameterForEachCollisionElement, parameterItem.ParameterSeparator);
                 dialog.Owner = this;
 
                 if (dialog.ShowDialog() == true)
@@ -116,6 +117,7 @@ namespace ClashManager.AutoNaming.Views
                     // Update parameter settings
                     parameterItem.DontRepeatParameter = dialog.DontRepeatParameter;
                     parameterItem.ParameterForEachCollisionElement = dialog.ParameterForEachCollisionElement;
+                    parameterItem.ParameterSeparator = dialog.ParameterSeparator;
                 }
             }
         }
