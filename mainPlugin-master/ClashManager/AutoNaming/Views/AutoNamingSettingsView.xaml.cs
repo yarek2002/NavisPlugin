@@ -59,6 +59,9 @@ namespace ClashManager.AutoNaming.Views
         {
             InitializeComponent();
 
+            // Set DataContext for binding
+            DataContext = this;
+
             // Load existing settings if available
             LoadExistingSettings();
 
