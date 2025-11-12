@@ -99,6 +99,7 @@ namespace ClashManager.AutoNaming
             ParameterName = string.Empty;
             DontRepeatParameter = false;
             ParameterForEachCollisionElement = false;
+            ParameterSeparator = ",";
         }
 
         public ParameterItem(bool isEnabled, string parameterName)
@@ -107,6 +108,7 @@ namespace ClashManager.AutoNaming
             ParameterName = parameterName ?? string.Empty;
             DontRepeatParameter = false;
             ParameterForEachCollisionElement = false;
+            ParameterSeparator = ",";
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -248,6 +250,9 @@ namespace ClashManager.AutoNaming
                         var param = settings.Parameters[i];
                         lines.Add($"Param{i}Enabled={param.IsEnabled}");
                         lines.Add($"Param{i}Name={param.ParameterName ?? string.Empty}");
+                        lines.Add($"Param{i}DontRepeat={param.DontRepeatParameter}");
+                        lines.Add($"Param{i}ForEachElement={param.ParameterForEachCollisionElement}");
+                        lines.Add($"Param{i}Separator={param.ParameterSeparator ?? ","}");
                     }
 
                     lines.Add($"Separator={settings.Separator ?? " | "}");
@@ -347,6 +352,44 @@ namespace ClashManager.AutoNaming
                                         parameterBuffer[paramIndex] = new ParameterItem();
                                     }
                                     parameterBuffer[paramIndex].ParameterName = value;
+                                }
+                            }
+                            else if (key.StartsWith("Param") && key.Contains("DontRepeat"))
+                            {
+                                var paramIndexStr = key.Replace("Param", "").Replace("DontRepeat", "");
+                                if (int.TryParse(paramIndexStr, out int paramIndex))
+                                {
+                                    if (!parameterBuffer.ContainsKey(paramIndex))
+                                    {
+                                        parameterBuffer[paramIndex] = new ParameterItem();
+                                    }
+                                    bool.TryParse(value, out bool dontRepeat);
+                                    parameterBuffer[paramIndex].DontRepeatParameter = dontRepeat;
+                                }
+                            }
+                            else if (key.StartsWith("Param") && key.Contains("ForEachElement"))
+                            {
+                                var paramIndexStr = key.Replace("Param", "").Replace("ForEachElement", "");
+                                if (int.TryParse(paramIndexStr, out int paramIndex))
+                                {
+                                    if (!parameterBuffer.ContainsKey(paramIndex))
+                                    {
+                                        parameterBuffer[paramIndex] = new ParameterItem();
+                                    }
+                                    bool.TryParse(value, out bool forEachElement);
+                                    parameterBuffer[paramIndex].ParameterForEachCollisionElement = forEachElement;
+                                }
+                            }
+                            else if (key.StartsWith("Param") && key.Contains("Separator"))
+                            {
+                                var paramIndexStr = key.Replace("Param", "").Replace("Separator", "");
+                                if (int.TryParse(paramIndexStr, out int paramIndex))
+                                {
+                                    if (!parameterBuffer.ContainsKey(paramIndex))
+                                    {
+                                        parameterBuffer[paramIndex] = new ParameterItem();
+                                    }
+                                    parameterBuffer[paramIndex].ParameterSeparator = value;
                                 }
                             }
                             else if (key == "Separator")
