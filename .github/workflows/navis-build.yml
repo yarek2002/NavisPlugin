@@ -151,7 +151,8 @@ jobs:
 
             **Сборка:**
             - Ветка: `${{ steps.release.outputs.branch }}`
-            - Коммит: `${{ github.sha }}`
+            - Коммит: `${{ github.event.head_commit.message }}`
+            - SHA: `${{ github.sha }}`
             - Запуск: `#${{ github.run_number }}`
             - Тип: ${{ steps.release.outputs.is_stable == 'true' && 'stable' || 'experimental' }}
 
