@@ -1,20 +1,44 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using ClashManager.AutoNaming;
 
 namespace ClashManager.AutoNaming.Views
 {
-    public partial class AutoNamingSettingsView : Window
+    public partial class AutoNamingSettingsView : Window, INotifyPropertyChanged
     {
         public TestAutoNamingSettings AppliedSettings { get; private set; }
         public List<System.Guid> SelectedTestGuids { get; set; } = new List<System.Guid>();
 
         // Observable collection for dynamic parameters
         public ObservableCollection<ParameterItem> Parameters { get; set; } = new ObservableCollection<ParameterItem>();
+
+        // Separator value for binding
+        private string _separatorText = " | ";
+        public string SeparatorText
+        {
+            get => _separatorText;
+            set
+            {
+                if (_separatorText != value)
+                {
+                    _separatorText = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
         public AutoNamingSettingsView()
         {
@@ -29,11 +53,19 @@ namespace ClashManager.AutoNaming.Views
 
         private void LoadExistingSettings()
         {
-            // Try to load settings for the first selected test (if any)
+            // Try to load settings for selected tests
             if (SelectedTestGuids.Count > 0)
             {
                 var allSettings = AutoNamingSettings.LoadFromFile();
-                var testSettings = allSettings.GetTestSettings(SelectedTestGuids[0]);
+
+                // Try to find settings from any of the selected tests
+                TestAutoNamingSettings testSettings = null;
+                foreach (var testGuid in SelectedTestGuids)
+                {
+                    testSettings = allSettings.GetTestSettings(testGuid);
+                    if (testSettings != null)
+                        break; // Use the first test that has settings
+                }
 
                 if (testSettings != null)
                 {
@@ -41,15 +73,19 @@ namespace ClashManager.AutoNaming.Views
                     Parameters.Clear();
                     foreach (var param in testSettings.Parameters)
                     {
-                        Parameters.Add(new ParameterItem(param.IsEnabled, param.ParameterName));
+                        Parameters.Add(new ParameterItem(param.IsEnabled, param.ParameterName)
+                        {
+                            DontRepeatParameter = param.DontRepeatParameter,
+                            ParameterForEachCollisionElement = param.ParameterForEachCollisionElement
+                        });
                     }
 
                     // Set separator
-                    SeparatorTextBox.Text = testSettings.Separator ?? " | ";
+                    SeparatorText = testSettings.Separator ?? " | ";
                 }
                 else
                 {
-                    // No existing settings, start with one empty parameter
+                    // No existing settings found for any selected test, start with one empty parameter
                     Parameters.Add(new ParameterItem());
                 }
             }
@@ -64,6 +100,24 @@ namespace ClashManager.AutoNaming.Views
         {
             // Add a new parameter directly to the list
             Parameters.Add(new ParameterItem(false, string.Empty));
+        }
+
+        private void SetParameterSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null && button.Tag is ParameterItem parameterItem)
+            {
+                // Open parameter settings dialog
+                var dialog = new ParameterSettingsDialog(parameterItem.DontRepeatParameter, parameterItem.ParameterForEachCollisionElement);
+                dialog.Owner = this;
+
+                if (dialog.ShowDialog() == true)
+                {
+                    // Update parameter settings
+                    parameterItem.DontRepeatParameter = dialog.DontRepeatParameter;
+                    parameterItem.ParameterForEachCollisionElement = dialog.ParameterForEachCollisionElement;
+                }
+            }
         }
 
         private void RemoveParameterButton_Click(object sender, RoutedEventArgs e)
@@ -90,7 +144,7 @@ namespace ClashManager.AutoNaming.Views
             var settings = new TestAutoNamingSettings
             {
                 Parameters = new List<ParameterItem>(Parameters),
-                Separator = SeparatorTextBox.Text?.Trim() ?? " | "
+                Separator = SeparatorText?.Trim() ?? " | "
             };
 
             // Сохраняем примененные настройки
@@ -128,7 +182,7 @@ namespace ClashManager.AutoNaming.Views
                 paramIndex++;
             }
 
-            message += $"Разделитель: '{SeparatorTextBox.Text}'";
+            message += $"Разделитель: '{SeparatorText}'";
 
             MessageBox.Show(message, "Проверка параметров", MessageBoxButton.OK, MessageBoxImage.Information);
         }

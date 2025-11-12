@@ -15,6 +15,8 @@ namespace ClashManager.AutoNaming
     {
         private bool _isEnabled;
         private string _parameterName;
+        private bool _dontRepeatParameter;
+        private bool _parameterForEachCollisionElement;
 
         public bool IsEnabled
         {
@@ -42,16 +44,52 @@ namespace ClashManager.AutoNaming
             }
         }
 
+        /// <summary>
+        /// Не повторять параметр
+        /// </summary>
+        public bool DontRepeatParameter
+        {
+            get => _dontRepeatParameter;
+            set
+            {
+                if (_dontRepeatParameter != value)
+                {
+                    _dontRepeatParameter = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Параметр для каждого элемента коллизии
+        /// </summary>
+        public bool ParameterForEachCollisionElement
+        {
+            get => _parameterForEachCollisionElement;
+            set
+            {
+                if (_parameterForEachCollisionElement != value)
+                {
+                    _parameterForEachCollisionElement = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public ParameterItem()
         {
             IsEnabled = false;
             ParameterName = string.Empty;
+            DontRepeatParameter = false;
+            ParameterForEachCollisionElement = false;
         }
 
         public ParameterItem(bool isEnabled, string parameterName)
         {
             IsEnabled = isEnabled;
             ParameterName = parameterName ?? string.Empty;
+            DontRepeatParameter = false;
+            ParameterForEachCollisionElement = false;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
