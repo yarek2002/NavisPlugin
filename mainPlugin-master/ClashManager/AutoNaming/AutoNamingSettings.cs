@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Autodesk.Navisworks.Api;
+using Autodesk.Navisworks.Api.Clash;
 
 namespace ClashManager.AutoNaming
 {
@@ -205,11 +206,17 @@ namespace ClashManager.AutoNaming
 
                 var lines = new List<string>();
 
+                // Get test names for better readability
+                var testNames = GetTestNames();
+
                 foreach (var kvp in TestSettings)
                 {
                     var testGuid = kvp.Key;
                     var settings = kvp.Value;
 
+                    // Add test name as comment for readability
+                    string testName = testNames.ContainsKey(testGuid) ? testNames[testGuid] : "Unknown Test";
+                    lines.Add($"# Test: {testName}");
                     lines.Add($"[{testGuid}]");
 
                     // Save parameters
@@ -363,6 +370,35 @@ namespace ClashManager.AutoNaming
             }
 
             return settings;
+        }
+
+        /// <summary>
+        /// Получает названия тестов для улучшения читаемости файла настроек
+        /// </summary>
+        private static Dictionary<Guid, string> GetTestNames()
+        {
+            var testNames = new Dictionary<Guid, string>();
+
+            try
+            {
+                var doc = Application.ActiveDocument;
+                if (doc?.GetClash()?.TestsData?.Tests != null)
+                {
+                    foreach (var test in doc.GetClash().TestsData.Tests)
+                    {
+                        if (test is ClashTest clashTest)
+                        {
+                            testNames[clashTest.Guid] = clashTest.DisplayName;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error getting test names: {ex.Message}");
+            }
+
+            return testNames;
         }
 
         /// <summary>
