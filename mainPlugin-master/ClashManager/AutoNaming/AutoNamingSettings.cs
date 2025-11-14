@@ -402,7 +402,7 @@ namespace ClashManager.AutoNaming
         }
 
         /// <summary>
-        /// Получает путь к файлу настроек рядом с текущим NWF проектом
+        /// Получает путь к файлу настроек в папке "Правила наименования"
         /// </summary>
         private static string GetSettingsFilePath()
         {
@@ -413,8 +413,16 @@ namespace ClashManager.AutoNaming
                     return null;
 
                 string nwfDirectory = Path.GetDirectoryName(doc.FileName);
+                string rulesDirectory = Path.Combine(nwfDirectory, "Правила наименования");
+
+                // Создаем папку "Правила наименования", если она не существует
+                if (!Directory.Exists(rulesDirectory))
+                {
+                    Directory.CreateDirectory(rulesDirectory);
+                }
+
                 string nwfFileName = Path.GetFileNameWithoutExtension(doc.FileName);
-                return Path.Combine(nwfDirectory, $"{nwfFileName}_auto_naming_settings.json");
+                return Path.Combine(rulesDirectory, $"{nwfFileName}_auto_naming_settings.json");
             }
             catch
             {
