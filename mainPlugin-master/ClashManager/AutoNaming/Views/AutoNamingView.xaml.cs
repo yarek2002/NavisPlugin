@@ -289,7 +289,7 @@ namespace ClashManager.AutoNaming.Views
                     string nameToUse = !string.IsNullOrEmpty(newName) ? newName : baseName;
 
                     string finalName;
-                    if (settings.UseCompleteCustomNaming)
+                    if (settings?.UseCompleteCustomNaming == true)
                     {
                         // Режим полного наименования: используем только пользовательские параметры
                         finalName = modelNames ?? nameToUse;
