@@ -752,65 +752,67 @@ namespace ClashManager.AutoNaming.Views
             return "";
         }
 
-        /// <summary>
-        /// Получает пользовательские параметры из группы коллизий
-        /// </summary>
-        /// <param name="group">Группа коллизий</param>
-        /// <param name="settings">Настройки авто-наименования</param>
-        /// <returns>Список найденных пользовательских параметров</returns>
-        private List<string> GetCustomParametersFromGroup(ClashResultGroup group, TestAutoNamingSettings settings)
-        {
-            var customParts = new List<string>();
+    /// <summary>
+    /// Получает пользовательские параметры из группы коллизий
+    /// </summary>
+    /// <param name="group">Группа коллизий</param>
+    /// <param name="settings">Настройки авто-наименования</param>
+    /// <returns>Список найденных пользовательских параметров</returns>
+    private List<string> GetCustomParametersFromGroup(ClashResultGroup group, TestAutoNamingSettings settings)
+    {
+        var customParts = new List<string>();
 
-            // If no settings, return empty list
-            if (settings == null)
-                return customParts;
-
-            var allResults = GetAllResultsFromGroup(group);
-
-            if (allResults.Count == 0)
-                return customParts;
-
-            // Собираем все уникальные элементы из всех результатов коллизий
-            var allUniqueElements = new HashSet<ModelItem>();
-            foreach (var result in allResults)
-            {
-                allUniqueElements.Add(result.CompositeItem1);
-                allUniqueElements.Add(result.CompositeItem2);
-            }
-
-            // Ищем параметры в каждом включенном ParameterItem
-            foreach (var paramItem in settings.Parameters.Where(p => p.IsEnabled && !string.IsNullOrWhiteSpace(p.ParameterName)))
-            {
-                var paramValues = new List<string>();
-
-                // Ищем параметр во всех уникальных элементах коллизии
-                foreach (var element in allUniqueElements)
-                {
-                    string paramValue = GetCustomParameterValue(element, paramItem.ParameterName);
-                    if (!string.IsNullOrEmpty(paramValue))
-                    {
-                        paramValues.Add(paramValue);
-                        System.Diagnostics.Debug.WriteLine($"Found custom parameter '{paramItem.ParameterName}' in element: '{paramValue}'");
-                    }
-                }
-
-                // Если нашли значения параметров, добавляем их
-                if (paramValues.Count > 0)
-                {
-                    // Объединяем значения через разделитель параметра (не основной разделитель!)
-                    string combinedValue = string.Join(paramItem.ParameterSeparator ?? ",", paramValues);
-                    customParts.Add(combinedValue);
-                    System.Diagnostics.Debug.WriteLine($"Combined parameter '{paramItem.ParameterName}' with separator '{paramItem.ParameterSeparator ?? ","}': '{combinedValue}'");
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($"Custom parameter '{paramItem.ParameterName}' not found in any elements");
-                }
-            }
-
+        // If no settings, return empty list
+        if (settings == null)
             return customParts;
+
+        var allResults = GetAllResultsFromGroup(group);
+
+        if (allResults.Count == 0)
+            return customParts;
+
+        // Собираем все уникальные элементы из всех результатов коллизий
+        var allUniqueElements = new HashSet<ModelItem>();
+        foreach (var result in allResults)
+        {
+            allUniqueElements.Add(result.CompositeItem1);
+            allUniqueElements.Add(result.CompositeItem2);
         }
+
+        // Ищем параметры в каждом включенном ParameterItem
+        foreach (var paramItem in settings.Parameters.Where(p => p.IsEnabled && !string.IsNullOrWhiteSpace(p.ParameterName)))
+        {
+            var paramValues = new List<string>();
+
+            // Ищем параметр во всех уникальных элементах коллизии
+            foreach (var element in allUniqueElements)
+            {
+                string paramValue = GetCustomParameterValue(element, paramItem.ParameterName);
+                if (!string.IsNullOrEmpty(paramValue))
+                {
+                    paramValues.Add(paramValue);
+                    System.Diagnostics.Debug.WriteLine($"Found custom parameter '{paramItem.ParameterName}' in element: '{paramValue}'");
+                }
+            }
+
+            // Если нашли значения параметров, добавляем их
+            if (paramValues.Count > 0)
+            {
+                // Объединяем значения через разделитель параметра (не основной разделитель!)
+                string combinedValue = string.Join(paramItem.ParameterSeparator ?? ",", paramValues);
+                customParts.Add(combinedValue);
+                System.Diagnostics.Debug.WriteLine($"Combined parameter '{paramItem.ParameterName}' with separator '{paramItem.ParameterSeparator ?? ","}': '{combinedValue}'");
+            }
+            else
+            {
+                // Параметр не найден - добавляем пробел
+                customParts.Add(" ");
+                System.Diagnostics.Debug.WriteLine($"Custom parameter '{paramItem.ParameterName}' not found, adding space");
+            }
+        }
+
+        return customParts;
+    }
 
         /// <summary>
         /// Получает значение пользовательского параметра из ModelItem
