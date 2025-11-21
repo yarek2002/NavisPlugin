@@ -292,7 +292,15 @@ namespace ClashManager.AutoNaming.Views
                     if (settings?.UseCompleteCustomNaming == true)
                     {
                         // Режим полного наименования: используем только пользовательские параметры
-                        finalName = modelNames ?? nameToUse;
+                        var customParts = GetCustomParametersFromGroup(group, settings);
+                        if (customParts.Count > 0)
+                        {
+                            finalName = string.Join(settings.Separator ?? " | ", customParts);
+                        }
+                        else
+                        {
+                            finalName = nameToUse; // fallback to base name if no custom parameters found
+                        }
                     }
                     else
                     {
@@ -300,7 +308,7 @@ namespace ClashManager.AutoNaming.Views
                         finalName = nameToUse;
                         if (!string.IsNullOrEmpty(modelNames))
                         {
-                            finalName = nameToUse + " | " + modelNames;
+                            finalName = nameToUse + (settings?.Separator ?? " | ") + modelNames;
                         }
                     }
 
