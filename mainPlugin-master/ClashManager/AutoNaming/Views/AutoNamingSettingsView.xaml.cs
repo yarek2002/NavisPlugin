@@ -206,6 +206,54 @@ namespace ClashManager.AutoNaming.Views
             MessageBox.Show(message, "Проверка параметров", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
+        private void CompleteCustomNamingToggle_Checked(object sender, RoutedEventArgs e)
+        {
+            // При включении режима полного наименования добавляем стандартные параметры по умолчанию,
+            // только если список параметров пустой или содержит только пустые параметры
+            if (Parameters.Count == 0 || Parameters.All(p => string.IsNullOrWhiteSpace(p.ParameterName)))
+            {
+                AddDefaultCompleteNamingParameters();
+            }
+            else
+            {
+                // Если уже есть параметры, показываем диалог с вопросом
+                var result = MessageBox.Show(
+                    "Обнаружены существующие параметры. Заменить их стандартными для режима полного наименования?",
+                    "Подтверждение",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    AddDefaultCompleteNamingParameters();
+                }
+            }
+        }
+
+        private void CompleteCustomNamingToggle_Unchecked(object sender, RoutedEventArgs e)
+        {
+            // При отключении режима полного наименования оставляем параметры как есть
+        }
+
+        private void AddDefaultCompleteNamingParameters()
+        {
+            // Очищаем существующие параметры
+            Parameters.Clear();
+
+            // Добавляем стандартные параметры для полного наименования коллизий
+            // 1. Название первой модели (с русским названием параметра)
+            Parameters.Add(new ParameterItem(true, "Название") { ParameterSeparator = " " });
+
+            // 2. Название второй модели
+            Parameters.Add(new ParameterItem(true, "Название") { ParameterSeparator = " " });
+
+            // 3. ID первого элемента коллизии
+            Parameters.Add(new ParameterItem(true, "Id") { ParameterSeparator = "," });
+
+            // 4. ID второго элемента коллизии
+            Parameters.Add(new ParameterItem(true, "Id") { ParameterSeparator = "," });
+        }
+
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             this.DialogResult = false;
