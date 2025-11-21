@@ -200,7 +200,8 @@ namespace ClashManager.AutoNaming.Views
                 paramIndex++;
             }
 
-            message += $"Разделитель: '{SeparatorText}'";
+            message += $"Разделитель: '{SeparatorText}'\n";
+            message += $"Режим полного наименования: {(UseCompleteCustomNaming ? "Включен" : "Отключен")}";
 
             MessageBox.Show(message, "Проверка параметров", MessageBoxButton.OK, MessageBoxImage.Information);
         }
