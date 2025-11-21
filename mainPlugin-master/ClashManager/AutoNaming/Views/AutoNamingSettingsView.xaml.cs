@@ -240,18 +240,16 @@ namespace ClashManager.AutoNaming.Views
             // Очищаем существующие параметры
             Parameters.Clear();
 
-            // Добавляем стандартные параметры для полного наименования коллизий
-            // 1. Название первой модели (с русским названием параметра)
+            // Добавляем стандартные параметры для полного наименования коллизий,
+            // соответствующие тому, что используется в базовом режиме
+            // 1. Название модели (будет взято из ModelItem)
             Parameters.Add(new ParameterItem(true, "Название") { ParameterSeparator = " " });
 
-            // 2. Название второй модели
-            Parameters.Add(new ParameterItem(true, "Название") { ParameterSeparator = " " });
-
-            // 3. ID первого элемента коллизии
+            // 2. ID элементов
             Parameters.Add(new ParameterItem(true, "Id") { ParameterSeparator = "," });
 
-            // 4. ID второго элемента коллизии
-            Parameters.Add(new ParameterItem(true, "Id") { ParameterSeparator = "," });
+            // 3. GUID группы коллизий
+            Parameters.Add(new ParameterItem(true, "GUID группы") { ParameterSeparator = "" });
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)

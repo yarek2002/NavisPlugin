@@ -792,14 +792,24 @@ namespace ClashManager.AutoNaming.Views
         {
             var paramValues = new List<string>();
 
-            // Ищем параметр во всех уникальных элементах коллизии
-            foreach (var element in allUniqueElements)
+            // Сперва проверяем специальные параметры группы
+            string specialValue = GetSpecialGroupParameter(group, paramItem.ParameterName);
+            if (!string.IsNullOrEmpty(specialValue))
             {
-                string paramValue = GetCustomParameterValue(element, paramItem.ParameterName);
-                if (!string.IsNullOrEmpty(paramValue))
+                paramValues.Add(specialValue);
+                System.Diagnostics.Debug.WriteLine($"Found special parameter '{paramItem.ParameterName}' in group: '{specialValue}'");
+            }
+            else
+            {
+                // Ищем параметр во всех уникальных элементах коллизии
+                foreach (var element in allUniqueElements)
                 {
-                    paramValues.Add(paramValue);
-                    System.Diagnostics.Debug.WriteLine($"Found custom parameter '{paramItem.ParameterName}' in element: '{paramValue}'");
+                    string paramValue = GetCustomParameterValue(element, paramItem.ParameterName);
+                    if (!string.IsNullOrEmpty(paramValue))
+                    {
+                        paramValues.Add(paramValue);
+                        System.Diagnostics.Debug.WriteLine($"Found custom parameter '{paramItem.ParameterName}' in element: '{paramValue}'");
+                    }
                 }
             }
 
@@ -888,6 +898,89 @@ namespace ClashManager.AutoNaming.Views
 
             System.Diagnostics.Debug.WriteLine($"Parameter '{paramName}' not found in element '{modelItem?.DisplayName ?? "Unknown"}'");
             return null;
+        }
+
+        /// <summary>
+        /// Получает значение специального параметра группы коллизий
+        /// </summary>
+        /// <param name="group">Группа коллизий</param>
+        /// <param name="paramName">Имя специального параметра</param>
+        /// <returns>Значение параметра или null если не найдено</returns>
+        private string GetSpecialGroupParameter(ClashResultGroup group, string paramName)
+        {
+            if (group == null || string.IsNullOrEmpty(paramName))
+                return null;
+
+            try
+            {
+                switch (paramName.ToLower())
+                {
+                    case "guid группы":
+                        return group.Guid.ToString();
+
+                    case "название":
+                        // Получаем названия моделей из группы
+                        var allResults = GetAllResultsFromGroup(group);
+                        if (allResults.Count > 0)
+                        {
+                            var firstResult = allResults.First();
+                            string model1Name = GetModelName(firstResult.CompositeItem1);
+                            string model2Name = GetModelName(firstResult.CompositeItem2);
+
+                            // Определяем, одинаковые ли модели
+                            bool isSameModel = model1Name == model2Name;
+
+                            if (model1Name != "Unknown" && model2Name != "Unknown")
+                            {
+                                if (isSameModel)
+                                {
+                                    return $"{model1Name} | {model1Name}";
+                                }
+                                else
+                                {
+                                    return $"{model1Name} | {model2Name}";
+                                }
+                            }
+                            else if (model1Name != "Unknown")
+                            {
+                                return model1Name;
+                            }
+                            else if (model2Name != "Unknown")
+                            {
+                                return model2Name;
+                            }
+                        }
+                        return "Unknown";
+
+                    case "id":
+                        // Получаем ID элементов из группы
+                        var idResults = GetAllResultsFromGroup(group);
+                        if (idResults.Count > 0)
+                        {
+                            var idSet = new HashSet<string>();
+                            foreach (var result in idResults)
+                            {
+                                string id1 = GetElementId(result.CompositeItem1);
+                                string id2 = GetElementId(result.CompositeItem2);
+                                if (!string.IsNullOrEmpty(id1)) idSet.Add(id1);
+                                if (!string.IsNullOrEmpty(id2)) idSet.Add(id2);
+                            }
+                            if (idSet.Count > 0)
+                            {
+                                return string.Join(", ", idSet.OrderBy(id => id));
+                            }
+                        }
+                        return "";
+
+                    default:
+                        return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error getting special parameter '{paramName}': {ex.Message}");
+                return null;
+            }
         }
 
         /// <summary>
