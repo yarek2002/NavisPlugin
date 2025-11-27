@@ -61,7 +61,6 @@
 
         <!-- Кнопки -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
-            <Button x:Name="CheckParametersButton" Content="Проверить параметры" Width="140" Margin="0,0,10,0" Click="CheckParametersButton_Click" />
             <Button x:Name="ApplyButton" Content="Применить" Width="100" Click="ApplyButton_Click" />
             <Button x:Name="CancelButton" Content="Отмена" Width="80" Margin="10,0,0,0" Click="CancelButton_Click" />
         </StackPanel>
