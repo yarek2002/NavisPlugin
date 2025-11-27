@@ -919,6 +919,7 @@ namespace ClashManager.AutoNaming.Views
                         return group.Guid.ToString();
 
                     case "название":
+                    case "название nwc":
                         // Получаем названия моделей из группы
                         var allResults = GetAllResultsFromGroup(group);
                         if (allResults.Count > 0)
