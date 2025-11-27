@@ -291,11 +291,11 @@ namespace ClashManager.AutoNaming.Views
                     string finalName;
                     if (settings?.UseCompleteCustomNaming == true)
                     {
-                        // Режим полного наименования: используем только пользовательские параметры
+                        // Режим полного наименования: baseName + пользовательские параметры
                         var customParts = GetCustomParametersFromGroup(group, settings);
                         if (customParts.Count > 0)
                         {
-                            finalName = string.Join(settings.Separator ?? " | ", customParts);
+                            finalName = baseName + (settings.Separator ?? " | ") + string.Join(settings.Separator ?? " | ", customParts);
                         }
                         else
                         {
