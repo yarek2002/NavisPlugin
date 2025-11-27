@@ -178,34 +178,6 @@ namespace ClashManager.AutoNaming.Views
             this.Close();
         }
 
-        private void CheckParametersButton_Click(object sender, RoutedEventArgs e)
-        {
-            string message = "Текущие настройки:\n\n";
-
-            int paramIndex = 1;
-            foreach (var param in Parameters)
-            {
-                if (param.IsEnabled && !string.IsNullOrWhiteSpace(param.ParameterName))
-                {
-                    message += $"Параметр {paramIndex}: '{param.ParameterName}' (включен)\n";
-                }
-                else if (!string.IsNullOrWhiteSpace(param.ParameterName))
-                {
-                    message += $"Параметр {paramIndex}: '{param.ParameterName}' (отключен)\n";
-                }
-                else
-                {
-                    message += $"Параметр {paramIndex}: (пустой)\n";
-                }
-                paramIndex++;
-            }
-
-            message += $"Разделитель: '{SeparatorText}'\n";
-            message += $"Режим полного наименования: {(UseCompleteCustomNaming ? "Включен" : "Отключен")}";
-
-            MessageBox.Show(message, "Проверка параметров", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
         private void CompleteCustomNamingToggle_Checked(object sender, RoutedEventArgs e)
         {
             // При включении режима полного наименования добавляем стандартные параметры по умолчанию,
