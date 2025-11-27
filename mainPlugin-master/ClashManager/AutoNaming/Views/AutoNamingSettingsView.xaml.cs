@@ -243,7 +243,7 @@ namespace ClashManager.AutoNaming.Views
             // Добавляем стандартные параметры для полного наименования коллизий,
             // соответствующие тому, что используется в базовом режиме
             // 1. Название модели (будет взято из ModelItem)
-            Parameters.Add(new ParameterItem(true, "Название") { ParameterSeparator = " " });
+            Parameters.Add(new ParameterItem(true, "Название nwc") { ParameterSeparator = " " });
 
             // 2. ID элементов
             Parameters.Add(new ParameterItem(true, "Id") { ParameterSeparator = "," });
