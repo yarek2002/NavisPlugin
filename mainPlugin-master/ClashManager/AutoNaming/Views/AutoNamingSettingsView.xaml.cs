@@ -79,11 +79,15 @@ namespace ClashManager.AutoNaming.Views
             // Set DataContext for binding
             DataContext = this;
 
-            // Load existing settings if available
-            LoadExistingSettings();
-
             // Bind the ItemsControl to our parameters collection
             ParametersItemsControl.ItemsSource = Parameters;
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            // К моменту Loaded свойства (включая SelectedTestGuids) уже заданы из вызывающего кода,
+            // поэтому можно корректно загрузить настройки из JSON.
+            LoadExistingSettings();
         }
 
         private void LoadExistingSettings()

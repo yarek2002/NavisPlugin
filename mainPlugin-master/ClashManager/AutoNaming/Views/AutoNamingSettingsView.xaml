@@ -5,7 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ClashManager.AutoNaming.Views"
         mc:Ignorable="d"
-        Title="Настройки авто-наименования" Height="450" Width="550" WindowStartupLocation="CenterOwner">
+        Title="Настройки авто-наименования"
+        Height="450"
+        Width="550"
+        WindowStartupLocation="CenterOwner"
+        Loaded="Window_Loaded">
 
     <Grid>
         <Grid.RowDefinitions>
