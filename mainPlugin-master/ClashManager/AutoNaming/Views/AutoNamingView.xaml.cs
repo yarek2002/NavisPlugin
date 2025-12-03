@@ -942,6 +942,7 @@ namespace ClashManager.AutoNaming.Views
         /// Поддерживает варианты:
         /// - просто имя свойства (DisplayName или Name)
         /// - 'Категория|Свойство' или 'Категория:Свойство' (явное указание категории).
+        /// Значения очищаются от префиксов вида 'DisplayString: ...' через CleanParameterValue.
         /// </summary>
         private string GetPropertyValueByDisplayName(ModelItem item, string displayName)
         {
@@ -973,7 +974,7 @@ namespace ClashManager.AutoNaming.Views
                     // Пробуем FindPropertyByDisplayName с явной категорией
                     var prop = item.PropertyCategories.FindPropertyByDisplayName(categoryName, propName);
                     if ((NativeHandle)prop != (NativeHandle)null)
-                        return prop.Value?.ToString();
+                        return CleanParameterValue(prop.Value?.ToString());
                 }
 
                 // Вариант 2: ищем по DisplayName/Name во всех категориях
@@ -984,7 +985,7 @@ namespace ClashManager.AutoNaming.Views
                         if (string.Equals(prop.DisplayName, trimmed, StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(prop.Name, trimmed, StringComparison.OrdinalIgnoreCase))
                         {
-                            return prop.Value?.ToString();
+                            return CleanParameterValue(prop.Value?.ToString());
                         }
                     }
                 }
@@ -994,7 +995,7 @@ namespace ClashManager.AutoNaming.Views
                 {
                     var prop = item.PropertyCategories.FindPropertyByDisplayName(cat.DisplayName, trimmed);
                     if ((NativeHandle)prop != (NativeHandle)null)
-                        return prop.Value?.ToString();
+                        return CleanParameterValue(prop.Value?.ToString());
                 }
 
                 // Отладка: один раз выведем список свойств для первого элемента
