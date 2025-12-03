@@ -121,14 +121,23 @@ namespace ClashManager.AutoNaming.Views
                 }
                 else
                 {
-                    // No existing settings found for any selected test, start with one empty parameter
-                    Parameters.Add(new ParameterItem());
+                    // Нет сохранённых настроек для выбранных тестов (или файл ещё не создан) —
+                    // показываем параметры по умолчанию
+                    Parameters.Clear();
+                    AddDefaultCompleteNamingParameters();
+                    SeparatorText = " | ";
+                    UseCompleteCustomNaming = false;
+                    SeparateByTwoClash = false;
                 }
             }
             else
             {
-                // No tests selected, start with one empty parameter
-                Parameters.Add(new ParameterItem());
+                // Нет выбранных тестов — также показываем параметры по умолчанию
+                Parameters.Clear();
+                AddDefaultCompleteNamingParameters();
+                SeparatorText = " | ";
+                UseCompleteCustomNaming = false;
+                SeparateByTwoClash = false;
             }
         }
 
