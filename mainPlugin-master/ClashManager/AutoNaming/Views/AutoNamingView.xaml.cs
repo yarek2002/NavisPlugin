@@ -977,15 +977,73 @@ namespace ClashManager.AutoNaming.Views
                         return CleanParameterValue(prop.Value?.ToString());
                 }
 
-                // Вариант 2: ищем по DisplayName/Name во всех категориях
+                // Специальная попытка: если категория по умолчанию для ваших свойств — "Объект",
+                // пробуем явно искать там (включая варианты с префиксом ADSK_ и нормализацией)
+                try
+                {
+                    var objCatName = "Объект";
+                    // точный поиск
+                    var objProp = item.PropertyCategories.FindPropertyByDisplayName(objCatName, trimmed);
+                    if ((NativeHandle)objProp != (NativeHandle)null)
+                        return CleanParameterValue(objProp.Value?.ToString());
+
+                    // ADSK_ prefixed
+                    var objPropAdsk = item.PropertyCategories.FindPropertyByDisplayName(objCatName, "ADSK_" + trimmed);
+                    if ((NativeHandle)objPropAdsk != (NativeHandle)null)
+                        return CleanParameterValue(objPropAdsk.Value?.ToString());
+
+                    // normalized forms
+                    var objPropNorm = item.PropertyCategories.FindPropertyByDisplayName(objCatName, normalized);
+                    if ((NativeHandle)objPropNorm != (NativeHandle)null)
+                        return CleanParameterValue(objPropNorm.Value?.ToString());
+
+                    var objPropNorm2 = item.PropertyCategories.FindPropertyByDisplayName(objCatName, normalizedUnderscoreToSpace);
+                    if ((NativeHandle)objPropNorm2 != (NativeHandle)null)
+                        return CleanParameterValue(objPropNorm2.Value?.ToString());
+                }
+                catch { /* silently ignore find errors here */ }
+
+                // Нормализованная форма искомого имени для сопоставлений
+                string normalized = trimmed.Replace(" ", "_").Replace("__", "_").Trim();
+                string normalizedUnderscoreToSpace = trimmed.Replace("_", " ").Trim();
+
+                // Вариант 2: ищем по DisplayName/Name во всех категориях — расширенное сравнение
                 foreach (PropertyCategory cat in item.PropertyCategories)
                 {
                     foreach (DataProperty prop in cat.Properties)
                     {
+                        // Точные совпадения (как прежде)
                         if (string.Equals(prop.DisplayName, trimmed, StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(prop.Name, trimmed, StringComparison.OrdinalIgnoreCase))
                         {
                             return CleanParameterValue(prop.Value?.ToString());
+                        }
+
+                        // Совпадения с префиксом ADSK_ или без него
+                        if (!string.IsNullOrEmpty(prop.Name))
+                        {
+                            string propNameLower = prop.Name.Trim();
+                            if (propNameLower.StartsWith("ADSK_", StringComparison.OrdinalIgnoreCase))
+                            {
+                                string withoutPrefix = propNameLower.Substring(5);
+                                if (string.Equals(withoutPrefix, trimmed, StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(withoutPrefix, normalized, StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(withoutPrefix, normalizedUnderscoreToSpace, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    return CleanParameterValue(prop.Value?.ToString());
+                                }
+                            }
+                        }
+
+                        // Частичные/альтернативные совпадения: DisplayName может содержать дополнительные метки
+                        if (!string.IsNullOrEmpty(prop.DisplayName))
+                        {
+                            if (prop.DisplayName.IndexOf(trimmed, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                prop.DisplayName.IndexOf(normalizedUnderscoreToSpace, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                prop.DisplayName.IndexOf(normalized, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                return CleanParameterValue(prop.Value?.ToString());
+                            }
                         }
                     }
                 }
@@ -998,8 +1056,14 @@ namespace ClashManager.AutoNaming.Views
                         return CleanParameterValue(prop.Value?.ToString());
                 }
 
-                // Отладка: один раз выведем список свойств для первого элемента
-                System.Diagnostics.Debug.WriteLine($"[AutoNaming] Property '{displayName}' not found. Available properties for item:");
+                // Дополнительная попытка: попробовать искать в родителях (рекурсивно)
+                if ((NativeHandle)item.Parent != (NativeHandle)null)
+                {
+                    return GetPropertyValueByDisplayName(item.Parent, displayName);
+                }
+
+                // Отладка: выведем список свойств для текущего элемента, чтобы помочь выяснить проблему
+                System.Diagnostics.Debug.WriteLine($"[AutoNaming] Property '{displayName}' not found on item. Available properties for item:");
                 foreach (PropertyCategory cat in item.PropertyCategories)
                 {
                     foreach (DataProperty prop in cat.Properties)
