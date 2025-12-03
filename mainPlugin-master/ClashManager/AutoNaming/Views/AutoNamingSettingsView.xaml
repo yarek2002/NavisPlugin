@@ -18,17 +18,12 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Заголовок и режим наименования -->
+        <!-- Заголовок -->
         <StackPanel Grid.Row="0" Margin="10">
-            <TextBlock Text="Настройки параметров наименования" FontSize="14" FontWeight="Bold" Margin="0,0,0,10" />
-            <!-- Режим полного наименования -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                <TextBlock Text="Режим наименования:" VerticalAlignment="Center" Margin="0,0,10,0" />
-                <CheckBox x:Name="CompleteCustomNamingToggle" Content="Настроить целиком (параметры составляют полное имя)" IsChecked="{Binding UseCompleteCustomNaming}" Checked="CompleteCustomNamingToggle_Checked" Unchecked="CompleteCustomNamingToggle_Unchecked" VerticalAlignment="Center" />
-            </StackPanel>
-            <TextBlock Text="По умолчанию: Доп. настройка (добавление к базовому имени)" FontSize="10" Foreground="Gray" />
-            <!-- Информация о базовых параметрах -->
-            <StackPanel Margin="0,10,0,0"/>
+            <TextBlock Text="Настройки параметров наименования"
+                       FontSize="14"
+                       FontWeight="Bold"
+                       Margin="0,0,0,10" />
         </StackPanel>
 
         <!-- Параметры -->
