@@ -348,7 +348,7 @@ namespace ClashManager.AutoNaming.Views
             _documentClash.TestsData.TestsReplaceWithCopy(testIndex, newTest);
 
             // Родитель для добавления новых элементов
-            var parentGroupItem = (GroupItem)_documentClash.TestsData.Tests[testIndex];
+            var parentGroupItem = (Autodesk.Navisworks.Api.GroupItem)_documentClash.TestsData.Tests[testIndex];
 
             // Неклассифицированные результаты просто переносим
             foreach (var result in topLevelResults)
