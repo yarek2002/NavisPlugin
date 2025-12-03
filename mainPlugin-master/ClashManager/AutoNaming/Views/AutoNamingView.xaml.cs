@@ -383,7 +383,8 @@ namespace ClashManager.AutoNaming.Views
                     var newGroup = new ClashResultGroup
                     {
                         DisplayName = group.DisplayName,
-                        Status = group.Status
+                        Status = group.Status,
+                        Guid = Guid.Empty
                     };
 
                     var clashCopy = (ClashResult)clashResult.CreateCopy();
