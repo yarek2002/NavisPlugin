@@ -58,7 +58,7 @@
                 <TextBox x:Name="SeparatorTextBox" Text="{Binding SeparatorText, UpdateSourceTrigger=PropertyChanged}" Margin="25,10,0,10" />
 
                 <!-- Чекбокс: разделить коллизии по парам (каждый результат в отдельной группе) -->
-                <CheckBox x:Name="SeparateByTwoClash"
+                <CheckBox x:Name="SeparateByTwoClashCheckBox"
                           Content="Разделить коллизии по парам (1 коллизия = 1 группа)"
                           IsChecked="{Binding SeparateByTwoClash}"
                           Margin="25,0,0,10" />
