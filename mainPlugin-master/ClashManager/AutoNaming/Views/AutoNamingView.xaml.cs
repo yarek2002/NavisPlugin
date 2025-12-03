@@ -282,24 +282,61 @@ namespace ClashManager.AutoNaming.Views
                     // Базовое имя группы (без завершающего "_")
                     string baseName = group.DisplayName.TrimEnd('_');
 
-                    // Берём разделитель и режим полного наименования из настроек (если есть)
+                    // Берём разделитель из настроек (если есть)
                     string separator = settings?.Separator ?? " | ";
-                    bool useCompleteCustomNaming = settings?.UseCompleteCustomNaming ?? false;
 
-                    string finalName;
-                    if (useCompleteCustomNaming)
-                    {
-                        // Полное наименование – используем только вычисленную строку
-                        finalName = string.IsNullOrEmpty(modelNames) ? baseName : modelNames;
-                    }
-                    else
-                    {
-                        // Доп. настройка – добавляем к базовому имени через настраиваемый разделитель
-                        finalName = string.IsNullOrEmpty(modelNames)
-                            ? baseName
-                            : baseName + separator + modelNames;
-                    }
+                    // 1) Всегда добавляем к базовому имени (не затираем его)
+                    string finalName = string.IsNullOrEmpty(modelNames)
+                        ? baseName
+                        : baseName + separator + modelNames;
 
+                    // 2) В конце добавляем пользовательские параметры из JSON, если они заданы
+                    if (settings != null && settings.Parameters != null)
+                    {
+                        var extraParts = new System.Collections.Generic.List<string>();
+
+                        foreach (var param in settings.Parameters)
+                        {
+                            if (!param.IsEnabled) continue;
+                            if (string.IsNullOrWhiteSpace(param.ParameterName)) continue;
+
+                            // Простое сопоставление по имени параметра
+                            string value = null;
+                            string innerSep = param.ParameterSeparator ?? ",";
+
+                            switch (param.ParameterName.Trim())
+                            {
+                                case "Название nwc":
+                                    // Используем уже вычисленные имена моделей (левая и правая часть до первого GUID)
+                                    // modelNames уже содержит строку формата "Model1 | Model2 | ..."
+                                    value = modelNames;
+                                    break;
+
+                                case "Id":
+                                    // Из GetModelNamesFromGroup мы уже включили ID в общую строку,
+                                    // здесь можно ничего не добавлять отдельно или доработать при необходимости.
+                                    break;
+
+                                case "GUID группы":
+                                    value = group.Guid.ToString();
+                                    break;
+
+                                default:
+                                    // Неизвестный параметр — пока пропускаем
+                                    break;
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(value))
+                            {
+                                extraParts.Add(value);
+                            }
+                        }
+
+                        if (extraParts.Count > 0)
+                        {
+                            finalName += separator + string.Join(separator, extraParts);
+                        }
+                    }
                     groupsToRename[group.Guid] = finalName;
                 }
             }
