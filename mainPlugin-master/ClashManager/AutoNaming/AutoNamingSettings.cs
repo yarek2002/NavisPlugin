@@ -109,10 +109,17 @@ namespace ClashManager.AutoNaming
         /// </summary>
         public bool UseCompleteCustomNaming { get; set; }
 
+        /// <summary>
+        /// Если true, перед авто-наименованием каждая коллизия в группе будет вынесена в отдельную группу
+        /// (3 коллизии в группе → 3 группы).
+        /// </summary>
+        public bool SeparateByTwoClash { get; set; }
+
         public TestAutoNamingSettings()
         {
             Separator = " | ";
             UseCompleteCustomNaming = false;
+            SeparateByTwoClash = false;
             // Initialize with one empty parameter
             Parameters.Add(new ParameterItem());
         }
@@ -230,6 +237,7 @@ namespace ClashManager.AutoNaming
 
                     lines.Add($"Separator={settings.Separator ?? " | "}");
                     lines.Add($"UseCompleteCustomNaming={settings.UseCompleteCustomNaming}");
+                    lines.Add($"SeparateByTwoClash={settings.SeparateByTwoClash}");
                     lines.Add(""); // Empty line between tests
                 }
 
@@ -348,6 +356,11 @@ namespace ClashManager.AutoNaming
                             {
                                 bool.TryParse(value, out bool useCompleteCustomNaming);
                                 currentTestSettings.UseCompleteCustomNaming = useCompleteCustomNaming;
+                            }
+                            else if (key == "SeparateByTwoClash")
+                            {
+                                bool.TryParse(value, out bool separateByTwoClash);
+                                currentTestSettings.SeparateByTwoClash = separateByTwoClash;
                             }
                         }
                     }

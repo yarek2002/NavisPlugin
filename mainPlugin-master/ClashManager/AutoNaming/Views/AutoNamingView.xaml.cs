@@ -17,13 +17,13 @@ namespace ClashManager.AutoNaming.Views
     public class TestItem : INotifyPropertyChanged
     {
         private bool _isChecked;
-
+        
         public ClashTest Test { get; set; }
         public string DisplayName { get; set; }
         public Guid Guid { get; set; }
-
-        public bool IsChecked
-        {
+        
+        public bool IsChecked 
+        { 
             get => _isChecked;
             set
             {
@@ -36,7 +36,7 @@ namespace ClashManager.AutoNaming.Views
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
-
+        
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -50,7 +50,6 @@ namespace ClashManager.AutoNaming.Views
         private List<TestItem> _testItems = new List<TestItem>(); // Кэшируем список тестов
         private int _lastTestClickIndex = -1; // Отслеживаем последний клик для Shift-выбора
         private bool _suppressCheckboxHandlers = false; // Предотвращает рекурсивные вызовы обработчиков чекбоксов
-        private AutoNamingSettings _allSettings; // Все настройки авто-наименования
 
         public AutoNamingView()
         {
@@ -58,33 +57,27 @@ namespace ClashManager.AutoNaming.Views
             _doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
             _documentClash = _doc.GetClash();
             LoadTests();
-            LoadSettings();
-        }
-
-        private void LoadSettings()
-        {
-            _allSettings = AutoNamingSettings.LoadFromFile();
         }
 
         private void LoadTests()
         {
             var tests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? Enumerable.Empty<ClashTest>().ToList();
-
+            
             // Создаем объекты TestItem только один раз
             _testItems = tests.Select(t => new TestItem
-            {
-                Test = t,
-                DisplayName = t.DisplayName,
-                IsChecked = _checkedTestIds.Contains(t.Guid),
-                Guid = t.Guid
+            { 
+                Test = t, 
+                DisplayName = t.DisplayName, 
+                IsChecked = _checkedTestIds.Contains(t.Guid), 
+                Guid = t.Guid 
             }).ToList();
-
+            
             // Подписываемся на изменения состояния каждого элемента
             foreach (var testItem in _testItems)
             {
                 testItem.PropertyChanged += TestItem_PropertyChanged;
             }
-
+            
             TestsListBox.ItemsSource = _testItems;
         }
 
@@ -93,16 +86,16 @@ namespace ClashManager.AutoNaming.Views
         /// </summary>
         private void TestItem_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(TestItem.IsChecked) && sender is TestItem checkedItem)
+            if (e.PropertyName == nameof(TestItem.IsChecked) && sender is TestItem testItem)
             {
                 // Синхронизируем с HashSet
-                if (checkedItem.IsChecked)
+                if (testItem.IsChecked)
                 {
-                    _checkedTestIds.Add(checkedItem.Guid);
+                    _checkedTestIds.Add(testItem.Guid);
                 }
                 else
                 {
-                    _checkedTestIds.Remove(checkedItem.Guid);
+                    _checkedTestIds.Remove(testItem.Guid);
                 }
             }
         }
@@ -213,36 +206,42 @@ namespace ClashManager.AutoNaming.Views
 
         private void AssignNameButton_Click(object sender, RoutedEventArgs e)
         {
-            // Получаем выбранные тесты
-            var selectedTestItems = _testItems.Where(t => t.IsChecked).ToList();
-
-            if (selectedTestItems.Count == 0)
+            // Получаем все выбранные элементы из модели
+            var checkedIds = _testItems.Where(x => x.IsChecked).Select(x => x.Guid).ToList();
+            
+            if (checkedIds.Count == 0)
             {
                 MessageBox.Show("Выберите хотя бы один тест!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
+            // Загружаем сохранённые настройки авто-наименования
+            var allSettings = AutoNamingSettings.LoadFromFile();
+
             // Логика авто-наименования групп коллизий
             int renamedGroupsCount = 0;
 
-            foreach (var testItem in selectedTestItems)
+            foreach (var testGuid in checkedIds)
             {
-                try
-                {
-                    var test = testItem.Test;
-                    if (test == null) continue;
+                var test = FindTestByGuid(testGuid);
+                if (test == null) continue;
 
-                    // Получаем настройки для этого конкретного теста
-                    var testSettings = _allSettings?.GetTestSettings(testItem.Guid);
+                // Получаем настройки для этого теста
+                var testSettings = allSettings.GetTestSettings(testGuid);
 
-                    // Переименовываем группы, заканчивающиеся на "_"
-                    renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, null, testSettings);
-                }
-                catch (Exception ex)
+                // Если включена опция разделения коллизий по парам —
+                // сначала делим группы так, чтобы каждая коллизия была в своей группе.
+                if (testSettings != null && testSettings.SeparateByTwoClash)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Error processing test '{testItem.DisplayName}': {ex.Message}");
-                    // Continue with other tests instead of crashing
+                    SplitGroupsIntoSingleResultGroups(test);
+                    // После замены теста копией берём его заново по GUID
+                    test = FindTestByGuid(testGuid);
+                    if (test == null)
+                        continue;
                 }
+
+                // Переименовываем группы, заканчивающиеся на "_"
+                renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, "");
             }
 
             if (renamedGroupsCount > 0)
@@ -263,14 +262,12 @@ namespace ClashManager.AutoNaming.Views
             return allTests?.FirstOrDefault(t => t.Guid == testGuid);
         }
 
-        private int RenameGroupsEndingWithUnderscore(ClashTest test, string newName, TestAutoNamingSettings settings = null)
+        private int RenameGroupsEndingWithUnderscore(ClashTest test, string newName)
         {
             int renamedCount = 0;
 
-            try
-            {
-                // Получаем все группы из теста (включая вложенные)
-                var allGroups = GetAllGroupsFromTest(test);
+            // Получаем все группы из теста (включая вложенные)
+            var allGroups = GetAllGroupsFromTest(test);
 
             // Собираем все группы, которые нужно переименовать
             var groupsToRename = new Dictionary<Guid, string>();
@@ -280,36 +277,14 @@ namespace ClashManager.AutoNaming.Views
                 if (group.DisplayName?.EndsWith("_") == true)
                 {
                     // Получаем названия моделей из группы
-                    string modelNames = GetModelNamesFromGroup(group, settings);
+                    string modelNames = GetModelNamesFromGroup(group);
 
-                    // Формируем новое имя
+                    // Формируем новое имя: убираем "_" и добавляем "|" + названия моделей
                     string baseName = group.DisplayName.TrimEnd('_');
-
-                    // Если есть пользовательское имя для теста, используем его вместо базового имени
-                    string nameToUse = !string.IsNullOrEmpty(newName) ? newName : baseName;
-
-                    string finalName;
-                    if (settings?.UseCompleteCustomNaming == true)
+                    string finalName = baseName;
+                    if (!string.IsNullOrEmpty(modelNames))
                     {
-                        // Режим полного наименования: baseName + пользовательские параметры
-                        var customParts = GetCustomParametersFromGroup(group, settings);
-                        if (customParts.Count > 0)
-                        {
-                            finalName = baseName + (settings.Separator ?? " | ") + string.Join(settings.Separator ?? " | ", customParts);
-                        }
-                        else
-                        {
-                            finalName = nameToUse; // fallback to base name if no custom parameters found
-                        }
-                    }
-                    else
-                    {
-                        // Обычный режим: добавляем пользовательские параметры к базовому имени
-                        finalName = nameToUse;
-                        if (!string.IsNullOrEmpty(modelNames))
-                        {
-                            finalName = nameToUse + (settings?.Separator ?? " | ") + modelNames;
-                        }
+                        finalName = baseName + " | " + modelNames;
                     }
 
                     groupsToRename[group.Guid] = finalName;
@@ -341,11 +316,82 @@ namespace ClashManager.AutoNaming.Views
             }
 
             return renamedCount;
-            }
-            catch (Exception ex)
+        }
+
+        /// <summary>
+        /// Делит группы в тесте так, чтобы каждая коллизия (ClashResult) находилась в отдельной группе.
+        /// Обрабатываются только верхнеуровневые группы, чьё имя заканчивается на "_".
+        /// Остальные группы и неклассифицированные результаты переносятся как есть.
+        /// </summary>
+        /// <param name="test">Тест коллизий</param>
+        private void SplitGroupsIntoSingleResultGroups(ClashTest test)
+        {
+            if (test == null || _documentClash?.TestsData?.Tests == null)
+                return;
+
+            // Сохраняем текущие верхнеуровневые группы и результаты
+            var topLevelGroups = test.Children.OfType<ClashResultGroup>().ToList();
+            var topLevelResults = test.Children.OfType<ClashResult>().ToList();
+
+            if (topLevelGroups.Count == 0)
+                return;
+
+            int testIndex = _documentClash.TestsData.Tests.IndexOf(test);
+            if (testIndex < 0)
+                return;
+
+            // Создаём копию теста без детей и подменяем им оригинальный тест
+            var newTest = test.CreateCopyWithoutChildren() as ClashTest;
+            if (newTest == null)
+                return;
+
+            _documentClash.TestsData.TestsReplaceWithCopy(testIndex, newTest);
+
+            // Родитель для добавления новых элементов
+            var parentGroupItem = (GroupItem)_documentClash.TestsData.Tests[testIndex];
+
+            // Неклассифицированные результаты просто переносим
+            foreach (var result in topLevelResults)
             {
-                System.Diagnostics.Debug.WriteLine($"Error in RenameGroupsEndingWithUnderscore for test '{test?.DisplayName ?? "Unknown"}': {ex.Message}");
-                return 0; // Return 0 on error
+                var resultCopy = (ClashResult)result.CreateCopy();
+                resultCopy.Guid = Guid.Empty;
+                _documentClash.TestsData.TestsAddCopy(parentGroupItem, resultCopy);
+            }
+
+            // Обрабатываем группы
+            foreach (var group in topLevelGroups)
+            {
+                var childResults = group.Children.OfType<ClashResult>().ToList();
+                var childGroups = group.Children.OfType<ClashResultGroup>().ToList();
+
+                bool canSplit = childResults.Count > 1 &&
+                                childGroups.Count == 0 &&
+                                (group.DisplayName?.EndsWith("_") == true);
+
+                // Если группу не нужно или нельзя делить — копируем её как есть
+                if (!canSplit)
+                {
+                    var groupCopy = (ClashResultGroup)group.CreateCopy();
+                    groupCopy.Guid = Guid.Empty;
+                    _documentClash.TestsData.TestsAddCopy(parentGroupItem, groupCopy);
+                    continue;
+                }
+
+                // Делим: для каждого результата создаём новую группу с тем же именем
+                foreach (var clashResult in childResults)
+                {
+                    var newGroup = new ClashResultGroup
+                    {
+                        DisplayName = group.DisplayName,
+                        Status = group.Status
+                    };
+
+                    var clashCopy = (ClashResult)clashResult.CreateCopy();
+                    clashCopy.Guid = Guid.Empty;
+                    newGroup.Children.Add(clashCopy);
+
+                    _documentClash.TestsData.TestsAddCopy(parentGroupItem, newGroup);
+                }
             }
         }
 
@@ -429,31 +475,19 @@ namespace ClashManager.AutoNaming.Views
             return null;
         }
 
-
-
         private void NameSettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            // Получаем выбранные тесты
-            var selectedTestGuids = _testItems.Where(t => t.IsChecked).Select(t => t.Guid).ToList();
-
-            if (selectedTestGuids.Count == 0)
+            // Открываем окно настроек авто-наименования и передаём выбранные тесты
+            var dialog = new AutoNamingSettingsView
             {
-                MessageBox.Show("Выберите хотя бы один тест для настройки!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+                Owner = this,
+                SelectedTestGuids = _testItems
+                    .Where(t => t.IsChecked)
+                    .Select(t => t.Guid)
+                    .ToList()
+            };
 
-            // Открываем окно настроек
-            var settingsWindow = new AutoNamingSettingsView();
-            settingsWindow.Owner = this;
-            settingsWindow.SelectedTestGuids = selectedTestGuids;
-            var result = settingsWindow.ShowDialog();
-
-            // Если настройки были применены, перезагружаем настройки
-            if (result == true)
-            {
-                LoadSettings(); // Перезагружаем настройки после сохранения
-                System.Diagnostics.Debug.WriteLine($"Settings updated for {selectedTestGuids.Count} tests");
-            }
+            dialog.ShowDialog();
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -528,9 +562,8 @@ namespace ClashManager.AutoNaming.Views
         /// Получает названия моделей из группы коллизий с дополнительной информацией
         /// </summary>
         /// <param name="group">Группа коллизий</param>
-        /// <param name="settings">Настройки авто-наименования</param>
         /// <returns>Строка с названиями моделей, ID элементов и GUID группы</returns>
-        private string GetModelNamesFromGroup(ClashResultGroup group, TestAutoNamingSettings settings)
+        private string GetModelNamesFromGroup(ClashResultGroup group)
         {
             if (group == null) return "";
 
@@ -564,7 +597,7 @@ namespace ClashManager.AutoNaming.Views
                         {
                             model1ElementIds.Add(element1Id);
                         }
-                        else if (resultModel1Name == model2Name)
+                        else if (resultModel1Name == model2Name)    
                         {
                             model2ElementIds.Add(element1Id);
                         }
@@ -737,19 +770,9 @@ namespace ClashManager.AutoNaming.Views
                 // Добавляем GUID группы
                 parts.Add(group.Guid.ToString());
 
-                // Добавляем пользовательские параметры, если они настроены
-                if (settings != null)
-                {
-                    var customParts = GetCustomParametersFromGroup(group, settings);
-                    if (customParts.Count > 0)
-                    {
-                        parts.AddRange(customParts);
-                    }
-                }
-
-                string finalResult = string.Join(settings?.Separator ?? " | ", parts);
+                string finalResult = string.Join(" | ", parts);
                 System.Diagnostics.Debug.WriteLine($"Final result: {finalResult}");
-
+                
                 return finalResult;
             }
             catch (Exception ex)
@@ -758,253 +781,6 @@ namespace ClashManager.AutoNaming.Views
             }
 
             return "";
-        }
-
-    /// <summary>
-    /// Получает пользовательские параметры из группы коллизий
-    /// </summary>
-    /// <param name="group">Группа коллизий</param>
-    /// <param name="settings">Настройки авто-наименования</param>
-    /// <returns>Список найденных пользовательских параметров</returns>
-    private List<string> GetCustomParametersFromGroup(ClashResultGroup group, TestAutoNamingSettings settings)
-    {
-        var customParts = new List<string>();
-
-        // If no settings, return empty list
-        if (settings == null)
-            return customParts;
-
-        var allResults = GetAllResultsFromGroup(group);
-
-        if (allResults.Count == 0)
-            return customParts;
-
-        // Собираем все уникальные элементы из всех результатов коллизий
-        var allUniqueElements = new HashSet<ModelItem>();
-        foreach (var result in allResults)
-        {
-            allUniqueElements.Add(result.CompositeItem1);
-            allUniqueElements.Add(result.CompositeItem2);
-        }
-
-        // Ищем параметры в каждом включенном ParameterItem
-        foreach (var paramItem in settings.Parameters.Where(p => p.IsEnabled && !string.IsNullOrWhiteSpace(p.ParameterName)))
-        {
-            var paramValues = new List<string>();
-
-            // Сперва проверяем специальные параметры группы
-            string specialValue = GetSpecialGroupParameter(group, paramItem.ParameterName);
-            if (!string.IsNullOrEmpty(specialValue))
-            {
-                paramValues.Add(specialValue);
-                System.Diagnostics.Debug.WriteLine($"Found special parameter '{paramItem.ParameterName}' in group: '{specialValue}'");
-            }
-            else
-            {
-                // Ищем параметр во всех уникальных элементах коллизии
-                foreach (var element in allUniqueElements)
-                {
-                    string paramValue = GetCustomParameterValue(element, paramItem.ParameterName);
-                    if (!string.IsNullOrEmpty(paramValue))
-                    {
-                        paramValues.Add(paramValue);
-                        System.Diagnostics.Debug.WriteLine($"Found custom parameter '{paramItem.ParameterName}' in element: '{paramValue}'");
-                    }
-                }
-            }
-
-            // Если нашли значения параметров, добавляем их
-            if (paramValues.Count > 0)
-            {
-                // Объединяем значения через разделитель параметра (не основной разделитель!)
-                string combinedValue = string.Join(paramItem.ParameterSeparator ?? ",", paramValues);
-                customParts.Add(combinedValue);
-                System.Diagnostics.Debug.WriteLine($"Combined parameter '{paramItem.ParameterName}' with separator '{paramItem.ParameterSeparator ?? ","}': '{combinedValue}'");
-            }
-            else
-            {
-                // Параметр не найден - добавляем пробел
-                customParts.Add(" ");
-                System.Diagnostics.Debug.WriteLine($"Custom parameter '{paramItem.ParameterName}' not found, adding space");
-            }
-        }
-
-        return customParts;
-    }
-
-        /// <summary>
-        /// Получает значение пользовательского параметра из ModelItem
-        /// </summary>
-        /// <param name="modelItem">Элемент модели</param>
-        /// <param name="paramName">Имя параметра для поиска</param>
-        /// <returns>Значение параметра или null</returns>
-        private string GetCustomParameterValue(ModelItem modelItem, string paramName)
-        {
-            if (modelItem == null || string.IsNullOrEmpty(paramName))
-                return null;
-
-            try
-            {
-                // Ищем параметр по имени во всех категориях и свойствах
-                foreach (var category in modelItem.PropertyCategories)
-                {
-                    foreach (var property in category.Properties)
-                    {
-                        try
-                        {
-                            // Проверяем отображаемое имя свойства (без учета регистра)
-                            if (string.Equals(property.DisplayName, paramName, StringComparison.OrdinalIgnoreCase))
-                            {
-                                string value = property.Value?.ToString();
-                                if (!string.IsNullOrEmpty(value))
-                                {
-                                    // Очищаем значение от возможных префиксов типа "DisplayString: "
-                                    value = CleanParameterValue(value);
-                                    System.Diagnostics.Debug.WriteLine($"Found parameter '{paramName}' by DisplayName '{property.DisplayName}' in category '{category.DisplayName}': '{value}'");
-                                    return value;
-                                }
-                            }
-
-                            // Также проверяем внутреннее имя (без учета регистра)
-                            if (string.Equals(property.Name, paramName, StringComparison.OrdinalIgnoreCase))
-                            {
-                                string value = property.Value?.ToString();
-                                if (!string.IsNullOrEmpty(value))
-                                {
-                                    // Очищаем значение от возможных префиксов типа "DisplayString: "
-                                    value = CleanParameterValue(value);
-                                    System.Diagnostics.Debug.WriteLine($"Found parameter '{paramName}' by Name '{property.Name}' in category '{category.DisplayName}': '{value}'");
-                                    return value;
-                                }
-                            }
-                        }
-                        catch
-                        {
-                            // Игнорируем ошибки чтения конкретного свойства
-                        }
-                    }
-                }
-
-                // Если не нашли, пробуем в родительском элементе
-                if ((NativeHandle)modelItem.Parent != (NativeHandle)null)
-                {
-                    return GetCustomParameterValue(modelItem.Parent, paramName);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error getting custom parameter '{paramName}': {ex.Message}");
-            }
-
-            System.Diagnostics.Debug.WriteLine($"Parameter '{paramName}' not found in element '{modelItem?.DisplayName ?? "Unknown"}'");
-            return null;
-        }
-
-        /// <summary>
-        /// Получает значение специального параметра группы коллизий
-        /// </summary>
-        /// <param name="group">Группа коллизий</param>
-        /// <param name="paramName">Имя специального параметра</param>
-        /// <returns>Значение параметра или null если не найдено</returns>
-        private string GetSpecialGroupParameter(ClashResultGroup group, string paramName)
-        {
-            if (group == null || string.IsNullOrEmpty(paramName))
-                return null;
-
-            try
-            {
-                switch (paramName.ToLower())
-                {
-                    case "guid группы":
-                        return group.Guid.ToString();
-
-                    case "название":
-                    case "название nwc":
-                        // Получаем названия моделей из группы
-                        var allResults = GetAllResultsFromGroup(group);
-                        if (allResults.Count > 0)
-                        {
-                            var firstResult = allResults.First();
-                            string model1Name = GetModelName(firstResult.CompositeItem1);
-                            string model2Name = GetModelName(firstResult.CompositeItem2);
-
-                            // Определяем, одинаковые ли модели
-                            bool isSameModel = model1Name == model2Name;
-
-                            if (model1Name != "Unknown" && model2Name != "Unknown")
-                            {
-                                if (isSameModel)
-                                {
-                                    return $"{model1Name} | {model1Name}";
-                                }
-                                else
-                                {
-                                    return $"{model1Name} | {model2Name}";
-                                }
-                            }
-                            else if (model1Name != "Unknown")
-                            {
-                                return model1Name;
-                            }
-                            else if (model2Name != "Unknown")
-                            {
-                                return model2Name;
-                            }
-                        }
-                        return "Unknown";
-
-                    case "id":
-                        // Получаем ID элементов из группы
-                        var idResults = GetAllResultsFromGroup(group);
-                        if (idResults.Count > 0)
-                        {
-                            var idSet = new HashSet<string>();
-                            foreach (var result in idResults)
-                            {
-                                string id1 = GetElementId(result.CompositeItem1);
-                                string id2 = GetElementId(result.CompositeItem2);
-                                if (!string.IsNullOrEmpty(id1)) idSet.Add(id1);
-                                if (!string.IsNullOrEmpty(id2)) idSet.Add(id2);
-                            }
-                            if (idSet.Count > 0)
-                            {
-                                return string.Join(", ", idSet.OrderBy(id => id));
-                            }
-                        }
-                        return "";
-
-                    default:
-                        return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error getting special parameter '{paramName}': {ex.Message}");
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Очищает значение параметра от возможных префиксов типа "DisplayString: "
-        /// </summary>
-        /// <param name="value">Исходное значение</param>
-        /// <returns>Очищенное значение</returns>
-        private string CleanParameterValue(string value)
-        {
-            if (string.IsNullOrEmpty(value))
-                return value;
-
-            // Если значение содержит ":", берем часть после ":"
-            if (value.Contains(":"))
-            {
-                var parts = value.Split(new[] { ':' }, 2);
-                if (parts.Length > 1)
-                {
-                    return parts[1].Trim();
-                }
-            }
-
-            return value;
         }
 
         /// <summary>

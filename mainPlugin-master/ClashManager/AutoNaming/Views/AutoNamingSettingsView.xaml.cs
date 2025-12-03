@@ -48,6 +48,23 @@ namespace ClashManager.AutoNaming.Views
             }
         }
 
+        /// <summary>
+        /// Если true, перед авто-наименованием каждая коллизия в группе будет вынесена в отдельную группу.
+        /// </summary>
+        private bool _separateByTwoClash;
+        public bool SeparateByTwoClash
+        {
+            get => _separateByTwoClash;
+            set
+            {
+                if (_separateByTwoClash != value)
+                {
+                    _separateByTwoClash = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -100,6 +117,7 @@ namespace ClashManager.AutoNaming.Views
                     // Set separator and complete custom naming mode
                     SeparatorText = testSettings.Separator ?? " | ";
                     UseCompleteCustomNaming = testSettings.UseCompleteCustomNaming;
+                    SeparateByTwoClash = testSettings.SeparateByTwoClash;
                 }
                 else
                 {
@@ -162,7 +180,8 @@ namespace ClashManager.AutoNaming.Views
             {
                 Parameters = new List<ParameterItem>(Parameters),
                 Separator = SeparatorText?.Trim() ?? " | ",
-                UseCompleteCustomNaming = UseCompleteCustomNaming
+                UseCompleteCustomNaming = UseCompleteCustomNaming,
+                SeparateByTwoClash = SeparateByTwoClash
             };
 
             // Сохраняем примененные настройки

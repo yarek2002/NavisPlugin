@@ -56,7 +56,12 @@
                 <!-- Разделитель -->
                 <TextBlock Text="Разделитель параметров" FontSize="10" FontWeight="Bold" Margin="10" />
                 <TextBox x:Name="SeparatorTextBox" Text="{Binding SeparatorText, UpdateSourceTrigger=PropertyChanged}" Margin="25,10,0,10" />
-            </StackPanel>
+
+                <!-- Чекбокс: разделить коллизии по парам (каждый результат в отдельной группе) -->
+                <CheckBox x:Name="SeparateByTwoClash"
+                          Content="Разделить коллизии по парам (1 коллизия = 1 группа)"
+                          IsChecked="{Binding SeparateByTwoClash}"
+                          Margin="25,0,0,10" />
         </ScrollViewer>
 
         <!-- Кнопки -->
