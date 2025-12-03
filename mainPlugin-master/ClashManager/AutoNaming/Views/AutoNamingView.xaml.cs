@@ -1015,5 +1015,49 @@ namespace ClashManager.AutoNaming.Views
 
             return null;
         }
+
+        /// <summary>
+        /// Очищает значение параметра от префиксов вида "DisplayString: ..." и обрезает пробелы.
+        /// Возвращает null, если входное значение пустое.
+        /// </summary>
+        /// <param name="value">Исходное значение параметра</param>
+        /// <returns>Очищенное значение или null</returns>
+        private string CleanParameterValue(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            string v = value.Trim();
+
+            // Убираем стандартный префикс, который иногда добавляет Navisworks
+            // Например: "DisplayString: SomeValue" -> "SomeValue"
+            const string prefix = "DisplayString:";
+            if (v.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                v = v.Substring(prefix.Length).Trim();
+            }
+
+            // Также поддерживаем вариант с пробелом перед двоеточием
+            const string prefix2 = "Display string:";
+            if (v.StartsWith(prefix2, StringComparison.OrdinalIgnoreCase))
+            {
+                v = v.Substring(prefix2.Length).Trim();
+            }
+
+            // Если значение оформлено как "DisplayString : value" (с пробелами), обработаем это
+            int idx = v.IndexOf(":");
+            if (idx > 0)
+            {
+                // Если до двоеточия встречается слово DisplayString (без учёта регистра), убираем префикс
+                string before = v.Substring(0, idx).Trim();
+                if (string.Equals(before, "DisplayString", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(before, "Display string", StringComparison.OrdinalIgnoreCase))
+                {
+                    v = v.Substring(idx + 1).Trim();
+                }
+            }
+
+            return string.IsNullOrEmpty(v) ? null : v;
+        }
     }
 }
