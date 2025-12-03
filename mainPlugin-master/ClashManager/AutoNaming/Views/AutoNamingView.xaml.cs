@@ -241,7 +241,7 @@ namespace ClashManager.AutoNaming.Views
                 }
 
                 // Переименовываем группы, заканчивающиеся на "_"
-                renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, "");
+                renamedGroupsCount += RenameGroupsEndingWithUnderscore(test, testSettings);
             }
 
             if (renamedGroupsCount > 0)
@@ -262,7 +262,7 @@ namespace ClashManager.AutoNaming.Views
             return allTests?.FirstOrDefault(t => t.Guid == testGuid);
         }
 
-        private int RenameGroupsEndingWithUnderscore(ClashTest test, string newName)
+        private int RenameGroupsEndingWithUnderscore(ClashTest test, TestAutoNamingSettings settings)
         {
             int renamedCount = 0;
 
@@ -276,15 +276,28 @@ namespace ClashManager.AutoNaming.Views
             {
                 if (group.DisplayName?.EndsWith("_") == true)
                 {
-                    // Получаем названия моделей из группы
+                    // Получаем строку с информацией о моделях/ID/GUID по старой логике
                     string modelNames = GetModelNamesFromGroup(group);
 
-                    // Формируем новое имя: убираем "_" и добавляем "|" + названия моделей
+                    // Базовое имя группы (без завершающего "_")
                     string baseName = group.DisplayName.TrimEnd('_');
-                    string finalName = baseName;
-                    if (!string.IsNullOrEmpty(modelNames))
+
+                    // Берём разделитель и режим полного наименования из настроек (если есть)
+                    string separator = settings?.Separator ?? " | ";
+                    bool useCompleteCustomNaming = settings?.UseCompleteCustomNaming ?? false;
+
+                    string finalName;
+                    if (useCompleteCustomNaming)
                     {
-                        finalName = baseName + " | " + modelNames;
+                        // Полное наименование – используем только вычисленную строку
+                        finalName = string.IsNullOrEmpty(modelNames) ? baseName : modelNames;
+                    }
+                    else
+                    {
+                        // Доп. настройка – добавляем к базовому имени через настраиваемый разделитель
+                        finalName = string.IsNullOrEmpty(modelNames)
+                            ? baseName
+                            : baseName + separator + modelNames;
                     }
 
                     groupsToRename[group.Guid] = finalName;
