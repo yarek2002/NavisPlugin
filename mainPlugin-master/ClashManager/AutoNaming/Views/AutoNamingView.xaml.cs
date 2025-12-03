@@ -938,7 +938,10 @@ namespace ClashManager.AutoNaming.Views
         }
 
         /// <summary>
-        /// Ищет значение свойства по отображаемому имени в PropertyCategories ModelItem.
+        /// Ищет значение свойства по имени/отображаемому имени в PropertyCategories ModelItem.
+        /// Поддерживает варианты:
+        /// - просто имя свойства (DisplayName или Name)
+        /// - 'Категория|Свойство' или 'Категория:Свойство' (явное указание категории).
         /// </summary>
         private string GetPropertyValueByDisplayName(ModelItem item, string displayName)
         {
@@ -947,14 +950,60 @@ namespace ClashManager.AutoNaming.Views
 
             try
             {
+                string trimmed = displayName.Trim();
+
+                // Вариант 1: указана категория и имя свойства (через | или :)
+                string[] separators = new[] { "|", ":", "/", "\\" };
+                string categoryName = null;
+                string propName = null;
+
+                foreach (var sep in separators)
+                {
+                    var parts = trimmed.Split(new[] { sep }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length == 2)
+                    {
+                        categoryName = parts[0].Trim();
+                        propName = parts[1].Trim();
+                        break;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(categoryName) && !string.IsNullOrEmpty(propName))
+                {
+                    // Пробуем FindPropertyByDisplayName с явной категорией
+                    var prop = item.PropertyCategories.FindPropertyByDisplayName(categoryName, propName);
+                    if ((NativeHandle)prop != (NativeHandle)null)
+                        return prop.Value?.ToString();
+                }
+
+                // Вариант 2: ищем по DisplayName/Name во всех категориях
                 foreach (PropertyCategory cat in item.PropertyCategories)
                 {
                     foreach (DataProperty prop in cat.Properties)
                     {
-                        if (string.Equals(prop.DisplayName, displayName, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(prop.DisplayName, trimmed, StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(prop.Name, trimmed, StringComparison.OrdinalIgnoreCase))
                         {
                             return prop.Value?.ToString();
                         }
+                    }
+                }
+
+                // Вариант 3: если ничего не нашли, пробуем FindPropertyByDisplayName по всем категориям
+                foreach (PropertyCategory cat in item.PropertyCategories)
+                {
+                    var prop = item.PropertyCategories.FindPropertyByDisplayName(cat.DisplayName, trimmed);
+                    if ((NativeHandle)prop != (NativeHandle)null)
+                        return prop.Value?.ToString();
+                }
+
+                // Отладка: один раз выведем список свойств для первого элемента
+                System.Diagnostics.Debug.WriteLine($"[AutoNaming] Property '{displayName}' not found. Available properties for item:");
+                foreach (PropertyCategory cat in item.PropertyCategories)
+                {
+                    foreach (DataProperty prop in cat.Properties)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"  Category='{cat.DisplayName}', Name='{prop.Name}', DisplayName='{prop.DisplayName}'");
                     }
                 }
             }
