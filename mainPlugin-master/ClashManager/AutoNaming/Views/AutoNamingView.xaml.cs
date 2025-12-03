@@ -340,6 +340,53 @@ namespace ClashManager.AutoNaming.Views
             if (testIndex < 0)
                 return;
 
+            // Подготавливаем копии заранее, чтобы не трогать исходные объекты после ReplaceWithCopy
+            var topLevelResultCopies = new List<ClashResult>();
+            foreach (var result in topLevelResults)
+            {
+                var resultCopy = (ClashResult)result.CreateCopy();
+                if (resultCopy == null) continue;
+                resultCopy.Guid = Guid.Empty;
+                topLevelResultCopies.Add(resultCopy);
+            }
+
+            var topLevelGroupCopies = new List<ClashResultGroup>();
+            foreach (var group in topLevelGroups)
+            {
+                var childResults = group.Children.OfType<ClashResult>().ToList();
+                var childGroups = group.Children.OfType<ClashResultGroup>().ToList();
+
+                bool canSplit = childResults.Count > 1 &&
+                                childGroups.Count == 0 &&
+                                (group.DisplayName?.EndsWith("_") == true);
+
+                if (!canSplit)
+                {
+                    var groupCopy = (ClashResultGroup)group.CreateCopy();
+                    if (groupCopy == null) continue;
+                    groupCopy.Guid = Guid.Empty;
+                    topLevelGroupCopies.Add(groupCopy);
+                    continue;
+                }
+
+                foreach (var clashResult in childResults)
+                {
+                    var clashCopy = (ClashResult)clashResult.CreateCopy();
+                    if (clashCopy == null) continue;
+                    clashCopy.Guid = Guid.Empty;
+
+                    var newGroup = new ClashResultGroup
+                    {
+                        DisplayName = group.DisplayName,
+                        Status = group.Status,
+                        Guid = Guid.Empty
+                    };
+
+                    newGroup.Children.Add(clashCopy);
+                    topLevelGroupCopies.Add(newGroup);
+                }
+            }
+
             // Создаём копию теста без детей и подменяем им оригинальный тест
             var newTest = test.CreateCopyWithoutChildren() as ClashTest;
             if (newTest == null)
@@ -350,49 +397,15 @@ namespace ClashManager.AutoNaming.Views
             // Родитель для добавления новых элементов
             var parentGroupItem = (Autodesk.Navisworks.Api.GroupItem)_documentClash.TestsData.Tests[testIndex];
 
-            // Неклассифицированные результаты просто переносим
-            foreach (var result in topLevelResults)
+            // Добавляем заранее подготовленные элементы
+            foreach (var resultCopy in topLevelResultCopies)
             {
-                var resultCopy = (ClashResult)result.CreateCopy();
-                resultCopy.Guid = Guid.Empty;
                 _documentClash.TestsData.TestsAddCopy(parentGroupItem, resultCopy);
             }
 
-            // Обрабатываем группы
-            foreach (var group in topLevelGroups)
+            foreach (var groupCopy in topLevelGroupCopies)
             {
-                var childResults = group.Children.OfType<ClashResult>().ToList();
-                var childGroups = group.Children.OfType<ClashResultGroup>().ToList();
-
-                bool canSplit = childResults.Count > 1 &&
-                                childGroups.Count == 0 &&
-                                (group.DisplayName?.EndsWith("_") == true);
-
-                // Если группу не нужно или нельзя делить — копируем её как есть
-                if (!canSplit)
-                {
-                    var groupCopy = (ClashResultGroup)group.CreateCopy();
-                    groupCopy.Guid = Guid.Empty;
-                    _documentClash.TestsData.TestsAddCopy(parentGroupItem, groupCopy);
-                    continue;
-                }
-
-                // Делим: для каждого результата создаём новую группу с тем же именем
-                foreach (var clashResult in childResults)
-                {
-                    var newGroup = new ClashResultGroup
-                    {
-                        DisplayName = group.DisplayName,
-                        Status = group.Status,
-                        Guid = Guid.Empty
-                    };
-
-                    var clashCopy = (ClashResult)clashResult.CreateCopy();
-                    clashCopy.Guid = Guid.Empty;
-                    newGroup.Children.Add(clashCopy);
-
-                    _documentClash.TestsData.TestsAddCopy(parentGroupItem, newGroup);
-                }
+                _documentClash.TestsData.TestsAddCopy(parentGroupItem, groupCopy);
             }
         }
 
