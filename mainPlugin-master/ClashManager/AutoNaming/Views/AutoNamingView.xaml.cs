@@ -276,16 +276,7 @@ namespace ClashManager.AutoNaming.Views
             {
                 if (group.DisplayName?.EndsWith("_") == true)
                 {
-                    // ВОЗВРАТ К ИСХОДНОЙ ЛОГИКЕ: базовое имя + строка по умолчанию из GetModelNamesFromGroup
-                    string modelNames = GetModelNamesFromGroup(group);
-                    string baseName = group.DisplayName.TrimEnd('_');
-
-                    string finalName = baseName;
-                    if (!string.IsNullOrEmpty(modelNames))
-                    {
-                        finalName = baseName + " | " + modelNames;
-                    }
-
+                    string finalName = BuildGroupNameFromSettings(group, settings);
                     groupsToRename[group.Guid] = finalName;
                 }
             }
@@ -315,6 +306,143 @@ namespace ClashManager.AutoNaming.Views
             }
 
             return renamedCount;
+        }
+
+        /// <summary>
+        /// Строит имя группы на основе настроек авто-наименования.
+        /// Если настроек нет или нет активных параметров, используется старая логика (GetModelNamesFromGroup).
+        /// </summary>
+        private string BuildGroupNameFromSettings(ClashResultGroup group, TestAutoNamingSettings settings)
+        {
+            string originalName = group.DisplayName ?? string.Empty;
+            string baseName = originalName.EndsWith("_") ? originalName.TrimEnd('_') : originalName;
+
+            // Если нет настроек или активных параметров — используем старую логику
+            var activeParams = settings?.Parameters?
+                .Where(p => p.IsEnabled && !string.IsNullOrWhiteSpace(p.ParameterName))
+                .ToList();
+
+            if (activeParams == null || activeParams.Count == 0)
+            {
+                string modelNamesDefault = GetModelNamesFromGroup(group);
+                if (string.IsNullOrEmpty(modelNamesDefault))
+                    return baseName;
+
+                return $"{baseName} | {modelNamesDefault}";
+            }
+
+            string separator = settings.Separator ?? " | ";
+
+            // Подготовка данных по группе
+            var allResults = GetAllResultsFromGroup(group);
+            var firstResult = allResults.FirstOrDefault();
+
+            string model1Name = null;
+            string model2Name = null;
+            HashSet<string> allElementIds = null;
+
+            var paramValues = new List<string>();
+
+            foreach (var param in activeParams)
+            {
+                string name = param.ParameterName.Trim();
+                string innerSep = param.ParameterSeparator ?? ",";
+                string value = null;
+
+                switch (name)
+                {
+                    case "Название nwc":
+                        // Названия моделей по существующей логике
+                        if (firstResult != null)
+                        {
+                            if (model1Name == null || model2Name == null)
+                            {
+                                model1Name = GetModelName(firstResult.CompositeItem1);
+                                model2Name = GetModelName(firstResult.CompositeItem2);
+                            }
+
+                            if (!string.IsNullOrEmpty(model1Name) && !string.IsNullOrEmpty(model2Name))
+                            {
+                                value = model1Name == model2Name
+                                    ? $"{model1Name} | {model1Name}"
+                                    : $"{model1Name} | {model2Name}";
+                            }
+                            else if (!string.IsNullOrEmpty(model1Name))
+                            {
+                                value = model1Name;
+                            }
+                            else if (!string.IsNullOrEmpty(model2Name))
+                            {
+                                value = model2Name;
+                            }
+                        }
+                        break;
+
+                    case "Id":
+                        // Собираем все ID элементов из группы
+                        if (allElementIds == null)
+                        {
+                            allElementIds = new HashSet<string>();
+                            foreach (var r in allResults)
+                            {
+                                var id1 = GetElementId(r.CompositeItem1);
+                                var id2 = GetElementId(r.CompositeItem2);
+                                if (!string.IsNullOrEmpty(id1)) allElementIds.Add(id1);
+                                if (!string.IsNullOrEmpty(id2)) allElementIds.Add(id2);
+                            }
+                        }
+
+                        if (allElementIds.Count > 0)
+                        {
+                            value = string.Join(innerSep, allElementIds.OrderBy(x => x));
+                        }
+                        break;
+
+                    case "GUID группы":
+                        value = group.Guid.ToString();
+                        break;
+
+                    default:
+                        // Остальные параметры: пытаемся найти одноимённое свойство у элементов модели
+                        if (firstResult != null)
+                        {
+                            var propValues = new HashSet<string>();
+                            foreach (var r in allResults)
+                            {
+                                string v1 = GetPropertyValueByDisplayName(r.CompositeItem1, name);
+                                string v2 = GetPropertyValueByDisplayName(r.CompositeItem2, name);
+                                if (!string.IsNullOrWhiteSpace(v1)) propValues.Add(v1);
+                                if (!string.IsNullOrWhiteSpace(v2)) propValues.Add(v2);
+                            }
+
+                            if (propValues.Count > 0)
+                            {
+                                value = string.Join(innerSep, propValues.OrderBy(x => x));
+                            }
+                        }
+                        break;
+                }
+
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    paramValues.Add(value);
+                }
+            }
+
+            // Если для параметров не удалось собрать значения – возвращаем поведение по умолчанию
+            if (paramValues.Count == 0)
+            {
+                string modelNamesDefault = GetModelNamesFromGroup(group);
+                if (string.IsNullOrEmpty(modelNamesDefault))
+                    return baseName;
+
+                return $"{baseName} | {modelNamesDefault}";
+            }
+
+            string suffix = string.Join(separator, paramValues);
+            return string.IsNullOrEmpty(suffix)
+                ? baseName
+                : $"{baseName}{separator}{suffix}";
         }
 
         /// <summary>
@@ -807,6 +935,35 @@ namespace ClashManager.AutoNaming.Views
             if ((NativeHandle) propertyByDisplayName != (NativeHandle) null)
                 return propertyByDisplayName.Value.ToInt32().ToString();
             return (NativeHandle) modelItem.Parent != (NativeHandle) null ? this.GetElementId(modelItem.Parent) : (string) null;
+        }
+
+        /// <summary>
+        /// Ищет значение свойства по отображаемому имени в PropertyCategories ModelItem.
+        /// </summary>
+        private string GetPropertyValueByDisplayName(ModelItem item, string displayName)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(displayName))
+                return null;
+
+            try
+            {
+                foreach (PropertyCategory cat in item.PropertyCategories)
+                {
+                    foreach (DataProperty prop in cat.Properties)
+                    {
+                        if (string.Equals(prop.DisplayName, displayName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return prop.Value?.ToString();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error getting property '{displayName}': {ex.Message}");
+            }
+
+            return null;
         }
     }
 }
