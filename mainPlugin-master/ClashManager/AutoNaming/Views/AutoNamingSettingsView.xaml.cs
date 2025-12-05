@@ -186,6 +186,34 @@ namespace ClashManager.AutoNaming.Views
             }
         }
 
+        private void MoveParameterUpButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null && button.Tag is ParameterItem parameterItem)
+            {
+                int currentIndex = Parameters.IndexOf(parameterItem);
+                if (currentIndex > 0)
+                {
+                    // Перемещаем параметр вверх
+                    Parameters.Move(currentIndex, currentIndex - 1);
+                }
+            }
+        }
+
+        private void MoveParameterDownButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null && button.Tag is ParameterItem parameterItem)
+            {
+                int currentIndex = Parameters.IndexOf(parameterItem);
+                if (currentIndex < Parameters.Count - 1)
+                {
+                    // Перемещаем параметр вниз
+                    Parameters.Move(currentIndex, currentIndex + 1);
+                }
+            }
+        }
+
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
             // Create settings object from current UI state
