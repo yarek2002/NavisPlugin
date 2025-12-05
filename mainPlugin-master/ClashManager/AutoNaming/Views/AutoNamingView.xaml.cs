@@ -953,6 +953,10 @@ namespace ClashManager.AutoNaming.Views
             {
                 string trimmed = displayName.Trim();
 
+                // Нормализованная форма искомого имени для сопоставлений (объявляем сразу для использования далее)
+                string normalized = trimmed.Replace(" ", "_").Replace("__", "_").Trim();
+                string normalizedUnderscoreToSpace = trimmed.Replace("_", " ").Trim();
+
                 // Вариант 1: указана категория и имя свойства (через | или :)
                 string[] separators = new[] { "|", ":", "/", "\\" };
                 string categoryName = null;
@@ -1002,10 +1006,6 @@ namespace ClashManager.AutoNaming.Views
                         return CleanParameterValue(objPropNorm2.Value?.ToString());
                 }
                 catch { /* silently ignore find errors here */ }
-
-                // Нормализованная форма искомого имени для сопоставлений
-                string normalized = trimmed.Replace(" ", "_").Replace("__", "_").Trim();
-                string normalizedUnderscoreToSpace = trimmed.Replace("_", " ").Trim();
 
                 // Вариант 2: ищем по DisplayName/Name во всех категориях — расширенное сравнение
                 foreach (PropertyCategory cat in item.PropertyCategories)
