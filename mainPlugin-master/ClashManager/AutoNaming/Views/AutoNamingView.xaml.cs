@@ -407,18 +407,28 @@ namespace ClashManager.AutoNaming.Views
                         if (firstResult != null)
                         {
                             // Use a list to preserve duplicate values coming from different elements
+                            // and insert a single-space placeholder when an element lacks the parameter.
                             var propValues = new System.Collections.Generic.List<string>();
                             foreach (var r in allResults)
                             {
                                 string v1 = GetPropertyValueByDisplayName(r.CompositeItem1, name);
                                 string v2 = GetPropertyValueByDisplayName(r.CompositeItem2, name);
-                                if (!string.IsNullOrWhiteSpace(v1)) propValues.Add(v1);
-                                if (!string.IsNullOrWhiteSpace(v2)) propValues.Add(v2);
+
+                                // If value exists, add it; otherwise add a single space as placeholder
+                                if (!string.IsNullOrWhiteSpace(v1))
+                                    propValues.Add(v1);
+                                else
+                                    propValues.Add(" ");
+
+                                if (!string.IsNullOrWhiteSpace(v2))
+                                    propValues.Add(v2);
+                                else
+                                    propValues.Add(" ");
                             }
 
                             if (propValues.Count > 0)
                             {
-                                // Keep duplicates — join according to specified inner separator
+                                // Keep duplicates and placeholders — join according to specified inner separator
                                 value = string.Join(innerSep, propValues);
                             }
                         }
