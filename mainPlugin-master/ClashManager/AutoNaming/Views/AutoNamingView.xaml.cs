@@ -406,7 +406,8 @@ namespace ClashManager.AutoNaming.Views
                         // Остальные параметры: пытаемся найти одноимённое свойство у элементов модели
                         if (firstResult != null)
                         {
-                            var propValues = new HashSet<string>();
+                            // Use a list to preserve duplicate values coming from different elements
+                            var propValues = new System.Collections.Generic.List<string>();
                             foreach (var r in allResults)
                             {
                                 string v1 = GetPropertyValueByDisplayName(r.CompositeItem1, name);
@@ -417,7 +418,8 @@ namespace ClashManager.AutoNaming.Views
 
                             if (propValues.Count > 0)
                             {
-                                value = string.Join(innerSep, propValues.OrderBy(x => x));
+                                // Keep duplicates — join according to specified inner separator
+                                value = string.Join(innerSep, propValues);
                             }
                         }
                         break;
