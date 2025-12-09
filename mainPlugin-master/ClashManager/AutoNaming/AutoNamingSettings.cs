@@ -310,7 +310,7 @@ namespace ClashManager.AutoNaming
                          {
                              var key = parts[0].Trim();
                             // DO NOT Trim() value — preserve leading/trailing spaces in separators
-+                            var value = parts[1];
+                            var value = parts[1];
                             
                              // Check if this is a parameter setting
                              if (key.StartsWith("Param") && key.Contains("Enabled"))
