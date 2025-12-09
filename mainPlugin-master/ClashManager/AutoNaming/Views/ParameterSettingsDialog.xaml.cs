@@ -22,7 +22,7 @@ namespace ClashManager.AutoNaming.Views
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
             // Save the separator setting
-            ParameterSeparator = ParameterSeparatorTextBox.Text?.Trim() ?? ",";
+            ParameterSeparator = ParameterSeparatorTextBox.Text ?? ",";
 
             DialogResult = true;
             Close();

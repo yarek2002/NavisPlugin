@@ -269,12 +269,13 @@ namespace ClashManager.AutoNaming
 
                 foreach (var line in lines)
                 {
-                    var trimmedLine = line.Trim();
+                    // Preserve original line (value must keep spaces); use trimmedForCheck только для заголовков/проверок
+                    var trimmedForCheck = line?.Trim();
 
                     // Check if this is a test GUID header
-                    if (trimmedLine.StartsWith("[") && trimmedLine.EndsWith("]"))
+                    if (!string.IsNullOrEmpty(trimmedForCheck) && trimmedForCheck.StartsWith("[") && trimmedForCheck.EndsWith("]"))
                     {
-                        var guidString = trimmedLine.Trim('[', ']');
+                        var guidString = trimmedForCheck.Trim('[', ']');
                         if (Guid.TryParse(guidString, out Guid testGuid))
                         {
                             // Save previous test settings if any
@@ -297,73 +298,74 @@ namespace ClashManager.AutoNaming
                         continue;
                     }
 
-                    // Skip empty lines
-                    if (string.IsNullOrWhiteSpace(trimmedLine))
+                    // Skip empty lines (use original line so spaces in values are preserved)
+                    if (string.IsNullOrWhiteSpace(line))
                         continue;
 
                     // Parse key-value pairs
-                    if (trimmedLine.Contains("=") && currentTestSettings != null)
+                    if (line.Contains("=") && currentTestSettings != null)
                     {
-                        var parts = trimmedLine.Split(new[] { '=' }, 2);
-                        if (parts.Length == 2)
-                        {
-                            var key = parts[0].Trim();
-                            var value = parts[1].Trim();
-
-                            // Check if this is a parameter setting
-                            if (key.StartsWith("Param") && key.Contains("Enabled"))
-                            {
-                                var paramIndexStr = key.Replace("Param", "").Replace("Enabled", "");
-                                if (int.TryParse(paramIndexStr, out int paramIndex))
-                                {
-                                    if (!parameterBuffer.ContainsKey(paramIndex))
-                                    {
-                                        parameterBuffer[paramIndex] = new ParameterItem();
-                                    }
-                                    bool.TryParse(value, out bool isEnabled);
-                                    parameterBuffer[paramIndex].IsEnabled = isEnabled;
-                                }
-                            }
-                            else if (key.StartsWith("Param") && key.Contains("Name"))
-                            {
-                                var paramIndexStr = key.Replace("Param", "").Replace("Name", "");
-                                if (int.TryParse(paramIndexStr, out int paramIndex))
-                                {
-                                    if (!parameterBuffer.ContainsKey(paramIndex))
-                                    {
-                                        parameterBuffer[paramIndex] = new ParameterItem();
-                                    }
-                                    parameterBuffer[paramIndex].ParameterName = value;
-                                }
-                            }
-                            else if (key.StartsWith("Param") && key.Contains("Separator"))
-                            {
-                                var paramIndexStr = key.Replace("Param", "").Replace("Separator", "");
-                                if (int.TryParse(paramIndexStr, out int paramIndex))
-                                {
-                                    if (!parameterBuffer.ContainsKey(paramIndex))
-                                    {
-                                        parameterBuffer[paramIndex] = new ParameterItem();
-                                    }
-                                    parameterBuffer[paramIndex].ParameterSeparator = value;
-                                }
-                            }
-                            else if (key == "Separator")
-                            {
-                                currentTestSettings.Separator = value;
-                            }
-                            else if (key == "UseCompleteCustomNaming")
-                            {
-                                bool.TryParse(value, out bool useCompleteCustomNaming);
-                                currentTestSettings.UseCompleteCustomNaming = useCompleteCustomNaming;
-                            }
-                            else if (key == "SeparateByTwoClash")
-                            {
-                                bool.TryParse(value, out bool separateByTwoClash);
-                                currentTestSettings.SeparateByTwoClash = separateByTwoClash;
-                            }
-                        }
-                    }
+                        var parts = line.Split(new[] { '=' }, 2);
+                         if (parts.Length == 2)
+                         {
+                             var key = parts[0].Trim();
+                            // DO NOT Trim() value — preserve leading/trailing spaces in separators
+                            var value = parts[1];
+                            
+                             // Check if this is a parameter setting
+                             if (key.StartsWith("Param") && key.Contains("Enabled"))
+                             {
+                                 var paramIndexStr = key.Replace("Param", "").Replace("Enabled", "");
+                                 if (int.TryParse(paramIndexStr, out int paramIndex))
+                                 {
+                                     if (!parameterBuffer.ContainsKey(paramIndex))
+                                     {
+                                         parameterBuffer[paramIndex] = new ParameterItem();
+                                     }
+                                     bool.TryParse(value, out bool isEnabled);
+                                     parameterBuffer[paramIndex].IsEnabled = isEnabled;
+                                 }
+                             }
+                             else if (key.StartsWith("Param") && key.Contains("Name"))
+                             {
+                                 var paramIndexStr = key.Replace("Param", "").Replace("Name", "");
+                                 if (int.TryParse(paramIndexStr, out int paramIndex))
+                                 {
+                                     if (!parameterBuffer.ContainsKey(paramIndex))
+                                     {
+                                         parameterBuffer[paramIndex] = new ParameterItem();
+                                     }
+                                     parameterBuffer[paramIndex].ParameterName = value;
+                                 }
+                             }
+                             else if (key.StartsWith("Param") && key.Contains("Separator"))
+                             {
+                                 var paramIndexStr = key.Replace("Param", "").Replace("Separator", "");
+                                 if (int.TryParse(paramIndexStr, out int paramIndex))
+                                 {
+                                     if (!parameterBuffer.ContainsKey(paramIndex))
+                                     {
+                                         parameterBuffer[paramIndex] = new ParameterItem();
+                                     }
+                                     parameterBuffer[paramIndex].ParameterSeparator = value;
+                                 }
+                             }
+                             else if (key == "Separator")
+                             {
+                                 currentTestSettings.Separator = value;
+                             }
+                             else if (key == "UseCompleteCustomNaming")
+                             {
+                                 bool.TryParse(value, out bool useCompleteCustomNaming);
+                                 currentTestSettings.UseCompleteCustomNaming = useCompleteCustomNaming;
+                             }
+                             else if (key == "SeparateByTwoClash")
+                             {
+                                 bool.TryParse(value, out bool separateByTwoClash);
+                                 currentTestSettings.SeparateByTwoClash = separateByTwoClash;
+                             }
+                         }
+                     }
                 }
 
                 // Save the last test settings
