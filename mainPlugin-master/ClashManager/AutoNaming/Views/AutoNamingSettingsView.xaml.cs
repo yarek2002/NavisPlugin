@@ -220,7 +220,7 @@ namespace ClashManager.AutoNaming.Views
             var settings = new TestAutoNamingSettings
             {
                 Parameters = new List<ParameterItem>(Parameters),
-                Separator = SeparatorText?.Trim() ?? " | ",
+                Separator = SeparatorText ?? " | ",
                 UseCompleteCustomNaming = UseCompleteCustomNaming,
                 SeparateByTwoClash = SeparateByTwoClash
             };
