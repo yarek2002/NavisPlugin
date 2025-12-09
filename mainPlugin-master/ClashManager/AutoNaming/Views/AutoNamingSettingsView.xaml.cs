@@ -48,6 +48,23 @@ namespace ClashManager.AutoNaming.Views
             }
         }
 
+        /// <summary>
+        /// Если true, перед авто-наименованием каждая коллизия в группе будет вынесена в отдельную группу.
+        /// </summary>
+        private bool _separateByTwoClash;
+        public bool SeparateByTwoClash
+        {
+            get => _separateByTwoClash;
+            set
+            {
+                if (_separateByTwoClash != value)
+                {
+                    _separateByTwoClash = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -62,11 +79,15 @@ namespace ClashManager.AutoNaming.Views
             // Set DataContext for binding
             DataContext = this;
 
-            // Load existing settings if available
-            LoadExistingSettings();
-
             // Bind the ItemsControl to our parameters collection
             ParametersItemsControl.ItemsSource = Parameters;
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            // К моменту Loaded свойства (включая SelectedTestGuids) уже заданы из вызывающего кода,
+            // поэтому можно корректно загрузить настройки из JSON.
+            LoadExistingSettings();
         }
 
         private void LoadExistingSettings()
@@ -100,17 +121,27 @@ namespace ClashManager.AutoNaming.Views
                     // Set separator and complete custom naming mode
                     SeparatorText = testSettings.Separator ?? " | ";
                     UseCompleteCustomNaming = testSettings.UseCompleteCustomNaming;
+                    SeparateByTwoClash = testSettings.SeparateByTwoClash;
                 }
                 else
                 {
-                    // No existing settings found for any selected test, start with one empty parameter
-                    Parameters.Add(new ParameterItem());
+                    // Нет сохранённых настроек для выбранных тестов (или файл ещё не создан) —
+                    // показываем параметры по умолчанию
+                    Parameters.Clear();
+                    AddDefaultCompleteNamingParameters();
+                    SeparatorText = " | ";
+                    UseCompleteCustomNaming = false;
+                    SeparateByTwoClash = false;
                 }
             }
             else
             {
-                // No tests selected, start with one empty parameter
-                Parameters.Add(new ParameterItem());
+                // Нет выбранных тестов — также показываем параметры по умолчанию
+                Parameters.Clear();
+                AddDefaultCompleteNamingParameters();
+                SeparatorText = " | ";
+                UseCompleteCustomNaming = false;
+                SeparateByTwoClash = false;
             }
         }
 
@@ -155,6 +186,34 @@ namespace ClashManager.AutoNaming.Views
             }
         }
 
+        private void MoveParameterUpButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null && button.Tag is ParameterItem parameterItem)
+            {
+                int currentIndex = Parameters.IndexOf(parameterItem);
+                if (currentIndex > 0)
+                {
+                    // Перемещаем параметр вверх
+                    Parameters.Move(currentIndex, currentIndex - 1);
+                }
+            }
+        }
+
+        private void MoveParameterDownButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null && button.Tag is ParameterItem parameterItem)
+            {
+                int currentIndex = Parameters.IndexOf(parameterItem);
+                if (currentIndex < Parameters.Count - 1)
+                {
+                    // Перемещаем параметр вниз
+                    Parameters.Move(currentIndex, currentIndex + 1);
+                }
+            }
+        }
+
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
             // Create settings object from current UI state
@@ -162,7 +221,8 @@ namespace ClashManager.AutoNaming.Views
             {
                 Parameters = new List<ParameterItem>(Parameters),
                 Separator = SeparatorText?.Trim() ?? " | ",
-                UseCompleteCustomNaming = UseCompleteCustomNaming
+                UseCompleteCustomNaming = UseCompleteCustomNaming,
+                SeparateByTwoClash = SeparateByTwoClash
             };
 
             // Сохраняем примененные настройки

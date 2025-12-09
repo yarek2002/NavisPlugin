@@ -5,7 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ClashManager.AutoNaming.Views"
         mc:Ignorable="d"
-        Title="Настройки авто-наименования" Height="450" Width="550" WindowStartupLocation="CenterOwner">
+        Title="Настройки авто-наименования"
+        Height="450"
+        Width="550"
+        WindowStartupLocation="CenterOwner"
+        Loaded="Window_Loaded">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -14,17 +18,12 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Заголовок и режим наименования -->
+        <!-- Заголовок -->
         <StackPanel Grid.Row="0" Margin="10">
-            <TextBlock Text="Настройки параметров наименования" FontSize="14" FontWeight="Bold" Margin="0,0,0,10" />
-            <!-- Режим полного наименования -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                <TextBlock Text="Режим наименования:" VerticalAlignment="Center" Margin="0,0,10,0" />
-                <CheckBox x:Name="CompleteCustomNamingToggle" Content="Настроить целиком (параметры составляют полное имя)" IsChecked="{Binding UseCompleteCustomNaming}" Checked="CompleteCustomNamingToggle_Checked" Unchecked="CompleteCustomNamingToggle_Unchecked" VerticalAlignment="Center" />
-            </StackPanel>
-            <TextBlock Text="По умолчанию: Доп. настройка (добавление к базовому имени)" FontSize="10" Foreground="Gray" />
-            <!-- Информация о базовых параметрах -->
-            <StackPanel Margin="0,10,0,0"/>
+            <TextBlock Text="Настройки параметров наименования"
+                       FontSize="14"
+                       FontWeight="Bold"
+                       Margin="0,0,0,10" />
         </StackPanel>
 
         <!-- Параметры -->
@@ -40,11 +39,16 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <CheckBox Grid.Column="0" IsChecked="{Binding IsEnabled}" VerticalAlignment="Center" Margin="0,0,10,0" />
                                 <TextBox Grid.Column="1" Text="{Binding ParameterName}" VerticalAlignment="Center" Margin="0,0,10,0" />
-                                <Button Grid.Column="2" Content="⚙️" Click="SetParameterSettingsButton_Click" Tag="{Binding}" Width="30" ToolTip="Настройки параметра" />
-                                <Button Grid.Column="3" Content="Удалить" Click="RemoveParameterButton_Click" Tag="{Binding}" Width="60" />
+                                <Button Grid.Column="2" Content="⬆️" Click="MoveParameterUpButton_Click" Tag="{Binding}" Width="30" ToolTip="Переместить вверх" />
+                                <Button Grid.Column="3" Content="⬇️" Click="MoveParameterDownButton_Click" Tag="{Binding}" Width="30" ToolTip="Переместить вниз" />
+                                <Button Grid.Column="4" Content="⚙️" Click="SetParameterSettingsButton_Click" Tag="{Binding}" Width="30" ToolTip="Настройки параметра" />
+                                <Button Grid.Column="5" Content="Удалить" Click="RemoveParameterButton_Click" Tag="{Binding}" Width="60" />
                             </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -56,6 +60,12 @@
                 <!-- Разделитель -->
                 <TextBlock Text="Разделитель параметров" FontSize="10" FontWeight="Bold" Margin="10" />
                 <TextBox x:Name="SeparatorTextBox" Text="{Binding SeparatorText, UpdateSourceTrigger=PropertyChanged}" Margin="25,10,0,10" />
+
+                <!-- Чекбокс: разделить коллизии по парам (каждый результат в отдельной группе) -->
+                <CheckBox x:Name="SeparateByTwoClashCheckBox"
+                          Content="Разделить коллизии по парам (1 коллизия = 1 группа)"
+                          IsChecked="{Binding SeparateByTwoClash}"
+                          Margin="25,0,0,10" />
             </StackPanel>
         </ScrollViewer>
 
