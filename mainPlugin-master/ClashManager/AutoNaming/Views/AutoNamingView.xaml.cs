@@ -81,6 +81,47 @@ namespace ClashManager.AutoNaming.Views
             TestsListBox.ItemsSource = _testItems;
         }
 
+
+        // ...existing code...
+        // Нажатие "Выбрать все" — ставит галочки напротив всех тестов или снимает, если уже все выбраны
+        private void SelectAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_testItems == null || _testItems.Count == 0)
+                return;
+
+            bool allSelected = _testItems.All(i => i.IsChecked);
+
+            _suppressCheckboxHandlers = true;
+            try
+            {
+                _checkedTestIds.Clear();
+
+                if (allSelected)
+                {
+                    // снять все галочки
+                    foreach (var item in _testItems)
+                    {
+                        item.IsChecked = false;
+                    }
+                }
+                else
+                {
+                    // поставить все галочки
+                    foreach (var item in _testItems)
+                    {
+                        item.IsChecked = true;
+                        _checkedTestIds.Add(item.Guid);
+                    }
+                }
+
+                TestsListBox.Items.Refresh();
+            }
+            finally
+            {
+                _suppressCheckboxHandlers = false;
+            }
+        }
+// ...existing code...
         /// <summary>
         /// Обработчик изменения свойства TestItem
         /// </summary>

@@ -64,6 +64,7 @@
         <!-- Кнопки -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Left" Margin="10">
             <Button x:Name="Settings" Content="Настройка" Width="80" Click="NameSettingsButton_Click" />
+            <Button x:Name="SelectAllButton" Content="Выбрать все" Width="100" Margin="8,0,0,0" Click="SelectAllButton_Click" />
         </StackPanel>
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
             <Button x:Name="AssignNameButton" Content="Авто-наименование" Width="150" Margin="0,0,10,0" Click="AssignNameButton_Click" />
