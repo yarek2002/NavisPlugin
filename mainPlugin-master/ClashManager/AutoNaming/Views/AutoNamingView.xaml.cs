@@ -22,6 +22,7 @@ namespace ClashManager.AutoNaming.Views
         public string DisplayName { get; set; }
         public Guid Guid { get; set; }
         
+
         public bool IsChecked 
         { 
             get => _isChecked;
