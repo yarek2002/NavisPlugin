@@ -1,4 +1,4 @@
-﻿using ClashManager;
+using ClashManager;
 using Autodesk.Navisworks.Api.Clash;
 using Autodesk.Navisworks.Api.Plugins;
 using System;
@@ -25,6 +25,7 @@ namespace ClashManager
     [Command("MagicWand", LargeIcon = "IMG/4_32.png", ToolTip = "Автоматическая группировка и кластеризация")]
     [Command("ManagerCollision", LargeIcon = "IMG/6_32.png", ToolTip = "Менеджер")]
     [Command("AutoNaming", LargeIcon = "IMG/7_32.png", ToolTip = "Авто-наименование групп коллизий")]
+    [Command("CreateSearchSet", LargeIcon = "IMG/5_32.png", ToolTip = "Создание поисковых наборов")]
 
 
     public class CollisionGrouperCommandHandler : CommandHandlerPlugin
@@ -59,6 +60,9 @@ namespace ClashManager
                         break;
                     case "AutoNaming":
                         command = (IExternalCommand)new AutoNamingCmd();
+                        break;
+                    case "CreateSearchSet":
+                        command = (IExternalCommand)new CreateSearchSetCmd();
                         break;
                     case "ZoneAssignment":
                         command = (IExternalCommand)new ZoneAssignmentCmd();

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <!-- BEGIN STANDARD SECTION DO NOT EDIT 
     except for ensuring x:Uid="CustomRibbonTab" has a unique ID
     -->
@@ -64,6 +64,13 @@
 								  KeyTip="B7"
 								  ShowText="True"
 								  Text="Авто-наименование"
+								  Orientation="Vertical"
+								  />
+				<local:NWRibbonButton x:Uid="Button_11" Id="CreateSearchSet"
+								  Size="Large"
+								  KeyTip="B11"
+								  ShowText="True"
+								  Text="Создание&#x0A;поисковых наборов"
 								  Orientation="Vertical"
 								  />
 				<local:NWRibbonButton x:Uid="Button_8" Id="ZoneAssignment"

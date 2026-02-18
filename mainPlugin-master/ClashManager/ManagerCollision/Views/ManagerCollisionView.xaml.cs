@@ -2137,104 +2137,11 @@ namespace ClashManager.ManagerCollision.Views
 					return;
 				}
 
-				// Если ничего не выбрано — глобальная замена по режиму
+				// Если ничего не выбрано — выводим предупреждение
 				if (!hasCheckedTests && !hasCheckedRows)
 				{
-					if (string.IsNullOrWhiteSpace(findText))
-					{
-						MessageBox.Show("Введите текст в поле 'Найти' для глобальной замены.");
-						return;
-					}
-
-					if (isTestMode)
-					{
-						// Глобальная замена тестов
-						int testsChanged = 0;
-						var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
-						foreach (var test in allTests)
-						{
-							var originalName = test.DisplayName ?? string.Empty;
-							if (string.Equals(originalName, findText, StringComparison.OrdinalIgnoreCase))
-							{
-								int idx = _documentClash.TestsData.Tests.IndexOf(test);
-								if (idx >= 0)
-								{
-									var copy = (ClashTest)test.CreateCopy();
-									copy.DisplayName = replaceText ?? string.Empty;
-									_documentClash.TestsData.TestsReplaceWithCopy(idx, copy);
-									testsChanged++;
-								}
-							}
-						}
-						LoadTests();
-						MessageBox.Show(testsChanged > 0 ? $"Глобальная замена тестов выполнена: {testsChanged} изменений." : "Совпадающие имена тестов не найдены.");
-						return;
-					}
-					else
-					{
-						// Глобальная замена коллизий/групп
-						int changes = 0;
-						var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
-						for (int ti = 0; ti < allTests.Count; ti++)
-						{
-							var test = allTests[ti];
-							var copy = (ClashTest)test.CreateCopy();
-							bool testChanged = false;
-
-							// Группы (все уровни)
-							foreach (var tpl in EnumerateAllGroupsWithLevel(copy))
-							{
-								var group = tpl.Group;
-								var originalName = group.DisplayName ?? string.Empty;
-															if (string.Equals(originalName, findText, StringComparison.Ordinal))
-							{
-								group.DisplayName = replaceText ?? string.Empty;
-								changes++;
-								testChanged = true;
-							}
-							}
-
-							// Неклассифицированные результаты
-							foreach (var r in copy.Children.OfType<ClashResult>())
-							{
-								var originalName = r.DisplayName ?? string.Empty;
-								if (string.Equals(originalName, findText, StringComparison.Ordinal))
-								{
-									r.DisplayName = replaceText ?? string.Empty;
-									changes++;
-									testChanged = true;
-								}
-							}
-
-							// Результаты внутри групп (все уровни)
-							foreach (var g in copy.Children.OfType<ClashResultGroup>())
-							{
-								foreach (var r in GetAllResultsFromGroup(g))
-								{
-									var originalName = r.DisplayName ?? string.Empty;
-									if (string.Equals(originalName, findText, StringComparison.Ordinal))
-									{
-										r.DisplayName = replaceText ?? string.Empty;
-										changes++;
-										testChanged = true;
-									}
-								}
-							}
-
-							if (testChanged)
-							{
-								int idx = _documentClash.TestsData.Tests.IndexOf(test);
-								if (idx >= 0)
-								{
-									_documentClash.TestsData.TestsReplaceWithCopy(idx, copy);
-								}
-							}
-						}
-
-						LoadTests();
-						MessageBox.Show(changes > 0 ? $"Глобальная замена коллизий/групп выполнена: {changes} изменений." : "Совпадающие имена коллизий/групп не найдены.");
-						return;
-					}
+					MessageBox.Show("Пожалуйста, выберите тесты или коллизии через чекбоксы для переименования.");
+					return;
 				}
 
 				// Если выбраны чекбоксы — работаем с выбранными
@@ -2262,8 +2169,7 @@ namespace ClashManager.ManagerCollision.Views
 						}
 					}
 					LoadTests();
-					_checkedTestIds.Clear();
-					MessageBox.Show(testsRenamed > 0 ? "Тесты успешно переименованы." : "Нет изменений по заданным критериям.");
+					MessageBox.Show(testsRenamed > 0 ? "Выбранные тесты успешно переименованы." : "Нет изменений для выбранных тестов по заданным критериям.");
 					return;
 				}
 				else if (!isTestMode && hasCheckedRows)
@@ -2319,8 +2225,7 @@ namespace ClashManager.ManagerCollision.Views
 						}
 					}
 					LoadTests();
-					_checkedRowIds.Clear();
-					MessageBox.Show(changes > 0 ? "Коллизии/группы успешно переименованы." : "Нет изменений по заданным критериям.");
+					MessageBox.Show(changes > 0 ? "Выбранные коллизии/группы успешно переименованы." : "Нет изменений для выбранных коллизий/групп по заданным критериям.");
 					return;
 				}
 
@@ -2364,102 +2269,11 @@ namespace ClashManager.ManagerCollision.Views
 					return;
 				}
 
-				// Если ничего не выбрано — глобальное применение по режиму
+				// Если ничего не выбрано — выводим предупреждение
 				if (!hasCheckedTests && !hasCheckedRows)
 				{
-					if (isTestMode)
-					{
-						// Глобальное применение к тестам
-						int testsChanged = 0;
-						var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
-						foreach (var test in allTests)
-						{
-							var originalName = test.DisplayName ?? string.Empty;
-							var newName = (prefixText ?? string.Empty) + originalName + (suffixText ?? string.Empty);
-							if (!string.Equals(newName, originalName, StringComparison.Ordinal))
-							{
-								int idx = _documentClash.TestsData.Tests.IndexOf(test);
-								if (idx >= 0)
-								{
-									var copy = (ClashTest)test.CreateCopy();
-									copy.DisplayName = newName;
-									_documentClash.TestsData.TestsReplaceWithCopy(idx, copy);
-									testsChanged++;
-								}
-							}
-						}
-						LoadTests();
-						MessageBox.Show(testsChanged > 0 ? $"Префикс/суффикс применены к тестам: {testsChanged} изменений." : "Нет изменений для тестов.");
-						return;
-					}
-					else
-					{
-						// Глобальное применение к коллизиям/группам
-						int changes = 0;
-						var allTests = _documentClash?.TestsData?.Tests?.OfType<ClashTest>()?.ToList() ?? new System.Collections.Generic.List<ClashTest>();
-						for (int ti = 0; ti < allTests.Count; ti++)
-						{
-							var test = allTests[ti];
-							var copy = (ClashTest)test.CreateCopy();
-							bool testChanged = false;
-
-							// Группы (все уровни)
-							foreach (var tpl in EnumerateAllGroupsWithLevel(copy))
-							{
-								var group = tpl.Group;
-								var originalName = group.DisplayName ?? string.Empty;
-								var newName = (prefixText ?? string.Empty) + originalName + (suffixText ?? string.Empty);
-								if (!string.Equals(newName, originalName, StringComparison.Ordinal))
-								{
-									group.DisplayName = newName;
-									changes++;
-									testChanged = true;
-								}
-							}
-
-							// Неклассифицированные результаты
-							foreach (var r in copy.Children.OfType<ClashResult>())
-							{
-								var originalName = r.DisplayName ?? string.Empty;
-								var newName = (prefixText ?? string.Empty) + originalName + (suffixText ?? string.Empty);
-								if (!string.Equals(newName, originalName, StringComparison.Ordinal))
-								{
-									r.DisplayName = newName;
-									changes++;
-									testChanged = true;
-								}
-							}
-
-							// Результаты внутри групп (все уровни)
-							foreach (var g in copy.Children.OfType<ClashResultGroup>())
-							{
-								foreach (var r in GetAllResultsFromGroup(g))
-								{
-									var originalName = r.DisplayName ?? string.Empty;
-									var newName = (prefixText ?? string.Empty) + originalName + (suffixText ?? string.Empty);
-									if (!string.Equals(newName, originalName, StringComparison.Ordinal))
-									{
-										r.DisplayName = newName;
-										changes++;
-										testChanged = true;
-									}
-								}
-							}
-
-							if (testChanged)
-							{
-								int idx = _documentClash.TestsData.Tests.IndexOf(test);
-								if (idx >= 0)
-								{
-									_documentClash.TestsData.TestsReplaceWithCopy(idx, copy);
-								}
-							}
-						}
-
-						LoadTests();
-						MessageBox.Show(changes > 0 ? $"Префикс/суффикс применены к коллизиям/группам: {changes} изменений." : "Нет изменений для коллизий/групп.");
-						return;
-					}
+					MessageBox.Show("Пожалуйста, выберите тесты или коллизии через чекбоксы для изменения.");
+					return;
 				}
 
 				// Если выбраны чекбоксы — работаем с выбранными
@@ -2484,8 +2298,7 @@ namespace ClashManager.ManagerCollision.Views
 						}
 					}
 					LoadTests();
-					_checkedTestIds.Clear();
-					MessageBox.Show(testsChanged > 0 ? "Префикс/суффикс применены к тестам." : "Нет изменений для выбранных тестов.");
+					MessageBox.Show(testsChanged > 0 ? "Префикс/суффикс применены к выбранным тестам." : "Нет изменений для выбранных тестов.");
 					return;
 				}
 				else if (!isTestMode && hasCheckedRows)
@@ -2537,11 +2350,10 @@ namespace ClashManager.ManagerCollision.Views
 						}
 					}
 					LoadTests();
-					_checkedRowIds.Clear();
-					MessageBox.Show(changes > 0 ? "Префикс/суффикс применены к коллизиям/группам." : "Нет изменений для выбранных коллизий/групп.");
+					MessageBox.Show(changes > 0 ? "Префикс/суффикс применены к выбранным коллизиям/группам." : "Нет изменений для выбранных коллизий/групп.");
 					return;
 				}
-
+				
 				// Новый случай: режим "Коллизии" + выбраны тесты, но не выбраны коллизии
 				if (!isTestMode && hasCheckedTests && !hasCheckedRows)
 				{
@@ -2609,7 +2421,6 @@ namespace ClashManager.ManagerCollision.Views
 						}
 					}
 					LoadTests();
-					_checkedTestIds.Clear();
 					MessageBox.Show(changes > 0 ? $"Префикс/суффикс применены к коллизиям в выбранных тестах: {changes} изменений." : "Нет изменений для коллизий в выбранных тестах.");
 					return;
 				}

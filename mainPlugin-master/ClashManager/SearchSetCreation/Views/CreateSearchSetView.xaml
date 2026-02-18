@@ -1,0 +1,50 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ClashManager.SearchSetCreation.Views.CreateSearchSetView"
+        Title="Создание поискового набора" Height="600" Width="800"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <TextBlock Grid.Row="0" Text="Выберите свойства и значения для создания поискового набора:" 
+                   FontWeight="Bold" Margin="0,0,0,10" />
+
+        <!-- Таблица свойств -->
+        <DataGrid x:Name="PropertiesDataGrid" 
+                  Grid.Row="1" 
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
+                  GridLinesVisibility="All"
+                  HeadersVisibility="Column"
+                  Margin="0,0,0,10">
+            <DataGrid.Columns>
+                <DataGridCheckBoxColumn Header="Свойство" Binding="{Binding IsPropertySelected}" Width="80" />
+                <DataGridTextColumn Header="Категория" Binding="{Binding Category}" IsReadOnly="True" Width="200" />
+                <DataGridTextColumn Header="Свойство" Binding="{Binding PropertyName}" IsReadOnly="True" Width="200" />
+                <DataGridCheckBoxColumn Header="Значение" Binding="{Binding IsValueSelected}" Width="80" />
+                <DataGridTextColumn Header="Значение" Binding="{Binding PropertyValue}" IsReadOnly="True" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Кнопки -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Создать поисковой набор" 
+                    Width="180" 
+                    Height="30" 
+                    Margin="0,0,10,0"
+                    Click="CreateSearchSetButton_Click" />
+            <Button Content="Закрыть" 
+                    Width="100" 
+                    Height="30"
+                    Click="CloseButton_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
