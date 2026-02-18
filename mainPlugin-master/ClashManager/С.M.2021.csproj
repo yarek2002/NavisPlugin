@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -166,6 +166,7 @@
     <Compile Include="CollisionCluster\Union.cs" />
     <Compile Include="Externals\ManagerCollisionCmd.cs" />
     <Compile Include="Externals\AutoNamingCmd.cs" />
+    <Compile Include="Externals\CreateSearchSetCmd.cs" />
     <Compile Include="Externals\ZoneAssignmentCmd.cs" />
     <Compile Include="ManagerCollision\Views\ManagerCollisionView.xaml.cs">
       <DependentUpon>ManagerCollisionView.xaml</DependentUpon>
@@ -191,6 +192,10 @@
     <Compile Include="Automation\AutomationSettings.cs" />
     <Compile Include="Externals\ReportAutomationCmd.cs" />
     <Compile Include="AutoNaming\AutoNamingSettings.cs" />
+    <Compile Include="SearchSetCreation\Models\PropertyItem.cs" />
+    <Compile Include="SearchSetCreation\Views\CreateSearchSetView.xaml.cs">
+      <DependentUpon>CreateSearchSetView.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="AddinRibbon.xaml">
@@ -236,6 +241,11 @@
     </Page>
 
     <Page Include="ZoneAssignment\Views\ZoneAssignmentView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Page>
+    <Page Include="SearchSetCreation\Views\CreateSearchSetView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
