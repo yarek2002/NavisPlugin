@@ -216,7 +216,12 @@ namespace ClashManager.SearchSetCreation.Views
                         }
                     }
                     
-                    foundItems = new ModelItemCollection(filteredItems);
+                    // Создаем новую коллекцию ModelItemCollection и добавляем элементы
+                    foundItems = new ModelItemCollection();
+                    foreach (var item in filteredItems)
+                    {
+                        foundItems.Add(item);
+                    }
                 }
 
                 if (foundItems.Count == 0)
@@ -250,34 +255,11 @@ namespace ClashManager.SearchSetCreation.Views
 
         private SearchCondition CreatePropertyValueEqualsCondition(string category, string propertyName, object value)
         {
-            try
-            {
-                // В Navisworks API для создания условия равенства значения используется PropertyValueEquals
-                // Метод принимает категорию, имя свойства и значение
-                if (value == null)
-                    return null;
-
-                // Преобразуем значение в VariantData если необходимо
-                VariantData variantValue = null;
-                if (value is VariantData)
-                {
-                    variantValue = (VariantData)value;
-                }
-                else
-                {
-                    variantValue = new VariantData(value);
-                }
-
-                // Создаем условие равенства значения свойства
-                return SearchCondition.PropertyValueEquals(category, propertyName, variantValue);
-            }
-            catch (Exception ex)
-            {
-                // Если PropertyValueEquals не доступен или произошла ошибка,
-                // используем альтернативный подход через фильтрацию результатов
-                System.Diagnostics.Debug.WriteLine($"Не удалось создать условие PropertyValueEquals: {ex.Message}");
-                return null;
-            }
+            // В Navisworks API нет прямого метода PropertyValueEquals для создания условия равенства значения
+            // Поэтому мы используем только HasPropertyByDisplayName для проверки наличия свойства,
+            // а фильтрацию по значению выполняем вручную после поиска
+            // Этот метод всегда возвращает null, чтобы указать, что нужно использовать ручную фильтрацию
+            return null;
         }
 
         private string GenerateSearchSetName(System.Collections.Generic.List<PropertyItem> selectedProperties, string objectCategory)
