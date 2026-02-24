@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <!-- BEGIN STANDARD SECTION DO NOT EDIT 
     except for ensuring x:Uid="CustomRibbonTab" has a unique ID
     -->
@@ -66,18 +66,11 @@
 								  Text="Авто-наименование"
 								  Orientation="Vertical"
 								  />
-				<local:NWRibbonButton x:Uid="Button_8" Id="ZoneAssignment"
+				<local:NWRibbonButton x:Uid="Button_8" Id="CreateSearchSet"
 								  Size="Large"
 								  KeyTip="B8"
 								  ShowText="True"
-								  Text="Назначение зон"
-								  Orientation="Vertical"
-								  />
-				<local:NWRibbonButton x:Uid="Button_9" Id="ZoneGrouping"
-								  Size="Large"
-								  KeyTip="B9"
-								  ShowText="True"
-								  Text="Авто-группировка&#x0A;по зонам"
+								  Text="Создание&#x0A;поисковых наборов"
 								  Orientation="Vertical"
 								  />
 

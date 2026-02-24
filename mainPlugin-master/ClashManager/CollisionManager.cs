@@ -64,15 +64,6 @@ namespace ClashManager
                     case "CreateSearchSet":
                         command = (IExternalCommand)new CreateSearchSetCmd();
                         break;
-                    case "ZoneAssignment":
-                        command = (IExternalCommand)new ZoneAssignmentCmd();
-                        break;
-                    case "ZoneGrouping":
-                        command = (IExternalCommand)new ZoneGroupingCmd();
-                        break;
-                    case "ReportAutomation":
-                        command = (IExternalCommand)new ReportAutomationCmd();
-                        break;
                 }
                 command.Execute();
             }
