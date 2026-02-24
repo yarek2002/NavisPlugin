@@ -109,12 +109,12 @@ namespace ClashManager.SearchSetCreation.Views
         {
             try
             {
-                // Проверяем, что выбраны хотя бы одно свойство и одно значение
-                var selectedProperties = _properties.Where(p => p.IsPropertySelected || p.IsValueSelected).ToList();
+                // Выбранные строки (чекбокс = вся строка: категория, свойство, значение)
+                var selectedProperties = _properties.Where(p => p.IsPropertySelected).ToList();
                 
                 if (!selectedProperties.Any())
                 {
-                    MessageBox.Show("Пожалуйста, выберите хотя бы одно свойство или значение для создания поискового набора.", 
+                    MessageBox.Show("Пожалуйста, выберите хотя бы одну строку для создания поискового набора.", 
                         "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -131,27 +131,20 @@ namespace ClashManager.SearchSetCreation.Views
 
                 foreach (var propItem in selectedProperties)
                 {
-                    if (propItem.IsPropertySelected)
-                    {
-                        // Условие: свойство существует
-                        search.SearchConditions.Add(
-                            SearchCondition.HasPropertyByDisplayName(propItem.Category, propItem.PropertyName));
-                        hasConditions = true;
-                    }
+                    // Выбрана вся строка: добавляем условие по свойству и по значению
+                    search.SearchConditions.Add(
+                        SearchCondition.HasPropertyByDisplayName(propItem.Category, propItem.PropertyName));
+                    hasConditions = true;
 
-                    if (propItem.IsValueSelected && !string.IsNullOrEmpty(propItem.PropertyValue))
+                    if (!string.IsNullOrEmpty(propItem.PropertyValue))
                     {
-                        // Сохраняем для последующей обработки
                         valueConditions.Add(propItem);
-                        
-                        // Пытаемся создать условие равенства значения
                         try
                         {
                             var condition = CreatePropertyValueEqualsCondition(
-                                propItem.Category, 
-                                propItem.PropertyName, 
+                                propItem.Category,
+                                propItem.PropertyName,
                                 propItem.OriginalValue);
-                            
                             if (condition != null)
                             {
                                 search.SearchConditions.Add(condition);
@@ -167,7 +160,7 @@ namespace ClashManager.SearchSetCreation.Views
 
                 if (!hasConditions && valueConditions.Count == 0)
                 {
-                    MessageBox.Show("Пожалуйста, выберите хотя бы одно свойство или значение для создания поискового набора.", 
+                    MessageBox.Show("Пожалуйста, выберите хотя бы одну строку для создания поискового набора.", 
                         "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
@@ -264,31 +257,13 @@ namespace ClashManager.SearchSetCreation.Views
 
         private string GenerateSearchSetName(System.Collections.Generic.List<PropertyItem> selectedProperties, string objectCategory)
         {
-            // Формируем имя набора согласно требованиям:
-            // Категория-объект, Свойство (по чекбоксу), Условие(=), Значение (по чекбоксу)
+            // Формируем имя набора: Категория-объект, Свойство = Значение (выбранная строка)
             var parts = new System.Collections.Generic.List<string>();
-            
-            // Добавляем категорию объекта
             parts.Add(objectCategory);
 
-            // Добавляем свойства и значения в формате: Свойство = Значение
             foreach (var prop in selectedProperties)
             {
-                if (prop.IsPropertySelected && prop.IsValueSelected)
-                {
-                    // Если выбраны и свойство, и значение: Категория-Свойство = Значение
-                    parts.Add($"{prop.PropertyName}={prop.PropertyValue}");
-                }
-                else if (prop.IsPropertySelected)
-                {
-                    // Если выбрано только свойство: Категория-Свойство
-                    parts.Add(prop.PropertyName);
-                }
-                else if (prop.IsValueSelected)
-                {
-                    // Если выбрано только значение: Категория- = Значение
-                    parts.Add($"={prop.PropertyValue}");
-                }
+                parts.Add($"{prop.PropertyName}={prop.PropertyValue}");
             }
 
             string setName = string.Join("-", parts);

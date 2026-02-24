@@ -26,10 +26,9 @@
                   HeadersVisibility="Column"
                   Margin="0,0,0,10">
             <DataGrid.Columns>
-                <DataGridCheckBoxColumn Header="Свойство" Binding="{Binding IsPropertySelected}" Width="80" />
+                <DataGridCheckBoxColumn Header="Выбрать" Binding="{Binding IsPropertySelected}" Width="80" />
                 <DataGridTextColumn Header="Категория" Binding="{Binding Category}" IsReadOnly="True" Width="200" />
                 <DataGridTextColumn Header="Свойство" Binding="{Binding PropertyName}" IsReadOnly="True" Width="200" />
-                <DataGridCheckBoxColumn Header="Значение" Binding="{Binding IsValueSelected}" Width="80" />
                 <DataGridTextColumn Header="Значение" Binding="{Binding PropertyValue}" IsReadOnly="True" Width="*" />
             </DataGrid.Columns>
         </DataGrid>
