@@ -97,10 +97,35 @@ namespace ClashManager.SearchSetCreation.Views
                     return variant.ToDisplayString();
                 }
                 
-                return property.Value.ToString();
+                // Для других типов данных пробуем разные подходы
+                object value = property.Value;
+                
+                if (value is string stringValue)
+                {
+                    return stringValue;
+                }
+                
+                if (value is double doubleValue)
+                {
+                    return doubleValue.ToString("G");
+                }
+                
+                if (value is int intValue)
+                {
+                    return intValue.ToString();
+                }
+                
+                if (value is bool boolValue)
+                {
+                    return boolValue ? "Да" : "Нет";
+                }
+                
+                // Для сложных типов данных пробуем получить строковое представление
+                return value.ToString();
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"Ошибка получения значения свойства {property.DisplayName}: {ex.Message}");
                 return "";
             }
         }
@@ -219,7 +244,7 @@ namespace ClashManager.SearchSetCreation.Views
 
                 if (foundItems.Count == 0)
                 {
-                    MessageBox.Show("Поиск не нашел элементов, соответствующих выбранным условиям.", 
+                    MessageBox.Show("ыыы онимэ.", 
                         "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
