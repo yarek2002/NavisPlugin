@@ -91,40 +91,48 @@ namespace ClashManager.SearchSetCreation.Views
 
             try
             {
-                // Базовая строка от Navisworks (обычно формат "Тип:Значение")
-                string raw = property.Value.ToString();
-                if (string.IsNullOrEmpty(raw))
-                    return "";
-
-                var parts = raw.Split(new[] { ':' }, 2);
-                if (parts.Length == 2)
+                // Пробуем получить корректное отображаемое значение, как в окне свойств Navisworks
+                var variant = property.Value as VariantData;
+                if (variant != null)
                 {
-                    var typePart = parts[0].Trim();
-                    var valuePart = parts[1].Trim();
+                    string display = variant.ToDisplayString();
+                    if (string.IsNullOrEmpty(display))
+                        return "";
 
-                    // Булевы значения локализуем как Да/Нет
-                    if (typePart.Equals("Boolean", StringComparison.OrdinalIgnoreCase))
+                    // Часто формат "Тип:Значение" (Int32:123, Boolean:True, DoubleLength: 25.920 м и т.п.)
+                    int colonIndex = display.IndexOf(':');
+                    if (colonIndex > 0)
                     {
-                        if (valuePart.Equals("True", StringComparison.OrdinalIgnoreCase))
-                            return "Да";
-                        if (valuePart.Equals("False", StringComparison.OrdinalIgnoreCase))
-                            return "Нет";
-                    }
+                        string typePart = display.Substring(0, colonIndex).Trim();
+                        string valuePart = display.Substring(colonIndex + 1).Trim();
 
-                    // Id и прочие Int32 показываем без префикса типа
-                    if (typePart.Equals("Int32", StringComparison.OrdinalIgnoreCase))
-                    {
+                        // Булевы значения локализуем как Да/Нет
+                        if (typePart.Equals("Boolean", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (valuePart.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                return "Да";
+                            if (valuePart.Equals("False", StringComparison.OrdinalIgnoreCase))
+                                return "Нет";
+                        }
+
+                        // Id и прочие Int32 показываем без префикса типа
+                        if (typePart.Equals("Int32", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return valuePart;
+                        }
+
+                        // Для остальных типов (включая длину, площадь, объём и т.п.)
+                        // возвращаем только часть "значение" — там уже метрические единицы,
+                        // которые даёт ToDisplayString() с учётом настроек проекта
                         return valuePart;
                     }
 
-                    // Для остальных типов (включая объём, толщину и пр. с единицами)
-                    // возвращаем только часть "значение", чтобы убрать префикс типа,
-                    // но сохранить метрические единицы, как в окне свойств Navisworks
-                    return valuePart;
+                    // Если двоеточия нет — просто возвращаем, как даёт Navisworks
+                    return display;
                 }
 
-                // Если формат другой — возвращаем как есть
-                return raw;
+                // Если это не VariantData (на всякий случай) — обычный ToString
+                return property.Value.ToString();
             }
             catch
             {
