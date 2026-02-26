@@ -100,18 +100,10 @@ namespace ClashManager.SearchSetCreation.Views
                     {
                         case VariantDataType.Boolean:
                             return variant.ToBoolean() ? "Да" : "Нет";
-                        case VariantDataType.Int16:
-                            return variant.ToInt16().ToString();
                         case VariantDataType.Int32:
                             return variant.ToInt32().ToString();
-                        case VariantDataType.Int64:
-                            return variant.ToInt64().ToString();
-                        case VariantDataType.Byte:
-                            return variant.ToByte().ToString();
                         case VariantDataType.Double:
                             return variant.ToDouble().ToString();
-                        case VariantDataType.Float:
-                            return variant.ToSingle().ToString();
                         case VariantDataType.String:
                             return variant.ToString();
                         case VariantDataType.DateTime:
@@ -174,7 +166,7 @@ namespace ClashManager.SearchSetCreation.Views
                             if (condition != null)
                             {
                                 search.SearchConditions.Add(condition);
-                                hasConditions = true;
+                                hasConditions = true;  
                             }
                         }
                         catch (Exception ex)
