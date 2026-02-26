@@ -91,47 +91,27 @@ namespace ClashManager.SearchSetCreation.Views
 
             try
             {
-                // Пробуем получить корректное отображаемое значение, как в окне свойств Navisworks
+                // Значения Navisworks хранятся в VariantData
                 var variant = property.Value as VariantData;
                 if (variant != null)
                 {
-                    string display = variant.ToDisplayString();
-                    if (string.IsNullOrEmpty(display))
-                        return "";
-
-                    // Часто формат "Тип:Значение" (Int32:123, Boolean:True, DoubleLength: 25.920 м и т.п.)
-                    int colonIndex = display.IndexOf(':');
-                    if (colonIndex > 0)
+                    switch (variant.DataType)
                     {
-                        string typePart = display.Substring(0, colonIndex).Trim();
-                        string valuePart = display.Substring(colonIndex + 1).Trim();
-
-                        // Булевы значения локализуем как Да/Нет
-                        if (typePart.Equals("Boolean", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (valuePart.Equals("True", StringComparison.OrdinalIgnoreCase))
-                                return "Да";
-                            if (valuePart.Equals("False", StringComparison.OrdinalIgnoreCase))
-                                return "Нет";
-                        }
-
-                        // Id и прочие Int32 показываем без префикса типа
-                        if (typePart.Equals("Int32", StringComparison.OrdinalIgnoreCase))
-                        {
-                            return valuePart;
-                        }
-
-                        // Для остальных типов (включая длину, площадь, объём и т.п.)
-                        // возвращаем только часть "значение" — там уже метрические единицы,
-                        // которые даёт ToDisplayString() с учётом настроек проекта
-                        return valuePart;
+                        case VariantDataType.Boolean:
+                            // Булевы значения локализуем как Да/Нет
+                            return variant.ToBoolean() ? "Да" : "Нет";
+                        case VariantDataType.Int32:
+                            // Целые (Id и т.п.) показываем как число без префикса типа
+                            return variant.ToInt32().ToString();
+                        default:
+                            // Для всех остальных типов (длина, площадь, объём, толщина и т.п.)
+                            // используем ToDisplayString(), чтобы получить значение в тех же единицах,
+                            // что и в окне свойств Navisworks (с учётом настроек проекта)
+                            return variant.ToDisplayString();
                     }
-
-                    // Если двоеточия нет — просто возвращаем, как даёт Navisworks
-                    return display;
                 }
 
-                // Если это не VariantData (на всякий случай) — обычный ToString
+                // Если это не VariantData (редко) — обычный ToString
                 return property.Value.ToString();
             }
             catch
