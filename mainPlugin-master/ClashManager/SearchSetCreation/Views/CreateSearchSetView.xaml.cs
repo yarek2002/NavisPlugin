@@ -97,8 +97,39 @@ namespace ClashManager.SearchSetCreation.Views
                 {
                     // Для большинства свойств (включая Id) это даёт корректное текстовое представление
                     string display = variant.ToDisplayString();
+
+                    // У Navisworks часто формат вида "Тип:Значение" (Int32:123, Boolean:True и т.п.)
                     if (!string.IsNullOrEmpty(display))
+                    {
+                        var parts = display.Split(new[] { ':' }, 2);
+                        if (parts.Length == 2)
+                        {
+                            var typePart = parts[0].Trim();
+                            var valuePart = parts[1].Trim();
+
+                            // Локализуем булевы значения под "Да/Нет"
+                            if (typePart.Equals("Boolean", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (valuePart.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                    return "Да";
+                                if (valuePart.Equals("False", StringComparison.OrdinalIgnoreCase))
+                                    return "Нет";
+                            }
+
+                            // Для известных типов возвращаем только значение без типа
+                            if (typePart.Equals("Int32", StringComparison.OrdinalIgnoreCase) ||
+                                typePart.Equals("Int64", StringComparison.OrdinalIgnoreCase) ||
+                                typePart.Equals("Double", StringComparison.OrdinalIgnoreCase) ||
+                                typePart.Equals("String", StringComparison.OrdinalIgnoreCase) ||
+                                typePart.Equals("DateTime", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return valuePart;
+                            }
+                        }
+
+                        // Если формат другой — возвращаем как есть
                         return display;
+                    }
                 }
                 catch
                 {
