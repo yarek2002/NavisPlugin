@@ -91,27 +91,57 @@ namespace ClashManager.SearchSetCreation.Views
 
             try
             {
-                // Значения Navisworks хранятся в VariantData
                 var variant = property.Value as VariantData;
                 if (variant != null)
                 {
-                    switch (variant.DataType)
+                    // Булевы значения: Да/Нет
+                    if (variant.DataType == VariantDataType.Boolean)
+                        return variant.ToBoolean() ? "Да" : "Нет";
+
+                    // Целочисленные (Id и т.п.) — без префикса типа
+                    if (variant.DataType == VariantDataType.Int32)
+                        return variant.ToInt32().ToString();
+
+                    // Double — переводим из футов/футов^2/футов^3 в метры
+                    if (variant.DataType == VariantDataType.Double)
                     {
-                        case VariantDataType.Boolean:
-                            // Булевы значения локализуем как Да/Нет
-                            return variant.ToBoolean() ? "Да" : "Нет";
-                        case VariantDataType.Int32:
-                            // Целые (Id и т.п.) показываем как число без префикса типа
-                            return variant.ToInt32().ToString();
-                        default:
-                            // Для всех остальных типов (длина, площадь, объём, толщина и т.п.)
-                            // используем ToDisplayString(), чтобы получить значение в тех же единицах,
-                            // что и в окне свойств Navisworks (с учётом настроек проекта)
-                            return variant.ToDisplayString();
+                        double raw = variant.ToDouble(); // внутреннее значение Navisworks, как правило футы
+                        string name = (property.DisplayName ?? string.Empty).ToLowerInvariant();
+
+                        // Длина / толщина / высота / ширина и т.п. (ft -> m)
+                        if (name.Contains("длина") || name.Contains("length") ||
+                            name.Contains("толщина") || name.Contains("thickness") ||
+                            name.Contains("высота") || name.Contains("height") ||
+                            name.Contains("ширина") || name.Contains("width") ||
+                            name.Contains("диаметр") || name.Contains("diameter"))
+                        {
+                            double meters = raw * 0.3048;
+                            return $"{meters:0.###} м";
+                        }
+
+                        // Объём (ft^3 -> m^3)
+                        if (name.Contains("объем") || name.Contains("объём") || name.Contains("volume"))
+                        {
+                            double cubicMeters = raw * 0.0283168466;
+                            return $"{cubicMeters:0.###} м³";
+                        }
+
+                        // Площадь (ft^2 -> m^2)
+                        if (name.Contains("площад") || name.Contains("area"))
+                        {
+                            double squareMeters = raw * 0.09290304;
+                            return $"{squareMeters:0.###} м²";
+                        }
+
+                        // Остальные double оставляем как есть (скорее всего безразмерные)
+                        return raw.ToString();
                     }
+
+                    // По умолчанию — стандартное отображение Navisworks
+                    return variant.ToDisplayString();
                 }
 
-                // Если это не VariantData (редко) — обычный ToString
+                // Если это не VariantData — обычный ToString
                 return property.Value.ToString();
             }
             catch
