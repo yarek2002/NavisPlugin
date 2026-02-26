@@ -91,57 +91,46 @@ namespace ClashManager.SearchSetCreation.Views
 
             try
             {
-                var variant = property.Value as VariantData;
-                if (variant != null)
+                // Нормальный путь: работаем через VariantData и ToDisplayString, как окно свойств Navisworks
+                if (property.Value is VariantData v)
                 {
-                    // Булевы значения: Да/Нет
-                    if (variant.DataType == VariantDataType.Boolean)
-                        return variant.ToBoolean() ? "Да" : "Нет";
+                    string display = v.ToDisplayString();
+                    if (string.IsNullOrEmpty(display))
+                        return "";
 
-                    // Целочисленные (Id и т.п.) — без префикса типа
-                    if (variant.DataType == VariantDataType.Int32)
-                        return variant.ToInt32().ToString();
-
-                    // Double — переводим из футов/футов^2/футов^3 в метры
-                    if (variant.DataType == VariantDataType.Double)
+                    // Часто формат "Тип:Значение" (Int32:123, Boolean:True, DoubleLength: 1234 мм и т.п.)
+                    int colonIndex = display.IndexOf(':');
+                    if (colonIndex > 0)
                     {
-                        double raw = variant.ToDouble(); // внутреннее значение Navisworks, как правило футы
-                        string name = (property.DisplayName ?? string.Empty).ToLowerInvariant();
+                        string typePart = display.Substring(0, colonIndex).Trim();
+                        string valuePart = display.Substring(colonIndex + 1).Trim();
 
-                        // Длина / толщина / высота / ширина и т.п. (ft -> m)
-                        if (name.Contains("длина") || name.Contains("length") ||
-                            name.Contains("толщина") || name.Contains("thickness") ||
-                            name.Contains("высота") || name.Contains("height") ||
-                            name.Contains("ширина") || name.Contains("width") ||
-                            name.Contains("диаметр") || name.Contains("diameter"))
+                        // Булевы значения локализуем как Да/Нет
+                        if (typePart.Equals("Boolean", StringComparison.OrdinalIgnoreCase))
                         {
-                            double meters = raw * 0.3048;
-                            return $"{meters:0.###} м";
+                            if (valuePart.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                return "Да";
+                            if (valuePart.Equals("False", StringComparison.OrdinalIgnoreCase))
+                                return "Нет";
                         }
 
-                        // Объём (ft^3 -> m^3)
-                        if (name.Contains("объем") || name.Contains("объём") || name.Contains("volume"))
+                        // Id и прочие Int32 показываем без префикса типа
+                        if (typePart.Equals("Int32", StringComparison.OrdinalIgnoreCase))
                         {
-                            double cubicMeters = raw * 0.0283168466;
-                            return $"{cubicMeters:0.###} м³";
+                            return valuePart;
                         }
 
-                        // Площадь (ft^2 -> m^2)
-                        if (name.Contains("площад") || name.Contains("area"))
-                        {
-                            double squareMeters = raw * 0.09290304;
-                            return $"{squareMeters:0.###} м²";
-                        }
-
-                        // Остальные double оставляем как есть (скорее всего безразмерные)
-                        return raw.ToString();
+                        // Для остальных типов (включая объём, толщину и пр. с единицами)
+                        // возвращаем только часть "значение", чтобы убрать префикс типа,
+                        // но сохранить метрические единицы, как в окне свойств Navisworks
+                        return valuePart;
                     }
 
-                    // По умолчанию — стандартное отображение Navisworks
-                    return variant.ToDisplayString();
+                    // Если двоеточия нет — просто возвращаем, как даёт Navisworks
+                    return display;
                 }
 
-                // Если это не VariantData — обычный ToString
+                // Запасной путь — что бы там ни было, просто ToString()
                 return property.Value.ToString();
             }
             catch
