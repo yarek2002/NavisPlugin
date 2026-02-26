@@ -91,53 +91,39 @@ namespace ClashManager.SearchSetCreation.Views
 
             try
             {
-                // Всегда сначала пробуем "правильное" отображаемое значение Navisworks
-                var variant = property.Value;
-                try
+                // В Navisworks значения хранятся в VariantData, будем разбирать по типу,
+                // а не по строке "Тип:Значение"
+                var variant = property.Value as VariantData;
+                if (variant != null)
                 {
-                    // Для большинства свойств (включая Id) это даёт корректное текстовое представление
-                    string display = variant.ToDisplayString();
-
-                    // У Navisworks часто формат вида "Тип:Значение" (Int32:123, Boolean:True и т.п.)
-                    if (!string.IsNullOrEmpty(display))
+                    switch (variant.DataType)
                     {
-                        var parts = display.Split(new[] { ':' }, 2);
-                        if (parts.Length == 2)
-                        {
-                            var typePart = parts[0].Trim();
-                            var valuePart = parts[1].Trim();
-
-                            // Локализуем булевы значения под "Да/Нет"
-                            if (typePart.Equals("Boolean", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (valuePart.Equals("True", StringComparison.OrdinalIgnoreCase))
-                                    return "Да";
-                                if (valuePart.Equals("False", StringComparison.OrdinalIgnoreCase))
-                                    return "Нет";
-                            }
-
-                            // Для известных типов возвращаем только значение без типа
-                            if (typePart.Equals("Int32", StringComparison.OrdinalIgnoreCase) ||
-                                typePart.Equals("Int64", StringComparison.OrdinalIgnoreCase) ||
-                                typePart.Equals("Double", StringComparison.OrdinalIgnoreCase) ||
-                                typePart.Equals("String", StringComparison.OrdinalIgnoreCase) ||
-                                typePart.Equals("DateTime", StringComparison.OrdinalIgnoreCase))
-                            {
-                                return valuePart;
-                            }
-                        }
-
-                        // Если формат другой — возвращаем как есть
-                        return display;
+                        case VariantDataType.Boolean:
+                            return variant.ToBoolean() ? "Да" : "Нет";
+                        case VariantDataType.Int16:
+                            return variant.ToInt16().ToString();
+                        case VariantDataType.Int32:
+                            return variant.ToInt32().ToString();
+                        case VariantDataType.Int64:
+                            return variant.ToInt64().ToString();
+                        case VariantDataType.Byte:
+                            return variant.ToByte().ToString();
+                        case VariantDataType.Double:
+                            return variant.ToDouble().ToString();
+                        case VariantDataType.Float:
+                            return variant.ToSingle().ToString();
+                        case VariantDataType.String:
+                            return variant.ToString();
+                        case VariantDataType.DateTime:
+                            return variant.ToDateTime().ToString();
+                        default:
+                            // На всякий случай используем стандартное отображение Navisworks
+                            return variant.ToDisplayString();
                     }
                 }
-                catch
-                {
-                    // Игнорируем и пробуем обычный ToString
-                }
 
-                // Резервный вариант
-                return variant.ToString();
+                // Если это не VariantData (на всякий случай) — обычный ToString
+                return property.Value.ToString();
             }
             catch
             {
