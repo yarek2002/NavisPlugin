@@ -99,15 +99,14 @@ namespace ClashManager.SearchSetCreation.Views
                     switch (variant.DataType)
                     {
                         case VariantDataType.Boolean:
+                            // Только булевы значения жёстко форматируем как Да/Нет
                             return variant.ToBoolean() ? "Да" : "Нет";
                         case VariantDataType.Int32:
+                            // Целые (Id и т.п.) показываем без префикса типа
                             return variant.ToInt32().ToString();
-                        case VariantDataType.Double:
-                            return variant.ToDouble().ToString();
-                        case VariantDataType.DateTime:
-                            return variant.ToDateTime().ToString();
                         default:
-                            // На всякий случай используем стандартное отображение Navisworks
+                            // Для всех прочих типов (включая объём, толщину, длины и др. с единицами)
+                            // используем стандартное отображение Navisworks, чтобы сохранить метрические единицы
                             return variant.ToDisplayString();
                     }
                 }
