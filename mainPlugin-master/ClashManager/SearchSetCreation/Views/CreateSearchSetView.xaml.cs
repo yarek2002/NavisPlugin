@@ -104,8 +104,6 @@ namespace ClashManager.SearchSetCreation.Views
                             return variant.ToInt32().ToString();
                         case VariantDataType.Double:
                             return variant.ToDouble().ToString();
-                        case VariantDataType.String:
-                            return variant.ToString();
                         case VariantDataType.DateTime:
                             return variant.ToDateTime().ToString();
                         default:
