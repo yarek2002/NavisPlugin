@@ -91,28 +91,40 @@ namespace ClashManager.SearchSetCreation.Views
 
             try
             {
-                // В Navisworks значения хранятся в VariantData, будем разбирать по типу,
-                // а не по строке "Тип:Значение"
-                var variant = property.Value as VariantData;
-                if (variant != null)
+                // Базовая строка от Navisworks (обычно формат "Тип:Значение")
+                string raw = property.Value.ToString();
+                if (string.IsNullOrEmpty(raw))
+                    return "";
+
+                var parts = raw.Split(new[] { ':' }, 2);
+                if (parts.Length == 2)
                 {
-                    switch (variant.DataType)
+                    var typePart = parts[0].Trim();
+                    var valuePart = parts[1].Trim();
+
+                    // Булевы значения локализуем как Да/Нет
+                    if (typePart.Equals("Boolean", StringComparison.OrdinalIgnoreCase))
                     {
-                        case VariantDataType.Boolean:
-                            // Только булевы значения жёстко форматируем как Да/Нет
-                            return variant.ToBoolean() ? "Да" : "Нет";
-                        case VariantDataType.Int32:
-                            // Целые (Id и т.п.) показываем без префикса типа
-                            return variant.ToInt32().ToString();
-                        default:
-                            // Для всех прочих типов (включая объём, толщину, длины и др. с единицами)
-                            // используем стандартное отображение Navisworks, чтобы сохранить метрические единицы
-                            return variant.ToDisplayString();
+                        if (valuePart.Equals("True", StringComparison.OrdinalIgnoreCase))
+                            return "Да";
+                        if (valuePart.Equals("False", StringComparison.OrdinalIgnoreCase))
+                            return "Нет";
                     }
+
+                    // Id и прочие Int32 показываем без префикса типа
+                    if (typePart.Equals("Int32", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return valuePart;
+                    }
+
+                    // Для остальных типов (включая объём, толщину и пр. с единицами)
+                    // возвращаем только часть "значение", чтобы убрать префикс типа,
+                    // но сохранить метрические единицы, как в окне свойств Navisworks
+                    return valuePart;
                 }
 
-                // Если это не VariantData (на всякий случай) — обычный ToString
-                return property.Value.ToString();
+                // Если формат другой — возвращаем как есть
+                return raw;
             }
             catch
             {
