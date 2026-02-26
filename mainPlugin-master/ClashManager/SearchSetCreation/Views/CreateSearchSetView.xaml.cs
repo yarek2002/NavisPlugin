@@ -91,41 +91,25 @@ namespace ClashManager.SearchSetCreation.Views
 
             try
             {
-                // Пробуем разные способы получения строкового представления значения
-                if (property.Value is VariantData variant)
+                // Всегда сначала пробуем "правильное" отображаемое значение Navisworks
+                var variant = property.Value;
+                try
                 {
-                    return variant.ToDisplayString();
+                    // Для большинства свойств (включая Id) это даёт корректное текстовое представление
+                    string display = variant.ToDisplayString();
+                    if (!string.IsNullOrEmpty(display))
+                        return display;
                 }
-                
-                // Для других типов данных пробуем разные подходы
-                object value = property.Value;
-                
-                if (value is string stringValue)
+                catch
                 {
-                    return stringValue;
+                    // Игнорируем и пробуем обычный ToString
                 }
-                
-                if (value is double doubleValue)
-                {
-                    return doubleValue.ToString("G");
-                }
-                
-                if (value is int intValue)
-                {
-                    return intValue.ToString();
-                }
-                
-                if (value is bool boolValue)
-                {
-                    return boolValue ? "Да" : "Нет";
-                }
-                
-                // Для сложных типов данных пробуем получить строковое представление
-                return value.ToString();
+
+                // Резервный вариант
+                return variant.ToString();
             }
-            catch (Exception ex)
+            catch
             {
-                System.Diagnostics.Debug.WriteLine($"Ошибка получения значения свойства {property.DisplayName}: {ex.Message}");
                 return "";
             }
         }
@@ -248,7 +232,7 @@ namespace ClashManager.SearchSetCreation.Views
                         "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
-
+                
                 // Создаем поисковый набор
                 SelectionSet newSet = new SelectionSet(foundItems);
                 
