@@ -193,8 +193,12 @@
     <Compile Include="Externals\ReportAutomationCmd.cs" />
     <Compile Include="AutoNaming\AutoNamingSettings.cs" />
     <Compile Include="SearchSetCreation\Models\PropertyItem.cs" />
+    <Compile Include="SearchSetCreation\Models\SearchSetConditionItem.cs" />
     <Compile Include="SearchSetCreation\Views\CreateSearchSetView.xaml.cs">
       <DependentUpon>CreateSearchSetView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="SearchSetCreation\Views\ConfirmSearchSetView.xaml.cs">
+      <DependentUpon>ConfirmSearchSetView.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -246,6 +250,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Page>
     <Page Include="SearchSetCreation\Views\CreateSearchSetView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Page>
+    <Page Include="SearchSetCreation\Views\ConfirmSearchSetView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
