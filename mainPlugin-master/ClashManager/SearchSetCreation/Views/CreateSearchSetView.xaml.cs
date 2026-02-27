@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using Autodesk.Navisworks.Api;
@@ -125,102 +126,74 @@ namespace ClashManager.SearchSetCreation.Views
                     return;
                 }
 
+                // Окно подтверждения условий (как в поиске Navisworks)
+                var conditions = selectedProperties.Select(p => new SearchSetConditionItem
+                {
+                    Category = p.Category,
+                    PropertyName = p.PropertyName,
+                    Operator = "=",
+                    Value = p.PropertyValue
+                }).ToList();
+
+                var confirm = new ClashManager.SearchSetCreation.Views.ConfirmSearchSetView(conditions)
+                {
+                    Owner = this
+                };
+
+                if (confirm.ShowDialog() != true)
+                    return;
+
+                var finalConditions = confirm.Conditions.ToList();
+
                 Document doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
                 string objectCategory = GetObjectCategory(_selectedItem);
 
-                // Создаем поисковый запрос
+                // 1) Поиск по наличию свойств
                 Search search = new Search();
-
-                // Добавляем условия для выбранных свойств и значений
-                bool hasConditions = false;
-                var valueConditions = new System.Collections.Generic.List<PropertyItem>();
-
-                foreach (var propItem in selectedProperties)
+                foreach (var c in finalConditions)
                 {
-                    // Выбрана вся строка: добавляем условие по свойству и по значению
-                    search.SearchConditions.Add(
-                        SearchCondition.HasPropertyByDisplayName(propItem.Category, propItem.PropertyName));
-                    hasConditions = true;
-
-                    if (!string.IsNullOrEmpty(propItem.PropertyValue))
-                    {
-                        valueConditions.Add(propItem);
-                        try
-                        {
-                            var condition = CreatePropertyValueEqualsCondition(
-                                propItem.Category,
-                                propItem.PropertyName,
-                                propItem.OriginalValue);
-                            if (condition != null)
-                            {
-                                search.SearchConditions.Add(condition);
-                                hasConditions = true;  
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Ошибка создания условия для {propItem.PropertyName}: {ex.Message}");
-                        }
-                    }
+                    search.SearchConditions.Add(SearchCondition.HasPropertyByDisplayName(c.Category, c.PropertyName));
                 }
 
-                if (!hasConditions && valueConditions.Count == 0)
-                {
-                    MessageBox.Show("Пожалуйста, выберите хотя бы одну строку для создания поискового набора.", 
-                        "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                // Выполняем поиск
                 ModelItemCollection foundItems = search.FindAll(doc, false);
 
-                // Если использовались условия по значениям, которые не удалось добавить через PropertyValueEquals,
-                // фильтруем результаты вручную
-                if (valueConditions.Any() && foundItems.Count > 0)
+                // 2) Ручная фильтрация по операторам/значениям
+                if (finalConditions.Any() && foundItems.Count > 0)
                 {
                     var filteredItems = new System.Collections.Generic.List<ModelItem>();
-                    
+
                     foreach (ModelItem item in foundItems)
                     {
-                        bool matchesAllConditions = true;
-                        
-                        foreach (var propItem in valueConditions)
+                        bool ok = true;
+
+                        foreach (var c in finalConditions)
                         {
-                            try
+                            var prop = item.PropertyCategories.FindPropertyByDisplayName(c.Category, c.PropertyName);
+                            if (prop == null)
                             {
-                                var prop = item.PropertyCategories.FindPropertyByDisplayName(propItem.Category, propItem.PropertyName);
-                                if (prop == null)
-                                {
-                                    matchesAllConditions = false;
-                                    break;
-                                }
-                                
-                                string itemValue = GetPropertyValueString(prop);
-                                if (itemValue != propItem.PropertyValue)
-                                {
-                                    matchesAllConditions = false;
-                                    break;
-                                }
+                                ok = false;
+                                break;
                             }
-                            catch
+
+                            // Если значение не задано — условие "свойство существует"
+                            if (string.IsNullOrWhiteSpace(c.Value))
+                                continue;
+
+                            string itemValue = GetPropertyValueString(prop);
+                            if (!EvaluateCondition(itemValue, c.Operator, c.Value))
                             {
-                                matchesAllConditions = false;
+                                ok = false;
                                 break;
                             }
                         }
-                        
-                        if (matchesAllConditions)
-                        {
+
+                        if (ok)
                             filteredItems.Add(item);
-                        }
                     }
-                    
-                    // Создаем новую коллекцию ModelItemCollection и добавляем элементы
+
                     foundItems = new ModelItemCollection();
                     foreach (var item in filteredItems)
-                    {
                         foundItems.Add(item);
-                    }
                 }
 
                 if (foundItems.Count == 0)
@@ -234,7 +207,7 @@ namespace ClashManager.SearchSetCreation.Views
                 SelectionSet newSet = new SelectionSet(foundItems);
                 
                 // Формируем имя набора
-                string setName = GenerateSearchSetName(selectedProperties, objectCategory);
+                string setName = GenerateSearchSetName(finalConditions, objectCategory);
                 newSet.DisplayName = setName;
 
                 // Добавляем набор в документ
@@ -252,6 +225,70 @@ namespace ClashManager.SearchSetCreation.Views
             }
         }
 
+        private static bool EvaluateCondition(string itemValue, string op, string expectedValue)
+        {
+            itemValue ??= "";
+            expectedValue ??= "";
+            op = (op ?? "=").Trim();
+
+            // Строковые операторы
+            if (op.Equals("содержит", StringComparison.OrdinalIgnoreCase))
+                return itemValue.IndexOf(expectedValue, StringComparison.OrdinalIgnoreCase) >= 0;
+            if (op.Equals("не содержит", StringComparison.OrdinalIgnoreCase))
+                return itemValue.IndexOf(expectedValue, StringComparison.OrdinalIgnoreCase) < 0;
+
+            if (op == "=")
+                return string.Equals(itemValue, expectedValue, StringComparison.OrdinalIgnoreCase);
+            if (op == "!=")
+                return !string.Equals(itemValue, expectedValue, StringComparison.OrdinalIgnoreCase);
+
+            // Числовые операторы
+            if (op == ">" || op == ">=" || op == "<" || op == "<=")
+            {
+                if (!TryParseDoubleLoose(itemValue, out double a) || !TryParseDoubleLoose(expectedValue, out double b))
+                    return false;
+
+                return op switch
+                {
+                    ">" => a > b,
+                    ">=" => a >= b,
+                    "<" => a < b,
+                    "<=" => a <= b,
+                    _ => false
+                };
+            }
+
+            // Неизвестный оператор — по умолчанию как "="
+            return string.Equals(itemValue, expectedValue, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool TryParseDoubleLoose(string s, out double value)
+        {
+            value = 0;
+            if (string.IsNullOrWhiteSpace(s))
+                return false;
+
+            // 1) пробуем текущую культуру
+            if (double.TryParse(s.Trim(), NumberStyles.Float, CultureInfo.CurrentCulture, out value))
+                return true;
+
+            // 2) пробуем invariant
+            if (double.TryParse(s.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+                return true;
+
+            // 3) очищаем строку (на случай единиц: "25.92 м", "12,5mm", и т.п.)
+            var cleaned = new string(s.Where(ch =>
+                char.IsDigit(ch) || ch == '-' || ch == '+' || ch == '.' || ch == ',' || ch == 'e' || ch == 'E').ToArray());
+
+            if (string.IsNullOrWhiteSpace(cleaned))
+                return false;
+
+            if (double.TryParse(cleaned, NumberStyles.Float, CultureInfo.CurrentCulture, out value))
+                return true;
+
+            return double.TryParse(cleaned, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+        }
+
         private SearchCondition CreatePropertyValueEqualsCondition(string category, string propertyName, object value)
         {
             // В Navisworks API нет прямого метода PropertyValueEquals для создания условия равенства значения
@@ -261,7 +298,7 @@ namespace ClashManager.SearchSetCreation.Views
             return null;
         }
 
-        private string GenerateSearchSetName(System.Collections.Generic.List<PropertyItem> selectedProperties, string objectCategory)
+        private string GenerateSearchSetName(System.Collections.Generic.List<SearchSetConditionItem> selectedProperties, string objectCategory)
         {
             // Формируем имя набора: Категория-объект, Свойство = Значение (выбранная строка)
             var parts = new System.Collections.Generic.List<string>();
@@ -269,7 +306,8 @@ namespace ClashManager.SearchSetCreation.Views
 
             foreach (var prop in selectedProperties)
             {
-                parts.Add($"{prop.PropertyName}={prop.PropertyValue}");
+                string op = string.IsNullOrWhiteSpace(prop.Operator) ? "=" : prop.Operator.Trim();
+                parts.Add($"{prop.PropertyName}{op}{prop.Value}");
             }
 
             string setName = string.Join("-", parts);

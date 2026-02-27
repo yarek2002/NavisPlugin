@@ -1,0 +1,51 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ClashManager.SearchSetCreation.Views.ConfirmSearchSetView"
+        Title="Подтверждение условий поиска" Height="450" Width="800"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Проверьте условия поиска и нажмите «Создать»:"
+                   FontWeight="Bold"
+                   Margin="0,0,0,10" />
+
+        <DataGrid x:Name="ConditionsDataGrid"
+                  Grid.Row="1"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
+                  GridLinesVisibility="All"
+                  HeadersVisibility="Column"
+                  Margin="0,0,0,10">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Категория" Binding="{Binding Category}" IsReadOnly="True" Width="220" />
+                <DataGridTextColumn Header="Свойство" Binding="{Binding PropertyName}" IsReadOnly="True" Width="220" />
+                <DataGridComboBoxColumn Header="Оператор"
+                                        SelectedItemBinding="{Binding Operator, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Width="120" />
+                <DataGridTextColumn Header="Значение" Binding="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Создать"
+                    Width="120"
+                    Height="30"
+                    Margin="0,0,10,0"
+                    Click="CreateButton_Click" />
+            <Button Content="Отмена"
+                    Width="120"
+                    Height="30"
+                    Click="CancelButton_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
+
