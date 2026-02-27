@@ -91,9 +91,19 @@ namespace ClashManager.SearchSetCreation.Views
 
             try
             {
-                // Без любого парсинга/конвертации — просто выводим то, что даёт Navisworks
-                // (обычно формат "Тип:Значение", например "Int32:123", "Boolean:True", "DoubleLength:85.03" и т.п.)
-                return property.Value.ToString();
+                // Строка от Navisworks обычно имеет формат "Тип:Значение"
+                // Нам нужно убрать только префикс "Тип:", оставить само значение как есть
+                string raw = property.Value.ToString();
+                if (string.IsNullOrEmpty(raw))
+                    return "";
+
+                int colonIndex = raw.IndexOf(':');
+                if (colonIndex < 0)
+                    return raw; // нет двоеточия — возвращаем как есть
+
+                // Всё после первого ':' считаем фактическим значением
+                string valuePart = raw.Substring(colonIndex + 1).Trim();
+                return valuePart;
             }
             catch
             {
