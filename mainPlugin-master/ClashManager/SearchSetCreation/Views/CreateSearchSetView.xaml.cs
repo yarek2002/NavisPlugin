@@ -91,75 +91,9 @@ namespace ClashManager.SearchSetCreation.Views
 
             try
             {
-                // Берём сырое строковое представление из Navisworks (обычно "Тип:Значение")
-                string raw = property.Value.ToString();
-                if (string.IsNullOrEmpty(raw))
-                    return "";
-
-                var parts = raw.Split(new[] { ':' }, 2);
-                if (parts.Length != 2)
-                    return raw;
-
-                string typePart = parts[0].Trim();
-                string valuePart = parts[1].Trim();
-
-                // Булевы значения локализуем как Да/Нет
-                if (typePart.Equals("Boolean", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (valuePart.Equals("True", StringComparison.OrdinalIgnoreCase))
-                        return "Да";
-                    if (valuePart.Equals("False", StringComparison.OrdinalIgnoreCase))
-                        return "Нет";
-                    return valuePart;
-                }
-
-                // Id и прочие Int32 показываем без префикса типа
-                if (typePart.Equals("Int32", StringComparison.OrdinalIgnoreCase))
-                {
-                    return valuePart;
-                }
-
-                // Для длин/толщин/объёмов и площадей конвертируем из футов в метры
-                // Опираемся и на тип, и на имя свойства
-                string name = property.DisplayName ?? string.Empty;
-
-                // Пытаемся распарсить числовое значение в инвариантной культуре
-                if (double.TryParse(valuePart, System.Globalization.NumberStyles.Float,
-                                    System.Globalization.CultureInfo.InvariantCulture, out double feetValue))
-                {
-                    // Длина / толщина
-                    if (typePart.IndexOf("Length", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        name.IndexOf("Длина", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        name.IndexOf("Толщина", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        name.IndexOf("Length", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        name.IndexOf("Thickness", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        double meters = feetValue * 0.3048; // ft -> m
-                        return meters.ToString("0.###", System.Globalization.CultureInfo.CurrentCulture) + " м";
-                    }
-
-                    // Площадь
-                    if (typePart.IndexOf("Area", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        name.IndexOf("Площадь", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        name.IndexOf("Area", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        double squareMeters = feetValue * 0.09290304; // ft² -> m²
-                        return squareMeters.ToString("0.###", System.Globalization.CultureInfo.CurrentCulture) + " м²";
-                    }
-
-                    // Объём
-                    if (typePart.IndexOf("Volume", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        name.IndexOf("Объем", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        name.IndexOf("Объём", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        name.IndexOf("Volume", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        double cubicMeters = feetValue * 0.028316846592; // ft³ -> m³
-                        return cubicMeters.ToString("0.###", System.Globalization.CultureInfo.CurrentCulture) + " м³";
-                    }
-                }
-
-                // По умолчанию возвращаем значение без префикса типа
-                return valuePart;
+                // Без любого парсинга/конвертации — просто выводим то, что даёт Navisworks
+                // (обычно формат "Тип:Значение", например "Int32:123", "Boolean:True", "DoubleLength:85.03" и т.п.)
+                return property.Value.ToString();
             }
             catch
             {
